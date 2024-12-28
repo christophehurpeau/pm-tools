@@ -611,9 +611,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pob/eslint-config@npm:59.3.0":
-  version: 59.3.0
-  resolution: "@pob/eslint-config@npm:59.3.0"
+"@pob/eslint-config@npm:59.3.1":
+  version: 59.3.1
+  resolution: "@pob/eslint-config@npm:59.3.1"
   dependencies:
     "@eslint/js": "npm:^9.9.0"
     "@pob/eslint-plugin": "npm:59.3.0"
@@ -624,7 +624,7 @@ __metadata:
     eslint-plugin-unicorn: "npm:^56.0.1"
   peerDependencies:
     eslint: ^9.9.0
-  checksum: 10c0/3a7483a98983e57b5fe9084c74fc84eaa118f5e9e8441ef9625a83285aef3cf760f764ad6c397caecb9bcc1297b67df158c64f53265a0821d06cc25353aa5021
+  checksum: 10c0/9836737c2f414b8e70ad2026d1debee3c120f5f3ce7929caa85e389b01b6f57999c52fbc5c4bb407fad14e20e96f806a022768edb72b0b213c3e1ab7cc2345a9
   languageName: node
   linkType: hard
 
@@ -4374,7 +4374,7 @@ __metadata:
   resolution: "pm-tools-monorepo@workspace:."
   dependencies:
     "@pob/commitlint-config": "npm:8.0.1"
-    "@pob/eslint-config": "npm:59.3.0"
+    "@pob/eslint-config": "npm:59.3.1"
     "@pob/root": "npm:15.1.1"
     check-package-dependencies: "npm:9.0.0"
     eslint: "npm:9.17.0"
