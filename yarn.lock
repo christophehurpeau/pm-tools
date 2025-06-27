@@ -56,13 +56,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@commitlint/config-conventional@npm:^19.2.2":
-  version: 19.2.2
-  resolution: "@commitlint/config-conventional@npm:19.2.2"
+"@commitlint/config-conventional@npm:^19.8.0":
+  version: 19.8.0
+  resolution: "@commitlint/config-conventional@npm:19.8.0"
   dependencies:
-    "@commitlint/types": "npm:^19.0.3"
+    "@commitlint/types": "npm:^19.8.0"
     conventional-changelog-conventionalcommits: "npm:^7.0.2"
-  checksum: 10c0/2f2a07ee318ac42ffda488521bd84f28268a6d2ea10b332abcad6106559d8a64a765cc58ddea106fd67fce376228cb24059000a584f4986e0e8f972cedd85442
+  checksum: 10c0/c0e2ad4ee8b793ad08ce8f0fd242d8111c71c81eba53b652431b7852e02d3eef0a383e234b7574429f5d1876b712a915921f6ff61fdaccdf708cbbaf3fa1f2f0
   languageName: node
   linkType: hard
 
@@ -220,13 +220,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@commitlint/types@npm:^19.0.3, @commitlint/types@npm:^19.5.0":
-  version: 19.5.0
-  resolution: "@commitlint/types@npm:19.5.0"
+"@commitlint/types@npm:^19.5.0, @commitlint/types@npm:^19.8.0":
+  version: 19.8.0
+  resolution: "@commitlint/types@npm:19.8.0"
   dependencies:
     "@types/conventional-commits-parser": "npm:^5.0.0"
     chalk: "npm:^5.3.0"
-  checksum: 10c0/f4a93992f43b23cd5af200c69bb73227fdc0f78a6f7ebcda73dad10d558c1ac66ff164aa6dc3c2ddb322c9ed8b1a89b05f458e40d7c440a0358f435d2d71c2df
+  checksum: 10c0/634a5db20110675da8ddf226f200c33f262c6e99d06853fd4a2f6d543e6cc7dfe48b045f7ae76bcce2e39595099bfebe6a5dd6da37ff2968733c1263b8d46644
   languageName: node
   linkType: hard
 
@@ -610,12 +610,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pob/commitlint-config@npm:8.0.1":
-  version: 8.0.1
-  resolution: "@pob/commitlint-config@npm:8.0.1"
+"@pob/commitlint-config@npm:9.1.4":
+  version: 9.1.4
+  resolution: "@pob/commitlint-config@npm:9.1.4"
   dependencies:
-    "@commitlint/config-conventional": "npm:^19.2.2"
-  checksum: 10c0/99d9ac14e3817832cab29497557ddd3bfadbb6583231a6edd06d71b17f2950abf155e0920be760cc963903918010feb9d53a47aef8d7abb58196d728d32603a8
+    "@commitlint/config-conventional": "npm:^19.8.0"
+  checksum: 10c0/008502a739b3a59b82c6b830325efb589483a57af9b3b584f4e700e5ef2a8762e75533081066fe347ef91ba2ad58abd7654f7c54e70fe2ea3191c9c13f80b2be
   languageName: node
   linkType: hard
 
@@ -4437,7 +4437,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "pm-tools-monorepo@workspace:."
   dependencies:
-    "@pob/commitlint-config": "npm:8.0.1"
+    "@pob/commitlint-config": "npm:9.1.4"
     "@pob/eslint-config": "npm:59.3.2"
     "@pob/root": "npm:15.1.1"
     check-package-dependencies: "npm:10.3.0"
