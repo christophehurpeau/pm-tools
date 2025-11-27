@@ -7,7 +7,7 @@
   "repository": "https://github.com/christophehurpeau/pm-tools.git",
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "type": "module",
-  "packageManager": "yarn@4.5.3",
+  "packageManager": "yarn@4.12.0",
   "engines": {
     "node": ">=20.9.0"
   },
