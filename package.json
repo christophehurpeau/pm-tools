@@ -34,7 +34,7 @@
   "prettier": "@pob/root/prettier-config",
   "devDependencies": {
     "@pob/commitlint-config": "8.0.1",
-    "@pob/eslint-config": "59.3.2",
+    "@pob/eslint-config": "59.8.1",
     "@pob/root": "15.1.1",
     "check-package-dependencies": "10.5.0",
     "eslint": "9.37.0"
