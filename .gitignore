@@ -17,6 +17,9 @@ yarn-error.log*
 # default coverage directory
 /coverage
 
+# Typescript
+*.tsbuildinfo
+
 #*
 *$
 *.BAK

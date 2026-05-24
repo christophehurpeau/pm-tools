@@ -1,0 +1,19 @@
+[
+  {
+    "installations": ["semver"],
+    "package": {
+      "info": {
+        "bin": {
+          "semver": "bin/semver.js"
+        }
+      },
+      "integrity": "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==",
+      "name": "semver",
+      "registry": "",
+      "resolution": "semver@7.7.3",
+      "type": "npm",
+      "version": "7.7.3"
+    },
+    "resolution": "semver@7.7.3"
+  }
+]

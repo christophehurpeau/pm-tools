@@ -1,0 +1,68 @@
+{
+  "name": "bun-why-duplicate",
+  "version": "2.0.0",
+  "description": "Simple bin to know why a package is duplicated",
+  "keywords": [
+    "bun"
+  ],
+  "homepage": "https://github.com/christophehurpeau/pm-tools",
+  "bugs": {
+    "url": "https://github.com/christophehurpeau/bun-why-duplicate/issues"
+  },
+  "license": "ISC",
+  "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/christophehurpeau/pm-tools.git",
+    "directory": "packages/bun-why-duplicate"
+  },
+  "bin": {
+    "bun-dedupe": "./src/bin/bun-dedupe.ts",
+    "bun-why-duplicate": "./src/bin/bun-why-duplicate.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "bin"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/definitions/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    "./src/index": {
+      "types": "./dist/definitions/src/index.d.ts",
+      "node": {
+        "import": "./dist/src/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "bun run lint:eslint",
+    "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/bun-why-duplicate'",
+    "test": "bun run --cwd '../..' test -- 'packages/bun-why-duplicate'",
+    "test:coverage:json": "npx c8 --reporter=json --all --src ./lib node --test test/*.js",
+    "test:coverage:lcov": "TS_NODE_PROJECT=tsconfig.test.json npx c8 --reporter=lcov --src ./lib node --test test/*.js",
+    "tsc": "tsc"
+  },
+  "dependencies": {
+    "@types/bun": "1.3.14",
+    "json5": "2.2.3",
+    "pm-utils": "workspace:*",
+    "semver": "7.6.0",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "pob": {
+    "bundler": "tsc",
+    "entries": [
+      "src/index.ts"
+    ]
+  }
+}

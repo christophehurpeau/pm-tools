@@ -7,25 +7,32 @@ on:
       - "renovate/pob-root-**"
       - "renovate/major-pob-root"
 
+permissions:
+  contents: write
+
 jobs:
   run-install-and-commit-modified-files:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          ssh-key: ${{ secrets.PUSH_DEPLOY_KEY }}
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
 
       - name: Install Dependencies
         # no immutable here
-        run: yarn install
+        run: bun i
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: false
 
       - name: Run pob-root-postinstall
-        run: yarn pob-root-postinstall
+        run: bun run pob-root-postinstall
 
       - name: Run pob update
         run: npx pob update --force
@@ -44,3 +51,5 @@ jobs:
             -c user.email="christophehurpeau@users.noreply.github.com" \
             commit -m "chore: update pob root" --author="github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
           git push --no-verify
+        env:
+          YARN_ENABLE_IMMUTABLE_INSTALLS: false

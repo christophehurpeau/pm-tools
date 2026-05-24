@@ -1,0 +1,44 @@
+[
+  {
+    "installations": ["@babel/code-frame"],
+    "package": {
+      "info": {
+        "dependencies": {
+          "@babel/helper-validator-identifier": "^7.25.9",
+          "js-tokens": "^4.0.0",
+          "picocolors": "^1.0.0"
+        }
+      },
+      "integrity": "sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==",
+      "name": "@babel/code-frame",
+      "registry": "",
+      "resolution": "@babel/code-frame@7.26.2",
+      "type": "npm",
+      "version": "7.26.2"
+    },
+    "resolution": "@babel/code-frame@7.26.2"
+  },
+  {
+    "installations": [
+      "@babel/core/@babel/code-frame",
+      "@babel/template/@babel/code-frame",
+      "@babel/traverse/@babel/code-frame"
+    ],
+    "package": {
+      "info": {
+        "dependencies": {
+          "@babel/helper-validator-identifier": "^7.27.1",
+          "js-tokens": "^4.0.0",
+          "picocolors": "^1.1.1"
+        }
+      },
+      "integrity": "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==",
+      "name": "@babel/code-frame",
+      "registry": "",
+      "resolution": "@babel/code-frame@7.27.1",
+      "type": "npm",
+      "version": "7.27.1"
+    },
+    "resolution": "@babel/code-frame@7.27.1"
+  }
+]

@@ -1,22 +1,23 @@
 {
   "pob": {
-    "project": {
-      "type": "lib",
-      "packageManager": "yarn",
-      "yarnNodeLinker": "node-modules"
-    },
     "renovate": {
       "enable": true
     },
     "monorepo": {
       "ci": true,
       "testing": true,
-      "testRunner": "node",
+      "testRunner": "bun",
       "codecov": false,
       "documentation": false,
-      "typescript": false,
+      "typescript": true,
       "eslint": true,
-      "packageNames": ["yarn-why-duplicate"]
+      "packageNames": ["pm-utils", "yarn-why-duplicate", "bun-why-duplicate"]
+    },
+    "project": {
+      "type": "lib",
+      "packageManager": "bun",
+      "yarnNodeLinker": "node-modules",
+      "ci": true
     }
   }
 }

@@ -1,0 +1,234 @@
+/* eslint-disable complexity */
+import { PackageDependencyDescriptorUtils } from "pm-utils";
+import { compare as compareRange } from "semver";
+import { parseSelector } from "./bunResolvedUtils.ts";
+import type { BunLockFile } from "bun";
+
+
+export const identifyDuplicatesDependents = (
+  bunLockResult: BunLockFile,
+  pkgNameToFilter: string,
+) => {
+  const packageMap = new Map();
+
+  const getOrCreatePackage = (name:string) => {
+    const pkg = packageMap.get(name);
+    if (!pkg) {
+      const pkg = { name, groupByVersions: new Map(), dependents: new Map() };
+
+      packageMap.set(name, pkg);
+      return pkg;
+    }
+    return pkg;
+  };
+
+  for (const [installationPath, [resolvedPackage, , partPkg]] of Object.entries(
+    bunLockResult.packages,
+  )) {
+    const [pkgName, pkgVersion] = parseSelector(resolvedPackage);
+
+    if (pkgName === pkgNameToFilter || !pkgNameToFilter) {
+      const { groupByVersions } = getOrCreatePackage(pkgName);
+
+      const parsedDescriptor = PackageDependencyDescriptorUtils.parse(
+        pkgName,
+        pkgVersion,
+      );
+
+      let byVersion = groupByVersions.get(resolvedPackage);
+      if (!byVersion) {
+        byVersion = {
+          selector: parsedDescriptor.selector,
+          descriptor: parsedDescriptor,
+          sources: new Map(),
+          installations: [],
+        };
+        groupByVersions.set(resolvedPackage, byVersion);
+      }
+      byVersion.installations.push({
+        pkgName,
+        path: installationPath,
+        descriptor: parsedDescriptor,
+        depVersion: pkgVersion,
+      });
+    }
+    if (!pkgNameToFilter || pkgName !== pkgNameToFilter) {
+      ["dependencies", "devDependencies", "peerDependencies"].forEach(
+        (depType) => {
+          const deps = partPkg[depType];
+          if (deps) {
+            for (const [depName, depValue] of Object.entries(deps)) {
+              if (pkgNameToFilter && depName !== pkgNameToFilter) {
+                continue;
+              }
+              const parsedDescriptor = PackageDependencyDescriptorUtils.parse(
+                depName,
+                depValue, // pkgVersion,
+              );
+
+              const { dependents } = getOrCreatePackage(
+                parsedDescriptor.npmName,
+              );
+
+              const dependent = dependents.get(installationPath);
+
+              const dependency = {
+                descriptor: parsedDescriptor,
+                pkgVersion,
+                resolvedPackage,
+              };
+              // a dependent can have multiple dependencies on the same package, either with different dependency types or with different versions (ie "a": "1.0.0" and "b": "npm:a@2.0.0")
+              if (dependent) {
+                dependent.dependencies.push(dependency);
+              } else {
+                dependents.set(installationPath, {
+                  path: installationPath,
+                  name: resolvedPackage,
+                  descriptor: parsedDescriptor,
+                  depName,
+                  depValue,
+                  dependencies: [dependency],
+                });
+              }
+            }
+          }
+        },
+      );
+    }
+  }
+
+  Object.entries(bunLockResult.workspaces).forEach(
+    ([workspacePath, partPkg]) => {
+      ["dependencies", "devDependencies", "peerDependencies"].forEach(
+        (depType) => {
+          const deps = partPkg[depType];
+          if (deps) {
+            for (const [depName, depVersion] of Object.entries(deps)) {
+              if (pkgNameToFilter && depName !== pkgNameToFilter) {
+                continue;
+              }
+
+              const { dependents } = getOrCreatePackage(depName);
+              const workspacePackageJsonPath = `${workspacePath || "."}/package.json`;
+
+              dependents.set(workspacePackageJsonPath, {
+                name: workspacePackageJsonPath,
+                depVersion,
+              });
+            }
+          }
+        },
+      );
+    },
+  );
+
+  if (pkgNameToFilter) {
+    const { dependents = [] } = packageMap.get(pkgNameToFilter) || {};
+    if (dependents.length === 0) {
+      throw new Error(`No dependents found for ${pkgNameToFilter}`);
+    }
+  }
+
+  const groupsMap = new Map();
+  for (const [
+    packageName,
+    { dependents, groupByVersions },
+  ] of packageMap.entries()) {
+    const versions = [...groupByVersions.values()];
+    if (!pkgNameToFilter && versions.length < 2) {
+      continue;
+    }
+    let defaultVersion;
+
+    const markAsUsed = (dependent) => {
+      dependent.used = true;
+    };
+
+    for (const groupByVersion of versions) {
+      console.log({ groupByVersion });
+      const sources = new Set();
+      for (const {
+        path,
+        descriptor,
+        pkgName,
+      } of groupByVersion.installations) {
+        console.log({ path, descriptor, pkgName });
+
+        const extractLastPackageNameInPath = () => {
+          const pathSegments = path.split("/");
+          return pathSegments.at(-2)?.startsWith("@")
+            ? `${pathSegments.at(-2)}/${pathSegments.at(-1)}` // scoped package
+            : pathSegments.at(-1);
+        };
+
+        const extractedPackageNameInPath = extractLastPackageNameInPath();
+        const parentDependentPath = path.slice(
+          0,
+          -(extractedPackageNameInPath.length + 1),
+        );
+
+        if (!parentDependentPath) {
+          if (path === packageName) {
+            defaultVersion = groupByVersion;
+            console.log("default version", defaultVersion);
+          } else {
+            // version installed with a different name
+            // TODO wrong
+            const dependent = [...dependents.values()].find((dependent) =>
+              dependent.resolutions.find(
+                (resolution) =>
+                  resolution.depName === path && resolution.depVersion === 12,
+              ),
+            );
+            if (dependent) {
+              const source = markAsUsed(dependent);
+              sources.add(source);
+            } else {
+              console.dir([...dependents.values()], { depth: null });
+              console.dir({ descriptor }, { depth: null });
+              throw new Error(`Found no dependent of path "${path}"`);
+            }
+          }
+        } else {
+          const parentDependentResolved =
+            bunLockResult.packages[parentDependentPath];
+
+          if (!parentDependentResolved) {
+            throw new Error(
+              `Could not find ${parentDependentPath} in packages`,
+            );
+          }
+
+          const dependent = dependents.get(parentDependentResolved[0]);
+          if (dependent) {
+            const source = markAsUsed(dependent);
+            sources.add(source);
+          }
+        }
+      }
+      groupByVersion.sources = sources;
+    }
+
+    for (const dependent of dependents.values()) {
+      if (!dependent.used) {
+        if (!defaultVersion) {
+          throw new Error(`No default version found for ${pkgNameToFilter}`);
+        }
+        defaultVersion.sources.add(dependent);
+      }
+    }
+
+    const groups = [...groupByVersions.values()];
+    groups.sort((a, b) => {
+      try {
+        return -compareRange(a.selector, b.selector);
+      } catch {
+        return 0;
+      }
+    });
+
+    groupsMap.set(packageName, groups);
+  }
+
+  return groupsMap;
+};

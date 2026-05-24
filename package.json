@@ -1,42 +1,46 @@
 {
   "name": "pm-tools-monorepo",
-  "private": true,
   "version": "2.0.0",
-  "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
-  "license": "ISC",
-  "repository": "https://github.com/christophehurpeau/pm-tools.git",
+  "private": true,
   "homepage": "https://github.com/christophehurpeau/pm-tools",
-  "type": "module",
-  "packageManager": "yarn@4.5.3",
-  "engines": {
-    "node": ">=20.9.0"
-  },
+  "license": "ISC",
+  "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
+  "repository": "https://github.com/christophehurpeau/pm-tools.git",
   "workspaces": [
     "packages/*"
   ],
+  "type": "module",
   "scripts": {
+    "build": "bun run build:definitions",
+    "build:definitions": "tsc -b",
+    "bun:test": "bun test packages/**/*.test.ts",
     "checks": "node scripts/check-packages.js",
-    "lint": "yarn run lint:prettier && yarn run lint:eslint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check .",
+    "lint": "bun run format && bun run lint:eslint",
     "lint:eslint": "eslint --quiet .",
     "lint:prettier": "pob-root-prettier --check .",
     "lint:prettier:fix": "pob-root-prettier --write .",
-    "postinstall": "pob-root-postinstall",
-    "test": "node --test packages/*/test/**/*.js",
-    "test:coverage": "npx c8 --all --src ./src node --test packages/*/test/**/*.js",
-    "test:coverage:json": "npx c8 --reporter=json --all --src ./src node --test packages/*/test/**/*.js",
-    "test:watch": "node --test packages/*/test/**/*.js"
+    "prepare": "pob-root-postinstall",
+    "test": "TZ=UTC bun test",
+    "test:coverage": "TZ=UTC bun test --coverage ",
+    "test:coverage:json": "TZ=UTC bun test --coverage --coverage-report=json",
+    "test:watch": "TZ=UTC bun test --watch",
+    "tsc": "tsc -b"
+  },
+  "devDependencies": {
+    "@pob/eslint-config": "65.4.3",
+    "@pob/root": "24.2.1",
+    "check-package-dependencies": "11.1.1",
+    "eslint": "10.4.0",
+    "typescript": "6.0.3"
   },
   "commitlint": {
     "extends": [
-      "@pob/commitlint-config"
+      "@pob/root/commitlint-config"
     ]
   },
-  "prettier": "@pob/root/prettier-config",
-  "devDependencies": {
-    "@pob/commitlint-config": "8.0.1",
-    "@pob/eslint-config": "59.3.2",
-    "@pob/root": "15.1.1",
-    "check-package-dependencies": "10.5.0",
-    "eslint": "9.37.0"
+  "engines": {
+    "node": ">=22.18.0"
   }
 }

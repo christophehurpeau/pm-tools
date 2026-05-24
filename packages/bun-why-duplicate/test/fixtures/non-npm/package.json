@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "bun-types": "npm:@types/bun",
+    "dayjs": "git+https://github.com/iamkun/dayjs.git",
+    "lodash": "git+ssh://github.com/lodash/lodash.git#4.17.21",
+    "moment": "git@github.com:moment/moment.git",
+    "react": "https://registry.npmjs.org/react/-/react-18.2.0.tgz",
+    "zod": "github:colinhacks/zod"
+  }
+}

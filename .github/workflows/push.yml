@@ -1,5 +1,6 @@
 name: Push CI
-
+permissions:
+  contents: read
 on: [push]
 
 jobs:
@@ -8,40 +9,50 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: "https://registry.npmjs.org"
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Install Dependencies
-        run: yarn install --immutable
+        run: bun install --frozen-lockfile
 
       - name: Checks
-        run: yarn run checks
-        if: startsWith(matrix.node-version, '22.')
+        run: bun run checks
+        if: startsWith(matrix.node-version, '24.')
 
-      - name: Prettier
-        run: yarn run lint:prettier
-        if: startsWith(matrix.node-version, '22.')
+      - name: Build
+        run: bun run build
+        if: startsWith(matrix.node-version, '24.')
+
+      - name: Format
+        run: bun run format:check
+        if: startsWith(matrix.node-version, '24.')
+
+      - name: Typescript
+        run: bun run tsc
+        if: startsWith(matrix.node-version, '24.')
 
       - name: Eslint
-        run: yarn run lint:eslint
-        if: startsWith(matrix.node-version, '22.')
+        run: bun run lint:eslint
+        if: startsWith(matrix.node-version, '24.')
 
       - name: Check nothing was forgotten before commit
-        if: startsWith(matrix.node-version, '22.')
-        run: yarn run repository-check-dirty
+        if: startsWith(matrix.node-version, '24.')
+        run: bun run repository-check-dirty
 
       - name: Test
-        run: yarn run test
+        run: bun run test
         env:
           CI: true

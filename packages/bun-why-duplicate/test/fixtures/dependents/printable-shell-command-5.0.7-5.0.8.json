@@ -1,0 +1,25 @@
+{
+  "printable-shell-command": [
+    {
+      "key": "package.json in dependencies",
+      "version": "^5.0.7"
+    },
+    {
+      "bunPackage": {
+        "info": {
+          "dependencies": {
+            "printable-shell-command": "^5.0.8"
+          }
+        },
+        "integrity": "sha512-8xjDhcejMcul4Gt7NCGQ4Oo17nF3R4okHa7Dee0BiLogwp486lylojrcPu7Zl1kggSwbjyWI/A5i+qLBXLBLdQ==",
+        "name": "betterdisplaycli",
+        "registry": "",
+        "resolution": "betterdisplaycli@0.2.3",
+        "type": "npm",
+        "version": "0.2.3"
+      },
+      "key": "betterdisplaycli",
+      "version": "^5.0.8"
+    }
+  ]
+}

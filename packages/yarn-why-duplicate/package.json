@@ -3,47 +3,45 @@
   "version": "2.0.0",
   "description": "Simple bin to know why a package is duplicated",
   "keywords": [
-    "yarn",
-    "berry"
+    "berry",
+    "yarn"
   ],
-  "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
+  "homepage": "https://github.com/christophehurpeau/pm-tools",
+  "bugs": {
+    "url": "https://github.com/christophehurpeau/yarn-why-duplicate/issues"
+  },
   "license": "ISC",
+  "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
   "repository": {
     "type": "git",
     "url": "https://github.com/christophehurpeau/pm-tools.git",
     "directory": "packages/yarn-why-duplicate"
   },
-  "homepage": "https://github.com/christophehurpeau/pm-tools",
-  "bugs": {
-    "url": "https://github.com/christophehurpeau/yarn-why-duplicate/issues"
-  },
-  "type": "module",
-  "engines": {
-    "node": ">=20.9.0"
-  },
-  "sideEffects": false,
   "bin": "./bin/yarn-why-duplicate.mjs",
+  "files": [
+    "lib",
+    "bin"
+  ],
+  "type": "module",
+  "sideEffects": false,
   "main": "./lib/index.js",
   "exports": {
     ".": "./lib/index.js",
     "./package.json": "./package.json"
   },
-  "files": [
-    "lib",
-    "bin"
-  ],
   "scripts": {
-    "lint": "yarn run lint:eslint",
-    "lint:eslint": "yarn ../.. run eslint --quiet packages/yarn-why-duplicate",
-    "lint:prettier:fix": "pob-root-prettier --write .",
-    "test": "yarn ../../ run test -- packages/yarn-why-duplicate",
+    "lint": "bun run lint:eslint",
+    "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/yarn-why-duplicate'",
+    "test": "bun run --cwd '../..' test -- 'packages/yarn-why-duplicate'",
     "test:coverage:json": "npx c8 --reporter=json --all --src ./lib node --test test/*.js",
     "test:coverage:lcov": "TS_NODE_PROJECT=tsconfig.test.json npx c8 --reporter=lcov --src ./lib node --test test/*.js"
   },
-  "pob": {},
-  "prettier": "@pob/root/prettier-config",
   "dependencies": {
     "@yarnpkg/core": "4.0.3",
     "semver": "7.6.0"
-  }
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "pob": {}
 }
