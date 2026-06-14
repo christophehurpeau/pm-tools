@@ -1,9 +1,18 @@
 import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { PackageResolution } from "./helpers/buildPackagesMap.ts";
-import type { Dependent } from "./helpers/collectDependents.ts";
+import {
+  type PackageResolution,
+  buildPackagesMap,
+  filterDuplicatesPackagesMap,
+} from "./helpers/buildPackagesMap.ts";
+import {
+  type Dependent,
+  collectDependents,
+} from "./helpers/collectDependents.ts";
+import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
 import { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
+import { readAndParseBunLock } from "./readAndParseBunLock.ts";
 
 const loadResolutionsFixture = (fileName: string): PackageResolution[] => {
   return JSON.parse(
@@ -78,5 +87,37 @@ describe("identifyResolutionFixes", () => {
         to: "printable-shell-command@5.0.8",
       },
     ]);
+  });
+
+  it("should not identify any fix for the typescript-eslint duplicates", () => {
+    const bunLock = readAndParseBunLock(
+      fileURLToPath(
+        new URL(
+          "../test/fixtures/duplicated-typescript-eslint/bun.lock",
+          import.meta.url,
+        ),
+      ),
+    );
+    const packages = parseBunLockPackages(bunLock);
+    const duplicates = filterDuplicatesPackagesMap(buildPackagesMap(packages));
+    const dependents = collectDependents(
+      packages,
+      bunLock.workspaces,
+      Object.keys(duplicates),
+    );
+
+    const fixesByPackage = Object.fromEntries(
+      Object.entries(duplicates).map(([packageName, resolutions]) => [
+        packageName,
+        identifyResolutionFixes(resolutions, dependents),
+      ]),
+    );
+
+    const fixablePackages = Object.entries(fixesByPackage)
+      .filter(([, fixes]) => fixes.length > 0)
+      .map(([packageName]) => packageName);
+
+    expect(Object.keys(duplicates)).toHaveLength(16);
+    expect(fixablePackages).toEqual([]);
   });
 });
