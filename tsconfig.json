@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/pm-utils/tsconfig.json" },
-    { "path": "packages/bun-dedup/tsconfig.json" }
+    { "path": "packages/bun-dedup/tsconfig.json" },
+    { "path": "packages/pnpm-dedup/tsconfig.json" }
   ]
 }

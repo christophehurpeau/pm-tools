@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@babel/code-frame": "7.26.2",
+    "@babel/core": "7.25.9"
+  }
+}

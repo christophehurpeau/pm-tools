@@ -1,0 +1,8 @@
+{
+  "semver": [
+    {
+      "key": "package.json in dependencies",
+      "version": "7.7.3"
+    }
+  ]
+}

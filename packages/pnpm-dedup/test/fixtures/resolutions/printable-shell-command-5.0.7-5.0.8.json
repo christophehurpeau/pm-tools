@@ -1,0 +1,38 @@
+[
+  {
+    "installations": ["printable-shell-command"],
+    "package": {
+      "info": {
+        "dependencies": {
+          "@types/node": ">=25.0.3",
+          "path-class": ">=0.12.1"
+        }
+      },
+      "integrity": "sha512-mpHAcZaNlOuzSzy8BljCRuX+tJCkPBAQfzczBT6oh9k8J/EzV65kw5ZIz81/kHCsNQqXL5CLDgxzlFU0hDc+LQ==",
+      "name": "printable-shell-command",
+      "registry": "",
+      "resolution": "printable-shell-command@5.0.7",
+      "type": "npm",
+      "version": "5.0.7"
+    },
+    "resolution": "printable-shell-command@5.0.7"
+  },
+  {
+    "installations": ["betterdisplaycli/printable-shell-command"],
+    "package": {
+      "info": {
+        "dependencies": {
+          "@types/node": ">=25.0.3",
+          "path-class": ">=0.12.1"
+        }
+      },
+      "integrity": "sha512-E0EDYu5f42mV7rhc03JyFiTIngbEOCwTkjyvoU0aZxDUfN218q12T62nzNFKcsPWjt6r64LrriymgNVkRFLc/g==",
+      "name": "printable-shell-command",
+      "registry": "",
+      "resolution": "printable-shell-command@5.0.8",
+      "type": "npm",
+      "version": "5.0.8"
+    },
+    "resolution": "printable-shell-command@5.0.8"
+  }
+]

@@ -1,0 +1,1 @@
+{"version":3,"file":"writeBunLockFile.d.ts","sourceRoot":"","sources":["../../../src/helpers/writeBunLockFile.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,KAAK,CAAC;AAGvC,eAAO,MAAM,gBAAgB,GAC3B,eAAe,WAAW,GAAG;IAAE,QAAQ,CAAC,EAAE,MAAM,CAAC,MAAM,EAAE,GAAG,CAAC,CAAA;CAAE,EAC/D,iBAAqB,KACpB,IAEF,CAAC"}

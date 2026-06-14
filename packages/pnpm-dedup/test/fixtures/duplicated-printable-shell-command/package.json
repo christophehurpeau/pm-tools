@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "betterdisplaycli": ">=0.2.0",
+    "printable-shell-command": "5.0.7"
+  }
+}

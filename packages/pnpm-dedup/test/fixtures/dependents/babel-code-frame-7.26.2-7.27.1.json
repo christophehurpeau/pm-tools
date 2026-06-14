@@ -1,0 +1,81 @@
+{
+  "@babel/code-frame": [
+    {
+      "key": "package.json in dependencies",
+      "version": "7.26.2"
+    },
+    {
+      "bunPackage": {
+        "info": {
+          "dependencies": {
+            "@ampproject/remapping": "^2.2.0",
+            "@babel/code-frame": "^7.25.9",
+            "@babel/generator": "^7.25.9",
+            "@babel/helper-compilation-targets": "^7.25.9",
+            "@babel/helper-module-transforms": "^7.25.9",
+            "@babel/helpers": "^7.25.9",
+            "@babel/parser": "^7.25.9",
+            "@babel/template": "^7.25.9",
+            "@babel/traverse": "^7.25.9",
+            "@babel/types": "^7.25.9",
+            "convert-source-map": "^2.0.0",
+            "debug": "^4.1.0",
+            "gensync": "^1.0.0-beta.2",
+            "json5": "^2.2.3",
+            "semver": "^6.3.1"
+          }
+        },
+        "integrity": "sha512-WYvQviPw+Qyib0v92AwNIrdLISTp7RfDkM7bPqBvpbnhY4wq8HvHBZREVdYDXk98C8BkOIVnHAY3yvj7AVISxQ==",
+        "name": "@babel/core",
+        "registry": "",
+        "resolution": "@babel/core@7.25.9",
+        "type": "npm",
+        "version": "7.25.9"
+      },
+      "key": "@babel/core",
+      "version": "^7.25.9"
+    },
+    {
+      "bunPackage": {
+        "info": {
+          "dependencies": {
+            "@babel/code-frame": "^7.27.1",
+            "@babel/parser": "^7.27.2",
+            "@babel/types": "^7.27.1"
+          }
+        },
+        "integrity": "sha512-LPDZ85aEJyYSd18/DkjNh4/y1ntkE5KwUHWTiqgRxruuZL2F1yuHligVHLvcHY2vMHXttKFpJn6LwfI7cw7ODw==",
+        "name": "@babel/template",
+        "registry": "",
+        "resolution": "@babel/template@7.27.2",
+        "type": "npm",
+        "version": "7.27.2"
+      },
+      "key": "@babel/template",
+      "version": "^7.27.1"
+    },
+    {
+      "bunPackage": {
+        "info": {
+          "dependencies": {
+            "@babel/code-frame": "^7.27.1",
+            "@babel/generator": "^7.28.5",
+            "@babel/helper-globals": "^7.28.0",
+            "@babel/parser": "^7.28.5",
+            "@babel/template": "^7.27.2",
+            "@babel/types": "^7.28.5",
+            "debug": "^4.3.1"
+          }
+        },
+        "integrity": "sha512-TCCj4t55U90khlYkVV/0TfkJkAkUg3jZFA3Neb7unZT8CPok7iiRfaX0F+WnqWqt7OxhOn0uBKXCw4lbL8W0aQ==",
+        "name": "@babel/traverse",
+        "registry": "",
+        "resolution": "@babel/traverse@7.28.5",
+        "type": "npm",
+        "version": "7.28.5"
+      },
+      "key": "@babel/traverse",
+      "version": "^7.27.1"
+    }
+  ]
+}

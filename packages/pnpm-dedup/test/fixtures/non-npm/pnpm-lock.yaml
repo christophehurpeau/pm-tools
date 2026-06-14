@@ -1,0 +1,47 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      react:
+        specifier: https://registry.npmjs.org/react/-/react-18.2.0.tgz
+        version: 18.2.0
+      zod:
+        specifier: github:colinhacks/zod#v3.23.8
+        version: https://codeload.github.com/colinhacks/zod/tar.gz/ca42965df46b2f7e2747db29c40a26bcb32a51d5
+
+packages:
+
+  js-tokens@4.0.0:
+    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
+
+  loose-envify@1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+
+  react@18.2.0:
+    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
+    engines: {node: '>=0.10.0'}
+
+  zod@https://codeload.github.com/colinhacks/zod/tar.gz/ca42965df46b2f7e2747db29c40a26bcb32a51d5:
+    resolution: {gitHosted: true, integrity: sha512-I5Z+LFoECVB4oy/vg92uJ2/2qnPPYXpg8WLa6Au586KTuwW5MT7BsYJ5Q63c4U0pKjFsMS8KqLKaEQVUTgrlHA==, tarball: https://codeload.github.com/colinhacks/zod/tar.gz/ca42965df46b2f7e2747db29c40a26bcb32a51d5}
+    version: 3.23.8
+
+snapshots:
+
+  js-tokens@4.0.0: {}
+
+  loose-envify@1.4.0:
+    dependencies:
+      js-tokens: 4.0.0
+
+  react@18.2.0:
+    dependencies:
+      loose-envify: 1.4.0
+
+  zod@https://codeload.github.com/colinhacks/zod/tar.gz/ca42965df46b2f7e2747db29c40a26bcb32a51d5: {}
