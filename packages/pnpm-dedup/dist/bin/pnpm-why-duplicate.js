@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { listDuplicates, whyDuplicate } from "../index.js";
 const args = process.argv.slice(2);
 const pkgName = args.find((arg) => !arg.startsWith("-"));

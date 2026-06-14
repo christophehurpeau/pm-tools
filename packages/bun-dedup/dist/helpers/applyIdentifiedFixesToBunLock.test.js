@@ -1,5 +1,5 @@
-import { ok, strictEqual } from "node:assert/strict";
 import { describe, it } from "bun:test";
+import { ok, strictEqual } from "node:assert/strict";
 import { applyIdentifiedFixesToBunLock } from "./applyIdentifiedFixesToBunLock.js";
 describe("applyIdentifiedFixesToBunLock", () => {
     it("replaces megeable resolutions with target resolution", () => {

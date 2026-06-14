@@ -1,8 +1,7 @@
+import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-// eslint-disable-next-line import/no-unresolved
-import { describe, it } from "bun:test";
 import { readAndParseBunLock } from "../readAndParseBunLock.js";
 import { buildPackagesMap } from "./buildPackagesMap.js";
 import { parseBunLockPackages } from "./parseBunLockPackages.js";

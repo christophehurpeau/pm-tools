@@ -3,7 +3,7 @@ export function applyIdentifiedFixesToBunLock(bunLockResult, identifiedFixesMap)
     for (const fixes of identifiedFixesMap.values()) {
         for (const fix of fixes) {
             const toResolution = fix.to;
-            const toEntry = Object.entries(bunLockResult.packages).find(([, arr]) => arr && arr[0] === toResolution);
+            const toEntry = Object.entries(bunLockResult.packages).find(([, arr]) => arr?.[0] === toResolution);
             if (!toEntry)
                 continue;
             const toArray = toEntry[1];

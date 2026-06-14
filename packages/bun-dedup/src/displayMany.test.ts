@@ -7,6 +7,7 @@ import {
 } from "./helpers/buildPackagesMap.ts";
 import { collectDependents } from "./helpers/collectDependents.ts";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
+import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import { readAndParseBunLock } from "./readAndParseBunLock.ts";
 
 describe("displayMany", () => {
@@ -28,7 +29,12 @@ describe("displayMany", () => {
       buffer += `${message}\n`;
     };
 
-    displayMany("duplicates", duplicates, dependents, undefined, log);
+    displayMany({
+      title: "duplicates",
+      duplicatesPackagesMap: duplicates,
+      dependents,
+      log,
+    });
 
     expect(buffer).toBe(expected);
   };
@@ -288,6 +294,53 @@ semver:
     - node-exports-info asking for "^6.3.1"
     - @typescript-eslint/utils/@typescript-eslint/typescript-estree asking for "^7.7.3"
 `,
+    );
+  });
+
+  it("renders the lockstep cluster fix for typescript-eslint", () => {
+    const fixturePath = fileURLToPath(
+      new URL(
+        "../test/fixtures/duplicated-typescript-eslint/bun.lock",
+        import.meta.url,
+      ),
+    );
+    const bunLock = readAndParseBunLock(fixturePath);
+    const packages = parseBunLockPackages(bunLock);
+    const packagesMap = buildPackagesMap(packages);
+    const duplicates = filterDuplicatesPackagesMap(packagesMap);
+    const dependents = collectDependents(
+      packages,
+      bunLock.workspaces,
+      Object.keys(duplicates),
+    );
+    const clusterFixes = identifyClusterFixes(
+      packagesMap,
+      packages,
+      bunLock.workspaces,
+    );
+
+    let buffer = "";
+    const log = (message = "") => {
+      buffer += `${message}\n`;
+    };
+
+    displayMany({
+      title: "duplicates",
+      duplicatesPackagesMap: duplicates,
+      dependents,
+      clusterFixes,
+      log,
+    });
+
+    expect(buffer).toContain("Found 1 lockstep cluster:");
+    expect(buffer).toContain("Cluster of 11 packages (7 duplicated):");
+    expect(buffer).toContain("Dedupe to 8.59.1 (downgrade)");
+    expect(buffer).toContain("Add to devDependencies, then run `bun install`:");
+    expect(buffer).toContain('"@typescript-eslint/eslint-plugin": "8.59.1"');
+    expect(buffer).toContain('"@typescript-eslint/parser": "8.59.1"');
+    expect(buffer).toContain('"typescript-eslint": "8.59.1"');
+    expect(buffer).toContain(
+      '@pob/eslint-plugin requires @typescript-eslint/utils "8.59.1"',
     );
   });
 });

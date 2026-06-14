@@ -1,7 +1,7 @@
+/* eslint-disable unicorn/no-array-sort */
+import { describe, it } from "bun:test";
 import { deepStrictEqual, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-// eslint-disable-next-line import/no-unresolved
-import { describe, it } from "bun:test";
 import { readAndParseBunLock } from "../readAndParseBunLock.js";
 import { parseBunLockPackages } from "./parseBunLockPackages.js";
 const fixturesBase = (rel) => fileURLToPath(new URL(rel, import.meta.url));

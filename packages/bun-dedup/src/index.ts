@@ -9,6 +9,7 @@ import {
 import { collectDependents } from "./helpers/collectDependents.ts";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
 import { writeBunLockFile } from "./helpers/writeBunLockFile.ts";
+import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
 import { readAndParseBunLock } from "./readAndParseBunLock.ts";
 
@@ -18,6 +19,7 @@ export { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
 export { buildPackagesMap } from "./helpers/buildPackagesMap.ts";
 export { collectDependents } from "./helpers/collectDependents.ts";
 export { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
+export { identifyClusterFixes } from "./identifyClusterFixes.ts";
 export { writeBunLockFile } from "./helpers/writeBunLockFile.ts";
 
 export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
@@ -34,15 +36,15 @@ export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
     ),
   );
 
-  displayMany(
-    all ? "matches" : "duplicates",
-    filteredPackages,
-    collectDependents(
+  displayMany({
+    title: all ? "matches" : "duplicates",
+    duplicatesPackagesMap: filteredPackages,
+    dependents: collectDependents(
       packages,
       bunLockResult.workspaces,
       Object.keys(filteredPackages),
     ),
-  );
+  });
 }
 
 export function listDuplicates(): void {
@@ -65,12 +67,21 @@ export function listDuplicates(): void {
     ]),
   );
 
-  displayMany(
-    "duplicates",
+  const clusterFixes = identifyClusterFixes(
+    packagesMap,
+    packages,
+    bunLockResult.workspaces,
+  );
+
+  console.log({ clusterFixes });
+
+  displayMany({
+    title: "duplicates",
     duplicatesPackagesMap,
     dependents,
-    identifedFixesMap,
-  );
+    identifiedFixesMap: identifedFixesMap,
+    clusterFixes,
+  });
 }
 
 export function fixDuplicates(dryRun = false): void {

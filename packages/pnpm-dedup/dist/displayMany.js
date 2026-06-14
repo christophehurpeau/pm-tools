@@ -1,4 +1,4 @@
-export const displayMany = (title, duplicatesPackagesMap, dependents, identifiedFixesMap, log = console.log) => {
+export const displayMany = (title, duplicatesPackagesMap, dependents, devDependencyFixes, log = console.log) => {
     const titleSingular = title === "duplicates" ? "duplicate" : "match";
     const duplicatePackageNames = Object.keys(duplicatesPackagesMap);
     if (duplicatePackageNames.length === 0) {
@@ -30,12 +30,10 @@ export const displayMany = (title, duplicatesPackagesMap, dependents, identified
                 log(`    - ${dependent.key} asking for "${dependent.version}"`);
             }
         }
-        const fixes = identifiedFixesMap?.get(packageName);
-        if (fixes && fixes.length > 0) {
-            log("  Possible fixes: (run `pnpm-dedupe` to apply)");
-            for (const fix of fixes) {
-                log(`    - ${fix.megeableResolutions.filter((resolution) => resolution !== fix.to).join(" and ")} can be merged with ${fix.to}`);
-            }
+        const fix = devDependencyFixes?.get(packageName);
+        if (fix) {
+            log("  Suggested fix:");
+            log(`    - add "${fix.name}": "${fix.version}" to devDependencies, then run \`pnpm install\``);
         }
     }
 };

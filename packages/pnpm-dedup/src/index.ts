@@ -1,13 +1,17 @@
 import picomatch from "picomatch";
 import { displayMany } from "./displayMany.ts";
-import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.ts";
 import {
   buildPnpmPackagesMap,
   filterDuplicatesPnpmPackagesMap,
 } from "./helpers/buildPnpmPackagesMap.ts";
+import { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
 import { collectPnpmDependents } from "./helpers/collectPnpmDependents.ts";
+import { identifyDevDependencyFixes } from "./helpers/identifyDevDependencyFixes.ts";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.ts";
+import { createManifestReader } from "./helpers/readInstalledManifest.ts";
+import type { PnpmLockFile } from "./pnpmLockTypes.ts";
 import { readPnpmLock } from "./readPnpmLock.ts";
+import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 
 export { dedupe } from "./dedupe.ts";
 export { displayMany } from "./displayMany.ts";
@@ -18,8 +22,23 @@ export {
   filterDuplicatesPnpmPackagesMap,
 } from "./helpers/buildPnpmPackagesMap.ts";
 export { collectPnpmDependents } from "./helpers/collectPnpmDependents.ts";
-export { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
-export { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.ts";
+export { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
+export { identifyDevDependencyFixes } from "./helpers/identifyDevDependencyFixes.ts";
+export { createManifestReader } from "./helpers/readInstalledManifest.ts";
+
+function identifyFixes(
+  lock: PnpmLockFile,
+  duplicatesPackagesMap: PackagesMap,
+  projectDir: string,
+): ReturnType<typeof identifyDevDependencyFixes> {
+  const duplicateNames = new Set(Object.keys(duplicatesPackagesMap));
+  const dependentRanges = collectDependentRanges(
+    lock,
+    duplicateNames,
+    createManifestReader(projectDir),
+  );
+  return identifyDevDependencyFixes(duplicatesPackagesMap, dependentRanges);
+}
 
 export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
   const isMatch = picomatch(packageNameToFilter);
@@ -39,6 +58,7 @@ export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
     all ? "matches" : "duplicates",
     filteredPackages,
     collectPnpmDependents(lock, Object.keys(filteredPackages)),
+    identifyFixes(lock, filteredPackages, process.cwd()),
   );
 }
 
@@ -51,15 +71,11 @@ export function listDuplicates(): void {
     lock,
     Object.keys(duplicatesPackagesMap),
   );
-  const identifiedFixesMap = buildIdentifiedFixesMap(
-    duplicatesPackagesMap,
-    dependents,
-  );
 
   displayMany(
     "duplicates",
     duplicatesPackagesMap,
     dependents,
-    identifiedFixesMap,
+    identifyFixes(lock, duplicatesPackagesMap, process.cwd()),
   );
 }

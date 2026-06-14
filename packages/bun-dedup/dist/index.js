@@ -6,6 +6,7 @@ import { buildPackagesMap, filterDuplicatesPackagesMap, } from "./helpers/buildP
 import { collectDependents } from "./helpers/collectDependents.js";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.js";
 import { writeBunLockFile } from "./helpers/writeBunLockFile.js";
+import { identifyClusterFixes } from "./identifyClusterFixes.js";
 import { identifyResolutionFixes } from "./identifyResolutionFixes.js";
 import { readAndParseBunLock } from "./readAndParseBunLock.js";
 export { displayMany } from "./displayMany.js";
@@ -14,6 +15,7 @@ export { parseBunLockPackages } from "./helpers/parseBunLockPackages.js";
 export { buildPackagesMap } from "./helpers/buildPackagesMap.js";
 export { collectDependents } from "./helpers/collectDependents.js";
 export { identifyResolutionFixes } from "./identifyResolutionFixes.js";
+export { identifyClusterFixes } from "./identifyClusterFixes.js";
 export { writeBunLockFile } from "./helpers/writeBunLockFile.js";
 export function whyDuplicate(packageNameToFilter, all) {
     const glob = new Glob(packageNameToFilter);
@@ -21,7 +23,11 @@ export function whyDuplicate(packageNameToFilter, all) {
     const packages = parseBunLockPackages(bunLockResult);
     const packagesMap = buildPackagesMap(packages);
     const filteredPackages = Object.fromEntries(Object.entries(packagesMap).filter(([packageName, resolutions]) => glob.match(packageName) && (all || resolutions.length > 1)));
-    displayMany(all ? "matches" : "duplicates", filteredPackages, collectDependents(packages, bunLockResult.workspaces, Object.keys(filteredPackages)));
+    displayMany({
+        title: all ? "matches" : "duplicates",
+        duplicatesPackagesMap: filteredPackages,
+        dependents: collectDependents(packages, bunLockResult.workspaces, Object.keys(filteredPackages)),
+    });
 }
 export function listDuplicates() {
     const bunLockResult = readAndParseBunLock();
@@ -33,7 +39,15 @@ export function listDuplicates() {
         packageName,
         identifyResolutionFixes(resolutions, dependents),
     ]));
-    displayMany("duplicates", duplicatesPackagesMap, dependents, identifedFixesMap);
+    const clusterFixes = identifyClusterFixes(packagesMap, packages, bunLockResult.workspaces);
+    console.log({ clusterFixes });
+    displayMany({
+        title: "duplicates",
+        duplicatesPackagesMap,
+        dependents,
+        identifiedFixesMap: identifedFixesMap,
+        clusterFixes,
+    });
 }
 export function fixDuplicates(dryRun = false) {
     const bunLockResult = readAndParseBunLock();

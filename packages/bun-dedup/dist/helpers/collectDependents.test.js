@@ -1,8 +1,7 @@
+import { describe, expect, it } from "bun:test";
 import { ok } from "node:assert/strict";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-// eslint-disable-next-line import/no-unresolved
-import { describe, expect, it } from "bun:test";
 import { readAndParseBunLock } from "../readAndParseBunLock.js";
 import { collectDependents } from "./collectDependents.js";
 import { parseBunLockPackages } from "./parseBunLockPackages.js";

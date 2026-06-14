@@ -1,19 +1,85 @@
 import type { PackagesMap } from "./helpers/buildPackagesMap.ts";
 import type { DependentsMap } from "./helpers/collectDependents.ts";
-import type { identifyResolutionFixes } from "./index.ts";
+import type { ClusterFix } from "./identifyClusterFixes.ts";
+import type { ResolutionFix } from "./identifyResolutionFixes.ts";
 
-export const displayMany = (
-  title: "duplicates" | "matches",
-  duplicatesPackagesMap: PackagesMap,
-  dependents: DependentsMap,
-  identifiedFixesMap?: Map<string, ReturnType<typeof identifyResolutionFixes>>,
-  log = console.log,
+interface DisplayManyOptions {
+  title: "duplicates" | "matches";
+  duplicatesPackagesMap: PackagesMap;
+  dependents: DependentsMap;
+  identifiedFixesMap?: Map<string, ResolutionFix[]>;
+  clusterFixes?: ClusterFix[];
+  log?: (message?: string) => void;
+}
+
+const directionLabel = (direction: ClusterFix["direction"]): string => {
+  if (direction === "down") return " (downgrade)";
+  if (direction === "up") return " (upgrade)";
+  return "";
+};
+
+const displayClusterFixes = (
+  clusterFixes: ClusterFix[],
+  log: (message?: string) => void,
 ): void => {
+  const applicable = clusterFixes.filter(
+    (fix) => fix.duplicatedMembers.length > 0,
+  );
+  if (applicable.length === 0) return;
+
+  log();
+  log(
+    `Found ${applicable.length} lockstep ${applicable.length === 1 ? "cluster" : "clusters"}:`,
+  );
+
+  for (const fix of applicable) {
+    log();
+    log(
+      `Cluster of ${fix.members.length} packages (${fix.duplicatedMembers.length} duplicated):`,
+    );
+    log(`  Members: ${fix.members.join(", ")}`);
+
+    if (!fix.applicable || fix.target === null) {
+      log(
+        "  No common version satisfies every external constraint — cannot dedupe",
+      );
+    } else {
+      log(`  Dedupe to ${fix.target}${directionLabel(fix.direction)}`);
+      if (fix.needsRoundTrip) {
+        log("  Add to devDependencies, then run `bun install`:");
+        for (const member of fix.reResolutionSet) {
+          log(`    "${member}": "${fix.target}"`);
+        }
+      } else {
+        log("  Applicable from the lockfile (target already installed)");
+      }
+    }
+
+    if (fix.externalConstraints.length > 0) {
+      log("  External constraints:");
+      for (const constraint of fix.externalConstraints) {
+        log(
+          `    - ${constraint.requesterName ?? "workspace"} requires ${constraint.packageName} "${constraint.range}"`,
+        );
+      }
+    }
+  }
+};
+
+export const displayMany = ({
+  title,
+  duplicatesPackagesMap,
+  dependents,
+  identifiedFixesMap,
+  clusterFixes,
+  log = console.log,
+}: DisplayManyOptions): void => {
   const titleSingular = title === "duplicates" ? "duplicate" : "match";
   const duplicatePackageNames = Object.keys(duplicatesPackagesMap);
 
   if (duplicatePackageNames.length === 0) {
     log("No duplicates found");
+    if (clusterFixes) displayClusterFixes(clusterFixes, log);
     return;
   }
 
@@ -61,4 +127,6 @@ export const displayMany = (
       }
     }
   }
+
+  if (clusterFixes) displayClusterFixes(clusterFixes, log);
 };

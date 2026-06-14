@@ -1,12 +1,12 @@
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import type { DependentsMap } from "./helpers/collectPnpmDependents.ts";
-import type { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
+import type { DevDependencyFixesMap } from "./helpers/identifyDevDependencyFixes.ts";
 
 export const displayMany = (
   title: "duplicates" | "matches",
   duplicatesPackagesMap: PackagesMap,
   dependents: DependentsMap,
-  identifiedFixesMap?: Map<string, ReturnType<typeof identifyResolutionFixes>>,
+  devDependencyFixes?: DevDependencyFixesMap,
   log = console.log,
 ): void => {
   const titleSingular = title === "duplicates" ? "duplicate" : "match";
@@ -51,14 +51,12 @@ export const displayMany = (
       }
     }
 
-    const fixes = identifiedFixesMap?.get(packageName);
-    if (fixes && fixes.length > 0) {
-      log("  Possible fixes: (run `pnpm-dedupe` to apply)");
-      for (const fix of fixes) {
-        log(
-          `    - ${fix.megeableResolutions.filter((resolution) => resolution !== fix.to).join(" and ")} can be merged with ${fix.to}`,
-        );
-      }
+    const fix = devDependencyFixes?.get(packageName);
+    if (fix) {
+      log("  Suggested fix:");
+      log(
+        `    - add "${fix.name}": "${fix.version}" to devDependencies, then run \`pnpm install\``,
+      );
     }
   }
 };

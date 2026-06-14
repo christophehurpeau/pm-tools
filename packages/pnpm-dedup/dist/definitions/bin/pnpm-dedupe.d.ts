@@ -1,3 +1,3 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 export {};
 //# sourceMappingURL=pnpm-dedupe.d.ts.map
