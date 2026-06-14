@@ -6,6 +6,8 @@ export default [
     settings: {
       "import-x/core-modules": ["bun", "bun:test"],
     },
+  },
+  {
     ignores: ["packages/*/test/fixtures/**/*.json"],
   },
   {
