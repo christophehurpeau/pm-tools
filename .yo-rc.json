@@ -11,7 +11,7 @@
       "documentation": false,
       "typescript": true,
       "eslint": true,
-      "packageNames": ["pm-utils", "yarn-why-duplicate", "bun-why-duplicate"]
+      "packageNames": ["pm-utils", "yarn-why-duplicate", "bun-dedup"]
     },
     "project": {
       "type": "lib",

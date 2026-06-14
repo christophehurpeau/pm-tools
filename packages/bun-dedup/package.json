@@ -1,5 +1,5 @@
 {
-  "name": "bun-why-duplicate",
+  "name": "bun-dedup",
   "version": "2.0.0",
   "description": "Simple bin to know why a package is duplicated",
   "keywords": [
@@ -7,14 +7,14 @@
   ],
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "bugs": {
-    "url": "https://github.com/christophehurpeau/bun-why-duplicate/issues"
+    "url": "https://github.com/christophehurpeau/bun-dedup/issues"
   },
   "license": "ISC",
   "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
   "repository": {
     "type": "git",
     "url": "https://github.com/christophehurpeau/pm-tools.git",
-    "directory": "packages/bun-why-duplicate"
+    "directory": "packages/bun-dedup"
   },
   "bin": {
     "bun-dedupe": "./src/bin/bun-dedupe.ts",
@@ -40,8 +40,8 @@
   "scripts": {
     "build": "tsc",
     "lint": "bun run lint:eslint",
-    "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/bun-why-duplicate'",
-    "test": "bun run --cwd '../..' test -- 'packages/bun-why-duplicate'",
+    "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/bun-dedup'",
+    "test": "bun run --cwd '../..' test -- 'packages/bun-dedup'",
     "test:coverage:json": "npx c8 --reporter=json --all --src ./lib node --test test/*.js",
     "test:coverage:lcov": "TS_NODE_PROJECT=tsconfig.test.json npx c8 --reporter=lcov --src ./lib node --test test/*.js",
     "tsc": "tsc"
