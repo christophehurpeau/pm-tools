@@ -13,7 +13,6 @@
   "scripts": {
     "build": "bun run build:definitions",
     "build:definitions": "tsc -b",
-    "bun:test": "bun test packages/**/*.test.ts",
     "checks": "node scripts/check-packages.js",
     "format": "oxfmt",
     "format:check": "oxfmt --check .",
