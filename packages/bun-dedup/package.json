@@ -1,9 +1,11 @@
 {
   "name": "bun-dedup",
   "version": "2.0.0",
-  "description": "Simple bin to know why a package is duplicated",
+  "description": "List duplicates and dedupe bun lock file",
   "keywords": [
-    "bun"
+    "bun",
+    "dedupe",
+    "duplicate"
   ],
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "bugs": {
