@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "8.67.0",
+    "@typescript-eslint/parser": "8.67.0",
+    "eslint": "10.9.0",
+    "printable-shell-command": "^5.0.0",
+    "printable-shell-command-pinned": "npm:printable-shell-command@5.0.7",
+    "typescript": "6.0.3"
+  }
+}

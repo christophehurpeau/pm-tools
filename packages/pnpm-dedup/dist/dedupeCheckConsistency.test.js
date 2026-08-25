@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildPnpmPackagesMap, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
+import { buildIdentifiedFixesMap, buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
 // These tests shell out to the real `pnpm` and require either network access or
 // a warm pnpm store; they are skipped when pnpm is not on PATH. `--lockfile-only`
 // keeps pnpm from writing node_modules, and `--frozen-lockfile` / `--check` never
@@ -46,6 +46,12 @@ const duplicateNames = (scenario) => {
     const duplicates = filterDuplicatesPnpmPackagesMap(buildPnpmPackagesMap(parsePnpmLockPackages(lock)));
     return Object.keys(duplicates).toSorted();
 };
+const fixTargets = (scenario, packageName) => {
+    const lock = readPnpmLock(join(fixturePath(scenario), "pnpm-lock.yaml"));
+    const duplicates = filterDuplicatesPnpmPackagesMap(buildPnpmPackagesMap(parsePnpmLockPackages(lock)));
+    const fixes = buildIdentifiedFixesMap(duplicates, collectPnpmDependents(lock, Object.keys(duplicates)));
+    return (fixes.get(packageName) ?? []).map((fix) => fix.to);
+};
 const lockContent = (dir) => readFileSync(join(dir, "pnpm-lock.yaml"), "utf8");
 // Defensive: `--lockfile-only` should never create node_modules, but if a future
 // pnpm version does, do not leave it in the committed fixture directory.
@@ -55,28 +61,48 @@ const assertPristine = (dir, lockBefore) => {
 };
 const suite = pnpmAvailable ? describe : describe.skip;
 suite("pnpm dedupe --check vs listDuplicates", () => {
-    it("flags the mergeable subset, all of which listDuplicates reports", () => {
-        const dir = fixturePath("duplicated-typescript-eslint");
-        const lockBefore = lockContent(dir);
-        const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
-        strictEqual(install.status, 0, install.output);
-        assertPristine(dir, lockBefore);
-        const check = runPnpm(dir, ["dedupe", "--check"]);
-        ok(check.status !== 0, `dedupe --check should flag issues\n${check.output}`);
-        assertPristine(dir, lockBefore);
-        const flagged = parseDedupedPackages(check.output);
-        deepStrictEqual(flagged, [
-            "@typescript-eslint/tsconfig-utils",
-            "@typescript-eslint/types",
-        ]);
-        const duplicates = duplicateNames("duplicated-typescript-eslint");
-        for (const name of flagged) {
-            ok(duplicates.includes(name), `listDuplicates should report ${name} that pnpm dedupe flags`);
-        }
-    }, 180_000);
-    // Duplicates pnpm cannot safely merge: `dedupe --check` exits 0 and flags
-    // nothing, yet listDuplicates still reports the duplicate.
-    const unmergeable = [
+    // `duplicated-typescript-eslint-dedupe-peers` is the same dependency with
+    // `dedupePeers: true`, which flattens the peer suffixes in the lockfile: pnpm
+    // must still merge the same packages, and we must still list them.
+    const mergeable = [
+        {
+            scenario: "duplicated-typescript-eslint",
+            expectedFlagged: [
+                "@typescript-eslint/tsconfig-utils",
+                "@typescript-eslint/types",
+            ],
+        },
+        {
+            scenario: "duplicated-typescript-eslint-dedupe-peers",
+            expectedFlagged: [
+                "@typescript-eslint/tsconfig-utils",
+                "@typescript-eslint/types",
+            ],
+        },
+    ];
+    for (const { scenario, expectedFlagged } of mergeable) {
+        it(`flags the mergeable subset of ${scenario}, all of which listDuplicates reports`, () => {
+            const dir = fixturePath(scenario);
+            const lockBefore = lockContent(dir);
+            const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
+            strictEqual(install.status, 0, install.output);
+            assertPristine(dir, lockBefore);
+            const check = runPnpm(dir, ["dedupe", "--check"]);
+            ok(check.status !== 0, `dedupe --check should flag issues\n${check.output}`);
+            assertPristine(dir, lockBefore);
+            deepStrictEqual(parseDedupedPackages(check.output), expectedFlagged);
+            const duplicates = duplicateNames(scenario);
+            for (const name of expectedFlagged) {
+                ok(duplicates.includes(name), `listDuplicates should report ${name} that pnpm dedupe flags`);
+            }
+        }, 180_000);
+    }
+    // Duplicates pnpm does not merge: `dedupe --check` exits 0 and flags nothing,
+    // yet listDuplicates still reports the duplicate. The `mergeable-alias*`
+    // fixtures go one step further: every declared range accepts the aliased
+    // 5.0.7 pin, so we do identify a merge target — one pnpm will never apply,
+    // because merging means downgrading the range from 5.3.1.
+    const unmergeableByPnpm = [
         {
             scenario: "duplicated-babel-frame",
             expectedDuplicate: "@babel/code-frame",
@@ -85,8 +111,18 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
             scenario: "duplicated-printable-shell-command",
             expectedDuplicate: "printable-shell-command",
         },
+        {
+            scenario: "mergeable-alias",
+            expectedDuplicate: "printable-shell-command",
+            expectedFixTargets: ["printable-shell-command@5.0.7"],
+        },
+        {
+            scenario: "mergeable-alias-dedupe-peers",
+            expectedDuplicate: "printable-shell-command",
+            expectedFixTargets: ["printable-shell-command@5.0.7"],
+        },
     ];
-    for (const { scenario, expectedDuplicate } of unmergeable) {
+    for (const { scenario, expectedDuplicate, expectedFixTargets, } of unmergeableByPnpm) {
         it(`flags nothing for ${scenario} but still lists ${expectedDuplicate}`, () => {
             const dir = fixturePath(scenario);
             const lockBefore = lockContent(dir);
@@ -98,6 +134,7 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
             assertPristine(dir, lockBefore);
             deepStrictEqual(parseDedupedPackages(check.output), []);
             ok(duplicateNames(scenario).includes(expectedDuplicate));
+            deepStrictEqual(fixTargets(scenario, expectedDuplicate), expectedFixTargets ?? []);
         }, 180_000);
     }
 });

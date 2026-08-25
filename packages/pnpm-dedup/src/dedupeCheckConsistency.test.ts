@@ -5,7 +5,9 @@ import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  buildIdentifiedFixesMap,
   buildPnpmPackagesMap,
+  collectPnpmDependents,
   filterDuplicatesPnpmPackagesMap,
   parsePnpmLockPackages,
   readPnpmLock,
@@ -70,6 +72,18 @@ const duplicateNames = (scenario: string): string[] => {
   return Object.keys(duplicates).toSorted();
 };
 
+const fixTargets = (scenario: string, packageName: string): string[] => {
+  const lock = readPnpmLock(join(fixturePath(scenario), "pnpm-lock.yaml"));
+  const duplicates = filterDuplicatesPnpmPackagesMap(
+    buildPnpmPackagesMap(parsePnpmLockPackages(lock)),
+  );
+  const fixes = buildIdentifiedFixesMap(
+    duplicates,
+    collectPnpmDependents(lock, Object.keys(duplicates)),
+  );
+  return (fixes.get(packageName) ?? []).map((fix) => fix.to);
+};
+
 const lockContent = (dir: string): string =>
   readFileSync(join(dir, "pnpm-lock.yaml"), "utf8");
 
@@ -87,39 +101,64 @@ const assertPristine = (dir: string, lockBefore: string): void => {
 const suite = pnpmAvailable ? describe : describe.skip;
 
 suite("pnpm dedupe --check vs listDuplicates", () => {
-  it("flags the mergeable subset, all of which listDuplicates reports", () => {
-    const dir = fixturePath("duplicated-typescript-eslint");
-    const lockBefore = lockContent(dir);
+  // `duplicated-typescript-eslint-dedupe-peers` is the same dependency with
+  // `dedupePeers: true`, which flattens the peer suffixes in the lockfile: pnpm
+  // must still merge the same packages, and we must still list them.
+  const mergeable: { scenario: string; expectedFlagged: string[] }[] = [
+    {
+      scenario: "duplicated-typescript-eslint",
+      expectedFlagged: [
+        "@typescript-eslint/tsconfig-utils",
+        "@typescript-eslint/types",
+      ],
+    },
+    {
+      scenario: "duplicated-typescript-eslint-dedupe-peers",
+      expectedFlagged: [
+        "@typescript-eslint/tsconfig-utils",
+        "@typescript-eslint/types",
+      ],
+    },
+  ];
 
-    const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
-    strictEqual(install.status, 0, install.output);
-    assertPristine(dir, lockBefore);
+  for (const { scenario, expectedFlagged } of mergeable) {
+    it(`flags the mergeable subset of ${scenario}, all of which listDuplicates reports`, () => {
+      const dir = fixturePath(scenario);
+      const lockBefore = lockContent(dir);
 
-    const check = runPnpm(dir, ["dedupe", "--check"]);
-    ok(
-      check.status !== 0,
-      `dedupe --check should flag issues\n${check.output}`,
-    );
-    assertPristine(dir, lockBefore);
+      const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
+      strictEqual(install.status, 0, install.output);
+      assertPristine(dir, lockBefore);
 
-    const flagged = parseDedupedPackages(check.output);
-    deepStrictEqual(flagged, [
-      "@typescript-eslint/tsconfig-utils",
-      "@typescript-eslint/types",
-    ]);
-
-    const duplicates = duplicateNames("duplicated-typescript-eslint");
-    for (const name of flagged) {
+      const check = runPnpm(dir, ["dedupe", "--check"]);
       ok(
-        duplicates.includes(name),
-        `listDuplicates should report ${name} that pnpm dedupe flags`,
+        check.status !== 0,
+        `dedupe --check should flag issues\n${check.output}`,
       );
-    }
-  }, 180_000);
+      assertPristine(dir, lockBefore);
 
-  // Duplicates pnpm cannot safely merge: `dedupe --check` exits 0 and flags
-  // nothing, yet listDuplicates still reports the duplicate.
-  const unmergeable: { scenario: string; expectedDuplicate: string }[] = [
+      deepStrictEqual(parseDedupedPackages(check.output), expectedFlagged);
+
+      const duplicates = duplicateNames(scenario);
+      for (const name of expectedFlagged) {
+        ok(
+          duplicates.includes(name),
+          `listDuplicates should report ${name} that pnpm dedupe flags`,
+        );
+      }
+    }, 180_000);
+  }
+
+  // Duplicates pnpm does not merge: `dedupe --check` exits 0 and flags nothing,
+  // yet listDuplicates still reports the duplicate. The `mergeable-alias*`
+  // fixtures go one step further: every declared range accepts the aliased
+  // 5.0.7 pin, so we do identify a merge target — one pnpm will never apply,
+  // because merging means downgrading the range from 5.3.1.
+  const unmergeableByPnpm: {
+    scenario: string;
+    expectedDuplicate: string;
+    expectedFixTargets?: string[];
+  }[] = [
     {
       scenario: "duplicated-babel-frame",
       expectedDuplicate: "@babel/code-frame",
@@ -128,9 +167,23 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
       scenario: "duplicated-printable-shell-command",
       expectedDuplicate: "printable-shell-command",
     },
+    {
+      scenario: "mergeable-alias",
+      expectedDuplicate: "printable-shell-command",
+      expectedFixTargets: ["printable-shell-command@5.0.7"],
+    },
+    {
+      scenario: "mergeable-alias-dedupe-peers",
+      expectedDuplicate: "printable-shell-command",
+      expectedFixTargets: ["printable-shell-command@5.0.7"],
+    },
   ];
 
-  for (const { scenario, expectedDuplicate } of unmergeable) {
+  for (const {
+    scenario,
+    expectedDuplicate,
+    expectedFixTargets,
+  } of unmergeableByPnpm) {
     it(`flags nothing for ${scenario} but still lists ${expectedDuplicate}`, () => {
       const dir = fixturePath(scenario);
       const lockBefore = lockContent(dir);
@@ -149,6 +202,10 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
 
       deepStrictEqual(parseDedupedPackages(check.output), []);
       ok(duplicateNames(scenario).includes(expectedDuplicate));
+      deepStrictEqual(
+        fixTargets(scenario, expectedDuplicate),
+        expectedFixTargets ?? [],
+      );
     }, 180_000);
   }
 });

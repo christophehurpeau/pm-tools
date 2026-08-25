@@ -29,8 +29,15 @@ export interface PackageSnapshot {
   optional?: boolean;
 }
 
+export interface PnpmLockSettings {
+  autoInstallPeers?: boolean;
+  dedupePeers?: boolean;
+  excludeLinksFromLockfile?: boolean;
+}
+
 export interface PnpmLockFile {
   lockfileVersion: string;
+  settings?: PnpmLockSettings;
   importers?: Record<string, ProjectSnapshot>;
   packages?: Record<string, PackageMeta>;
   snapshots?: Record<string, PackageSnapshot>;

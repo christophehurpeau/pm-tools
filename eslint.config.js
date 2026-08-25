@@ -11,7 +11,7 @@ export default [
     ignores: ["packages/*/test/fixtures/**/*.json"],
   },
   {
-    files: ["**/*.ts"],
+    files: ["packages/bun-dedup/**/*.ts"],
     rules: {
       "n/hashbang": [
         "error",
