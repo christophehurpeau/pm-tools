@@ -1,0 +1,4 @@
+# The point of this fixture is the installed layout `nodeLinker: hoisted`
+# produces, so its node_modules has to be committed.
+!node_modules/
+!node_modules/**

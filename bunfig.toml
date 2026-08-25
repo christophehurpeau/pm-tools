@@ -17,3 +17,8 @@ minimumReleaseAgeExcludes = [
   "nightingale",
   "nightingale-logger",
 ]
+
+[test]
+# Every test lives in packages/*/src; dist holds committed build output whose
+# stale *.test.js copies would otherwise run as duplicates.
+pathIgnorePatterns = ["**/dist/**"]

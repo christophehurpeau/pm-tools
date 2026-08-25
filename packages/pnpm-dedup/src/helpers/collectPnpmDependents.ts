@@ -1,6 +1,9 @@
 import { PackageDependencyDescriptorUtils } from "pm-utils";
 import type { PnpmLockFile } from "../pnpmLockTypes.ts";
-import { parsePackageId, stripPeerSuffix } from "./parsePnpmLockPackages.ts";
+import {
+  parsePackageId,
+  resolveSnapshotDependency,
+} from "./parsePnpmLockPackages.ts";
 
 export interface Dependent {
   key: string;
@@ -16,21 +19,6 @@ const importerDepTypes = [
 ] as const;
 
 const snapshotDepTypes = ["dependencies", "optionalDependencies"] as const;
-
-// In a snapshot, a dependency value is either a resolved version (`1.2.3`,
-// possibly peer-suffixed) for which the key is the real npm name, or an aliased
-// `realName@version` form when the key is a local alias.
-const resolveSnapshotDependency = (
-  depName: string,
-  depValue: string,
-): { name: string; version: string } => {
-  const stripped = stripPeerSuffix(depValue);
-  if (/^\d/.test(stripped)) {
-    return { name: depName, version: stripped };
-  }
-  const { name, version } = parsePackageId(stripped);
-  return { name: name || depName, version };
-};
 
 export function collectPnpmDependents(
   lock: PnpmLockFile,

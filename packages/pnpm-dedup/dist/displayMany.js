@@ -1,42 +1,47 @@
-export const displayMany = (title, duplicatesPackagesMap, dependents, identifiedFixesMap, log = console.log) => {
-    const titleSingular = title === "duplicates" ? "duplicate" : "match";
-    const duplicatePackageNames = Object.keys(duplicatesPackagesMap);
-    if (duplicatePackageNames.length === 0) {
-        log("No duplicates found");
-        return;
+import { renderDuplicatesReport } from "pm-utils";
+// A cluster of one is the package's own fix: nothing else converges with it, so
+// it is rendered in the package's block instead of the cluster section.
+const isSingleton = (fix) => fix.members.length === 1;
+const toDedupeViews = (packageName, clusterFixes) => clusterFixes
+    .filter((fix) => isSingleton(fix) &&
+    fix.members[0] === packageName &&
+    fix.applicable &&
+    fix.target !== null)
+    .map((fix) => ({
+    // the target is what the copies merge into; the other installed versions
+    // are what goes away
+    from: (fix.memberVersions[packageName]?.versions ?? []).filter((version) => version !== fix.target),
+    to: fix.target,
+    direction: fix.direction,
+}))
+    .filter((view) => view.from.length > 0);
+const toPackageViews = ({ duplicatesPackagesMap, dependents, clusterFixes = [], }) => Object.entries(duplicatesPackagesMap).map(([packageName, resolutions]) => {
+    if (!resolutions) {
+        throw new Error(`Unexpected error: no resolutions found for package ${packageName}`);
     }
-    log(`Found ${duplicatePackageNames.length} ${duplicatePackageNames.length === 1 ? titleSingular : title}:`);
-    for (const packageName of duplicatePackageNames) {
-        log();
-        log(`${packageName}:`);
-        log("  Resolutions:");
-        const resolutions = duplicatesPackagesMap[packageName];
-        if (!resolutions) {
-            throw new Error(`Unexpected error: no resolutions found for package ${packageName}`);
-        }
-        for (const { resolution, installations } of resolutions) {
-            log(`    - ${resolution}`);
-            if (installations.length > 1) {
-                log("      Installed at:");
-                for (const location of installations) {
-                    log(`        - ${location}`);
-                }
-            }
-        }
-        const sources = dependents.get(packageName);
-        if (sources) {
-            log("  Dependents:");
-            for (const dependent of sources) {
-                log(`    - ${dependent.key} asking for "${dependent.version}"`);
-            }
-        }
-        const fixes = identifiedFixesMap?.get(packageName);
-        if (fixes && fixes.length > 0) {
-            log("  Possible fixes: (run `pnpm-dedupe` to apply)");
-            for (const fix of fixes) {
-                log(`    - ${fix.megeableResolutions.filter((resolution) => resolution !== fix.to).join(" and ")} can be merged with ${fix.to}`);
-            }
-        }
-    }
+    return {
+        packageName,
+        resolutions: resolutions.map(({ resolution, installations }) => ({
+            resolution,
+            installations,
+        })),
+        dependents: (dependents.get(packageName) ?? []).map((dependent) => ({
+            requester: dependent.key,
+            range: dependent.range,
+            resolvedVersion: dependent.resolvedVersion,
+        })),
+        dedupe: toDedupeViews(packageName, clusterFixes),
+    };
+});
+export const displayMany = (options) => {
+    renderDuplicatesReport({
+        title: options.title,
+        packages: toPackageViews(options),
+        totalDependencies: options.totalDependencies,
+        clusterFixes: (options.clusterFixes ?? []).filter((fix) => !isSingleton(fix)),
+        dedupeCommand: "pnpm-dedupe",
+        color: options.color,
+        log: options.log,
+    });
 };
 //# sourceMappingURL=displayMany.js.map

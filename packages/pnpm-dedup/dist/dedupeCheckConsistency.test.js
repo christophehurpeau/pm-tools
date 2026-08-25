@@ -4,7 +4,8 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildIdentifiedFixesMap, buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
+import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.js";
+import { buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
 // These tests shell out to the real `pnpm` and require either network access or
 // a warm pnpm store; they are skipped when pnpm is not on PATH. `--lockfile-only`
 // keeps pnpm from writing node_modules, and `--frozen-lockfile` / `--check` never
@@ -102,6 +103,9 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
     // fixtures go one step further: every declared range accepts the aliased
     // 5.0.7 pin, so we do identify a merge target — one pnpm will never apply,
     // because merging means downgrading the range from 5.3.1.
+    // `wildcard-not-reused` is the widest case: a `*` range resolved to 0.87.0
+    // instead of the installed 0.84.5, duplicating the metro family (see
+    // wildcardNotReused.test.ts). pnpm will not undo it either.
     const unmergeableByPnpm = [
         {
             scenario: "duplicated-babel-frame",
@@ -120,6 +124,10 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
             scenario: "mergeable-alias-dedupe-peers",
             expectedDuplicate: "printable-shell-command",
             expectedFixTargets: ["printable-shell-command@5.0.7"],
+        },
+        {
+            scenario: "wildcard-not-reused",
+            expectedDuplicate: "metro-config",
         },
     ];
     for (const { scenario, expectedDuplicate, expectedFixTargets, } of unmergeableByPnpm) {

@@ -1,8 +1,9 @@
 import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.js";
 import { parsePackageId } from "./helpers/parsePnpmLockPackages.js";
-import { buildIdentifiedFixesMap, buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
+import { buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
 // Both fixtures declare the same single dependency; only the `dedupePeers`
 // setting differs. With it enabled pnpm writes peer suffixes as plain
 // `name@version` instead of repeating the peer's own resolution, so snapshot

@@ -1,10 +1,10 @@
 import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.ts";
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { parsePackageId } from "./helpers/parsePnpmLockPackages.ts";
 import {
-  buildIdentifiedFixesMap,
   buildPnpmPackagesMap,
   collectPnpmDependents,
   filterDuplicatesPnpmPackagesMap,

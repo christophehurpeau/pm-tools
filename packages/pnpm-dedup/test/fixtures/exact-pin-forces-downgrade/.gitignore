@@ -1,0 +1,4 @@
+# The declared ranges this fixture is about only exist in the installed
+# manifests, so its node_modules has to be committed.
+!node_modules/
+!node_modules/**

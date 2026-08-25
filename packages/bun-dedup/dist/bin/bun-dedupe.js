@@ -1,6 +1,17 @@
 #!/usr/bin/env bun
 import { fixDuplicates } from "../index.js";
 const args = process.argv.slice(2);
-const dryRun = args.includes("--dry-run") || args.includes("-n");
-fixDuplicates(dryRun);
+// `--check` wins over `--dry-run`: both write nothing, and the caller that asked
+// for a gate gets one.
+const mode = (() => {
+    if (args.includes("--check"))
+        return "check";
+    if (args.includes("--dry-run") || args.includes("-n"))
+        return "dry-run";
+    return "apply";
+})();
+fixDuplicates({
+    mode,
+    clusters: !args.includes("--no-clusters"),
+});
 //# sourceMappingURL=bun-dedupe.js.map

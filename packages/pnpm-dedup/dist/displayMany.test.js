@@ -3,21 +3,79 @@ import { ok } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { displayMany } from "./displayMany.js";
 import { buildPnpmPackagesMap, filterDuplicatesPnpmPackagesMap, } from "./helpers/buildPnpmPackagesMap.js";
-import { collectPnpmDependents } from "./helpers/collectPnpmDependents.js";
+import { collectDependentRanges } from "./helpers/collectDependentRanges.js";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.js";
+import { createManifestReader } from "./helpers/readInstalledManifest.js";
+import { identifyClusterFixes } from "./identifyClusterFixes.js";
 import { readPnpmLock } from "./readPnpmLock.js";
 const fixturesBase = (rel) => fileURLToPath(new URL(rel, import.meta.url));
-const renderDuplicates = (scenario) => {
+// The report layout is covered in pm-utils (`renderDuplicatesReport`); these
+// only check that the pnpm lockfile model is mapped onto it correctly.
+const renderDuplicates = (scenario, clusterFixes, readManifest = () => undefined) => {
     const lock = readPnpmLock(fixturesBase(`../test/fixtures/${scenario}/pnpm-lock.yaml`));
-    const duplicates = filterDuplicatesPnpmPackagesMap(buildPnpmPackagesMap(parsePnpmLockPackages(lock)));
-    const dependents = collectPnpmDependents(lock, Object.keys(duplicates));
+    const packagesMap = buildPnpmPackagesMap(parsePnpmLockPackages(lock));
+    const duplicates = filterDuplicatesPnpmPackagesMap(packagesMap);
     let buffer = "";
-    const log = (message = "") => {
-        buffer += `${message}\n`;
-    };
-    displayMany("duplicates", duplicates, dependents, undefined, log);
+    displayMany({
+        title: "duplicates",
+        duplicatesPackagesMap: duplicates,
+        dependents: collectDependentRanges(lock, new Set(Object.keys(duplicates)), readManifest),
+        totalDependencies: Object.keys(packagesMap).length,
+        clusterFixes,
+        color: false,
+        log: (message = "") => {
+            buffer += `${message}\n`;
+        },
+    });
     return buffer;
 };
+// `exact-pin-forces-downgrade` commits its virtual store, so the report runs on
+// the real declared ranges: an exact 3.0.3 against expo-camera's `^3.0.0`.
+const downgradeScenario = "exact-pin-forces-downgrade";
+const downgradeDir = fixturesBase(`../test/fixtures/${downgradeScenario}`);
+const renderDowngrade = () => {
+    const lock = readPnpmLock(`${downgradeDir}/pnpm-lock.yaml`);
+    const readManifest = createManifestReader(downgradeDir);
+    return renderDuplicates(downgradeScenario, identifyClusterFixes(lock, buildPnpmPackagesMap(parsePnpmLockPackages(lock)), readManifest), readManifest);
+};
+const lastLine = (output) => output.trimEnd().split("\n").at(-1);
+const clusterFix = (overrides = {}) => ({
+    members: ["metro", "metro-config"],
+    duplicatedMembers: ["metro", "metro-config"],
+    memberVersions: {
+        metro: { versions: ["0.84.5", "0.87.0"], nonNpmCount: 0 },
+        "metro-config": { versions: ["0.84.5", "0.87.0"], nonNpmCount: 0 },
+    },
+    target: "0.87.0",
+    direction: "up",
+    convergentMembers: ["metro", "metro-config"],
+    driverMembers: ["metro"],
+    excludedMembers: [],
+    anchor: null,
+    reuseFixes: [],
+    floatingMembers: [],
+    workspaceChanges: [],
+    reResolutionSet: ["metro"],
+    externalConstraints: [],
+    needsRoundTrip: true,
+    applicable: true,
+    ...overrides,
+});
+const singletonFix = (overrides = {}) => ({
+    ...clusterFix(),
+    members: ["@babel/code-frame"],
+    duplicatedMembers: ["@babel/code-frame"],
+    memberVersions: {
+        "@babel/code-frame": { versions: ["7.26.2", "7.29.7"], nonNpmCount: 0 },
+    },
+    target: "7.29.7",
+    direction: "up",
+    convergentMembers: ["@babel/code-frame"],
+    driverMembers: ["@babel/code-frame"],
+    reResolutionSet: [],
+    needsRoundTrip: false,
+    ...overrides,
+});
 describe("displayMany", () => {
     it("renders resolutions and dependents for a duplicated package", () => {
         const output = renderDuplicates("duplicated-babel-frame");
@@ -26,9 +84,9 @@ describe("displayMany", () => {
         ok(output.includes("  Resolutions:"));
         ok(output.includes("    - @babel/code-frame@7.26.2"));
         ok(output.includes("  Dependents:"));
-        ok(output.includes('package.json in dependencies asking for "7.26.2"'));
-        // no fixes section in the list step
-        ok(!output.includes("Possible fixes"));
+        ok(output.includes('package.json in dependencies requires "7.26.2"'));
+        // the list step computes no fix
+        ok(!output.includes("Dedupe:"));
     });
     it("renders the printable-shell-command duplicate", () => {
         const output = renderDuplicates("duplicated-printable-shell-command");
@@ -36,7 +94,53 @@ describe("displayMany", () => {
         ok(output.includes("    - printable-shell-command@5.0.7"));
     });
     it("reports no duplicates for a clean lockfile", () => {
-        expect(renderDuplicates("simple")).toBe("No duplicates found\n");
+        expect(renderDuplicates("simple")).toBe("No duplicates found\n\nFound 1 dependency, 0 duplicates, 0 dedupable.\n");
+    });
+    it("maps a cluster of one to the versions that would collapse", () => {
+        const output = renderDuplicates("duplicated-babel-frame", [singletonFix()]);
+        ok(output.includes("  Dedupe:"));
+        ok(output.includes("    - 7.26.2 -> 7.29.7 (upgrade)"));
+        // a lone package is no family, so it gets no cluster section
+        ok(!output.includes("Lockstep clusters:"));
+    });
+    it("counts the whole lockfile and names the pnpm command", () => {
+        const output = renderDuplicates("duplicated-babel-frame", [singletonFix()]);
+        ok(lastLine(output).startsWith("Found 39 dependencies, 1 duplicate, 1 dedupable. Run `pnpm-dedupe`"));
+    });
+    it("says nothing collapses when the cluster of one is unfixable", () => {
+        const output = renderDuplicates("duplicated-babel-frame", [
+            singletonFix({
+                target: null,
+                direction: "none",
+                convergentMembers: [],
+                driverMembers: [],
+                applicable: false,
+            }),
+        ]);
+        ok(!output.includes("Dedupe:"));
+        ok(lastLine(output).includes("0 dedupable"));
+    });
+    it("shows the declared range next to the version it resolved to", () => {
+        const output = renderDowngrade();
+        ok(output.includes('    - @yudiel/react-qr-scanner@2.3.1 requires "3.0.3"\n'));
+        ok(output.includes('    - expo-camera@57.0.3 requires "^3.0.0", resolved 3.2.2'));
+    });
+    it("names the downgrade a converging dependent has to take", () => {
+        const output = renderDowngrade();
+        ok(output.includes("    - 3.2.2 -> 3.0.3 (downgrade)"));
+        // zxing-wasm cannot converge: `^2.1.2` against an exact 3.1.3
+        ok(lastLine(output).includes("2 duplicates, 1 dedupable"));
+    });
+    it("forwards the cluster fixes", () => {
+        const output = renderDuplicates("duplicated-babel-frame", [clusterFix()]);
+        ok(output.includes("Lockstep clusters:"));
+        ok(output.includes("cluster 1 — metro* [2 packages, 2 duplicated, 2 fixable]:"));
+        ok(lastLine(output).includes("2 dedupable"));
+    });
+    it("renders a cluster from a lockfile with no per-package duplicate", () => {
+        const output = renderDuplicates("simple", [clusterFix()]);
+        ok(output.startsWith("No duplicates found"));
+        ok(output.includes("Lockstep clusters:"));
     });
 });
 //# sourceMappingURL=displayMany.test.js.map

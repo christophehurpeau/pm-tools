@@ -31,5 +31,14 @@ export declare const parsePackageId: (id: string) => {
     name: string;
     version: string;
 };
+/**
+ * Resolve a snapshot dependency entry. The value is either a resolved version
+ * (`1.2.3`, possibly peer-suffixed) for which the key is the real npm name, or
+ * an aliased `realName@version` form when the key is a local alias.
+ */
+export declare const resolveSnapshotDependency: (depName: string, depValue: string) => {
+    name: string;
+    version: string;
+};
 export declare const parsePnpmLockPackages: (lock: PnpmLockFile) => ParsedPnpmPackages;
 //# sourceMappingURL=parsePnpmLockPackages.d.ts.map

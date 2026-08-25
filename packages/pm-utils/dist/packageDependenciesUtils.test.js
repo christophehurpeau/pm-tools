@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { describe, expect, it } from "bun:test";
 import { PackageDependencyDescriptorUtils } from "./packageDependenciesUtils.js";
 describe("PackageDependencyDescriptorUtils.parse", () => {

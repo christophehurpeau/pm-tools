@@ -52,6 +52,23 @@ const isNpmVersion = (version: string): boolean => {
   return /^\d/.test(version);
 };
 
+/**
+ * Resolve a snapshot dependency entry. The value is either a resolved version
+ * (`1.2.3`, possibly peer-suffixed) for which the key is the real npm name, or
+ * an aliased `realName@version` form when the key is a local alias.
+ */
+export const resolveSnapshotDependency = (
+  depName: string,
+  depValue: string,
+): { name: string; version: string } => {
+  const stripped = stripPeerSuffix(depValue);
+  if (isNpmVersion(stripped)) {
+    return { name: depName, version: stripped };
+  }
+  const { name, version } = parsePackageId(stripped);
+  return { name: name || depName, version };
+};
+
 export const parsePnpmLockPackages = (
   lock: PnpmLockFile,
 ): ParsedPnpmPackages => {

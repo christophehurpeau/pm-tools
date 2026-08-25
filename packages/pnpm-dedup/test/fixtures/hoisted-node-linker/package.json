@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "mini-metro": "0.84.5",
+    "mini-plugin": "1.0.0"
+  }
+}

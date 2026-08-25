@@ -89,6 +89,46 @@ describe("identifyResolutionFixes", () => {
     ]);
   });
 
+  // `exact-pin-forces-downgrade`: `@yudiel/react-qr-scanner` pins
+  // barcode-detector at exactly 3.0.3, `expo-camera` declares `^3.0.0` and got
+  // 3.2.2. Only 3.0.3 satisfies both, and it is installed — so bun collapses
+  // the copies onto it by rewriting the lockfile, no install round-trip.
+  it("merges a caret dependent down onto the version an exact pin forces", () => {
+    const bunLock = readAndParseBunLock(
+      fileURLToPath(
+        new URL(
+          "../test/fixtures/exact-pin-forces-downgrade/bun.lock",
+          import.meta.url,
+        ),
+      ),
+    );
+    const packages = parseBunLockPackages(bunLock);
+    const duplicates = filterDuplicatesPackagesMap(buildPackagesMap(packages));
+    const dependents = collectDependents(
+      packages,
+      bunLock.workspaces,
+      Object.keys(duplicates),
+    );
+
+    expect(
+      identifyResolutionFixes(duplicates["barcode-detector"]!, dependents),
+    ).toEqual([
+      {
+        megeableResolutions: [
+          "barcode-detector@3.0.3",
+          "barcode-detector@3.2.2",
+        ],
+        to: "barcode-detector@3.0.3",
+      },
+    ]);
+
+    // the duplicate that convergence drags along: `^2.1.2` against an exact
+    // 3.1.3, which nothing covers
+    expect(
+      identifyResolutionFixes(duplicates["zxing-wasm"]!, dependents),
+    ).toEqual([]);
+  });
+
   it("should not identify any fix for the typescript-eslint duplicates", () => {
     const bunLock = readAndParseBunLock(
       fileURLToPath(

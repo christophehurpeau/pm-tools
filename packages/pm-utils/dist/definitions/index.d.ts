@@ -1,3 +1,24 @@
 export { PackageDescriptorNameUtils, PackageDependencyDescriptorUtils, } from "./packageDependenciesUtils.ts";
 export type { PackageDescriptorName, PackageDependencyDescriptor, } from "./packageDependenciesUtils.ts";
+export { buildLockstepClusters } from "./buildLockstepClusters.ts";
+export type { LockstepGraph, LockstepResolution, } from "./buildLockstepClusters.ts";
+export { identifyLockstepClusterFixes } from "./identifyLockstepClusterFixes.ts";
+export type { ClusterDependent, ClusterDependentsMap, ClusterExcludedMember, ClusterExternalConstraint, ClusterFix, ClusterMember, ClusterMemberVersions, ClusterMembersMap, ClusterReuseFix, ClusterWorkspaceChange, ClusterWorkspaceRef, } from "./identifyLockstepClusterFixes.ts";
+export { clusterLabel } from "./clusterLabel.ts";
+export { createColorize, shouldColorize } from "./reportColors.ts";
+export type { Colorize, ReportStyle } from "./reportColors.ts";
+export { renderDuplicatesReport } from "./renderDuplicatesReport.ts";
+export type { DuplicateDedupeView, DuplicateDependentView, DuplicatePackageView, DuplicateResolutionView, DuplicatesReportOptions, } from "./renderDuplicatesReport.ts";
+export { renderApplyPlan } from "./renderApplyPlan.ts";
+export type { ApplyPlanFileChange, ApplyPlanOptions, ApplyPlanSummary, } from "./renderApplyPlan.ts";
+export { captureFiles, restoreFiles } from "./fileSnapshot.ts";
+export type { FileSnapshot } from "./fileSnapshot.ts";
+export { applyWorkspaceRangeEdit, nextSelector } from "./workspaceManifest.ts";
+export type { WorkspaceRangeEdit } from "./workspaceManifest.ts";
+export { planClusterApply } from "./planClusterApply.ts";
+export type { ClusterApplyPlan, PlannedManifestEdit, PlannedOverride, } from "./planClusterApply.ts";
+export { diffDuplicates } from "./duplicateSnapshot.ts";
+export type { DuplicateDiff, DuplicateSnapshot } from "./duplicateSnapshot.ts";
+export { partitionUnconditionalOverrides } from "./unconditionalOverrides.ts";
+export type { PartitionedOverrides, RejectedOverride, } from "./unconditionalOverrides.ts";
 //# sourceMappingURL=index.d.ts.map

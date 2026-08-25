@@ -1,6 +1,5 @@
-import { strictEqual, ok } from "node:assert/strict";
-// eslint-disable-next-line import/no-unresolved
 import { describe, it } from "bun:test";
+import { ok, strictEqual } from "node:assert/strict";
 import { buildIdentifiedFixesMap } from "./buildIdentifiedFixesMap.js";
 describe("buildIdentifiedFixesMap", () => {
     it("builds a map even when there are no fixes", () => {

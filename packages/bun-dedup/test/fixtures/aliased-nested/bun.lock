@@ -1,0 +1,24 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "other": "1.0.0",
+        "plugin": "1.0.0",
+      },
+    },
+  },
+  "packages": {
+    "helper": ["helper@2.0.0", "", {}, "sha512-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=="],
+
+    "other": ["other@1.0.0", "", { "dependencies": { "semver": "^7.0.0" } }, "sha512-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=="],
+
+    "plugin": ["plugin@1.0.0", "", { "dependencies": { "helper": "^1.0.0", "semver-legacy": "npm:semver@^6.0.0" } }, "sha512-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc=="],
+
+    "semver": ["semver@7.8.1", "", {}, "sha512-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd=="],
+
+    "plugin/helper": ["helper@1.5.0", "", {}, "sha512-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee=="],
+
+    "plugin/semver-legacy": ["semver@6.3.1", "", { "dependencies": { "helper": "^1.0.0" } }, "sha512-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff=="],
+  }
+}

@@ -1,8 +1,14 @@
+import type { ClusterFix } from "pm-utils";
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
-import type { DependentsMap } from "./helpers/collectPnpmDependents.ts";
-import type { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
-export declare const displayMany: (title: "duplicates" | "matches", duplicatesPackagesMap: PackagesMap, dependents: DependentsMap, identifiedFixesMap?: Map<string, ReturnType<typeof identifyResolutionFixes>>, log?: {
-    (...data: any[]): void;
-    (message?: any, ...optionalParams: any[]): void;
-}) => void;
+import type { DependentRangesMap } from "./helpers/collectDependentRanges.ts";
+export interface DisplayManyOptions {
+    title: "duplicates" | "matches";
+    duplicatesPackagesMap: PackagesMap;
+    dependents: DependentRangesMap;
+    totalDependencies: number;
+    clusterFixes?: ClusterFix[];
+    color?: boolean;
+    log?: (message?: string) => void;
+}
+export declare const displayMany: (options: DisplayManyOptions) => void;
 //# sourceMappingURL=displayMany.d.ts.map

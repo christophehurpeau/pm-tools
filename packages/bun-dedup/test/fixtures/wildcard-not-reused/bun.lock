@@ -1,0 +1,22 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "devDependencies": {
+        "mini-metro": "0.84.5",
+        "mini-plugin": "1.0.0",
+      },
+    },
+  },
+  "packages": {
+    "mini-metro": ["mini-metro@0.84.5", "", { "dependencies": { "mini-metro-config": "0.84.5" } }, "sha512-AAAA=="],
+
+    "mini-metro-config": ["mini-metro-config@0.84.5", "", { "dependencies": { "mini-metro": "0.84.5" } }, "sha512-CCCC=="],
+
+    "mini-plugin": ["mini-plugin@1.0.0", "", { "dependencies": { "mini-metro-config": "*" } }, "sha512-EEEE=="],
+
+    "mini-plugin/mini-metro-config": ["mini-metro-config@0.87.0", "", { "dependencies": { "mini-metro": "0.87.0" } }, "sha512-DDDD=="],
+
+    "mini-plugin/mini-metro-config/mini-metro": ["mini-metro@0.87.0", "", { "dependencies": { "mini-metro-config": "0.87.0" } }, "sha512-BBBB=="],
+  }
+}

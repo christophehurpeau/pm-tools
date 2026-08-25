@@ -1,5 +1,5 @@
 import { describe, it } from "bun:test";
-import { ok, strictEqual } from "node:assert/strict";
+import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { readPnpmLock } from "../readPnpmLock.ts";
 import {
@@ -61,6 +61,25 @@ describe("buildPnpmPackagesMap", () => {
     );
     ok(duplicates["printable-shell-command"]);
     strictEqual(duplicates["printable-shell-command"].length, 2);
+  });
+
+  it("detects the metro family a non-reused wildcard duplicated", () => {
+    // `@tamagui/metro-plugin` requests metro-config/metro-transform-worker with
+    // `*`; pnpm resolved them to 0.87.0 instead of reusing the 0.84.5 pulled by
+    // the root `metro: 0.84.5` pin, so the whole family is installed twice.
+    const duplicates = filterDuplicatesPnpmPackagesMap(
+      buildFor("wildcard-not-reused"),
+    );
+    const family = Object.keys(duplicates).filter(
+      (name) => name === "metro" || name.startsWith("metro-"),
+    );
+    strictEqual(family.length, 14);
+    for (const name of family) {
+      deepStrictEqual(
+        versionsOf(duplicates, name),
+        new Set(["0.84.5", "0.87.0"]),
+      );
+    }
   });
 
   it("detects at least the known @typescript-eslint duplicates", () => {

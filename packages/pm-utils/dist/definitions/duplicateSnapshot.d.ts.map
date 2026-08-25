@@ -1,0 +1,1 @@
+{"version":3,"file":"duplicateSnapshot.d.ts","sourceRoot":"","sources":["../../src/duplicateSnapshot.ts"],"names":[],"mappings":"AAGA,MAAM,MAAM,iBAAiB,GAAG,GAAG,CAAC,MAAM,CAAC,CAAC;AAE5C,MAAM,WAAW,aAAa;IAC5B,OAAO,EAAE,MAAM,EAAE,CAAC;IAClB,KAAK,EAAE,MAAM,EAAE,CAAC;IAChB,QAAQ,EAAE,OAAO,CAAC;CACnB;AAED,eAAO,MAAM,cAAc,GACzB,QAAQ,iBAAiB,EACzB,OAAO,iBAAiB,KACvB,aASF,CAAC"}

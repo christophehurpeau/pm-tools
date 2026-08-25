@@ -1,42 +1,51 @@
-export const displayMany = (title, duplicatesPackagesMap, dependents, identifiedFixesMap, log = console.log) => {
-    const titleSingular = title === "duplicates" ? "duplicate" : "match";
-    const duplicatePackageNames = Object.keys(duplicatesPackagesMap);
-    if (duplicatePackageNames.length === 0) {
-        log("No duplicates found");
-        return;
+import { renderDuplicatesReport } from "pm-utils";
+import semver from "semver";
+// the fixes carry full resolutions (`metro@0.84.5`); the report shows versions,
+// the package name being the block it sits under
+const stripName = (packageName, resolution) => resolution.startsWith(`${packageName}@`)
+    ? resolution.slice(packageName.length + 1)
+    : resolution;
+const toDedupeViews = (packageName, fixes) => (fixes ?? []).map((fix) => {
+    const from = fix.megeableResolutions
+        .filter((resolution) => resolution !== fix.to)
+        .map((resolution) => stripName(packageName, resolution));
+    const to = stripName(packageName, fix.to);
+    return {
+        from,
+        to,
+        // merging onto a lower installed version is legitimate here — the copy is
+        // already in the lockfile — but it is a downgrade for whoever resolved
+        // higher, so it is named
+        direction: from.some((version) => semver.gt(version, to)) ? "down" : "up",
+    };
+});
+const toPackageViews = ({ duplicatesPackagesMap, dependents, identifiedFixesMap, }) => Object.entries(duplicatesPackagesMap).map(([packageName, resolutions]) => {
+    if (!resolutions) {
+        throw new Error(`Unexpected error: no resolutions found for package ${packageName}`);
     }
-    log(`Found ${duplicatePackageNames.length} ${duplicatePackageNames.length === 1 ? titleSingular : title}:`);
-    for (const packageName of duplicatePackageNames) {
-        log();
-        log(`${packageName}:`);
-        log("  Resolutions:");
-        const resolutions = duplicatesPackagesMap[packageName];
-        if (!resolutions) {
-            throw new Error(`Unexpected error: no resolutions found for package ${packageName}`);
-        }
-        for (const { resolution, installations } of resolutions) {
-            log(`    - ${resolution}`);
-            if (installations.length > 1) {
-                log("      Installed at:");
-                for (const location of installations) {
-                    log(`        - ${location}`);
-                }
-            }
-        }
-        const sources = dependents.get(packageName);
-        if (sources) {
-            log("  Dependents:");
-            for (const dependent of sources) {
-                log(`    - ${dependent.key} asking for "${dependent.version}"`);
-            }
-        }
-        const fixes = identifiedFixesMap?.get(packageName);
-        if (fixes && fixes.length > 0) {
-            log("  Possible fixes: (run `bun-dedupe` to apply)");
-            for (const fix of fixes) {
-                log(`    - ${fix.megeableResolutions.filter((r) => r !== fix.to).join(" and ")} can be merged with ${fix.to}`);
-            }
-        }
-    }
+    return {
+        packageName,
+        resolutions: resolutions.map(({ resolution, installations }) => ({
+            resolution,
+            installations,
+        })),
+        dependents: (dependents.get(packageName) ?? []).map((dependent) => ({
+            requester: dependent.key,
+            range: dependent.version,
+            resolvedVersion: dependent.resolvedVersion,
+        })),
+        dedupe: toDedupeViews(packageName, identifiedFixesMap?.get(packageName)).filter((view) => view.from.length > 0),
+    };
+});
+export const displayMany = (options) => {
+    renderDuplicatesReport({
+        title: options.title,
+        packages: toPackageViews(options),
+        totalDependencies: options.totalDependencies,
+        clusterFixes: options.clusterFixes,
+        dedupeCommand: "bun-dedupe",
+        color: options.color,
+        log: options.log,
+    });
 };
 //# sourceMappingURL=displayMany.js.map

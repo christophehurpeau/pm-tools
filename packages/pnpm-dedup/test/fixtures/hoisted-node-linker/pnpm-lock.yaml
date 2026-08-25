@@ -1,0 +1,63 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      mini-metro:
+        specifier: 0.84.5
+        version: 0.84.5
+      mini-plugin:
+        specifier: 1.0.0
+        version: 1.0.0
+
+packages:
+
+  mini-metro@0.84.5:
+    resolution: {integrity: sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==}
+
+  mini-metro@0.87.0:
+    resolution: {integrity: sha512-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB==}
+
+  mini-metro-config@0.84.5:
+    resolution: {integrity: sha512-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC==}
+
+  mini-metro-config@0.87.0:
+    resolution: {integrity: sha512-DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD==}
+
+  mini-deep@2.0.0:
+    resolution: {integrity: sha512-FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF==}
+
+  mini-plugin@1.0.0:
+    resolution: {integrity: sha512-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE==}
+
+snapshots:
+
+  mini-metro@0.84.5:
+    dependencies:
+      mini-metro-config: 0.84.5
+
+  mini-metro@0.87.0:
+    dependencies:
+      mini-deep: 2.0.0
+      mini-metro-config: 0.87.0
+
+  mini-deep@2.0.0:
+    dependencies:
+      mini-metro-config: 0.87.0
+
+  mini-metro-config@0.84.5:
+    dependencies:
+      mini-metro: 0.84.5
+
+  mini-metro-config@0.87.0:
+    dependencies:
+      mini-metro: 0.87.0
+
+  mini-plugin@1.0.0:
+    dependencies:
+      mini-metro-config: 0.87.0
