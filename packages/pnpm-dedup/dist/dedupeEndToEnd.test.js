@@ -1,13 +1,13 @@
 import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.js";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.js";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.js";
+import { createTempProjects } from "./helpers/tempProjects.js";
 import { readPnpmLock } from "./readPnpmLock.js";
 // The shipped tool against a real pnpm: a copy of the
 // `exact-pin-forces-downgrade` fixture, a real `pnpm install`, then the built
@@ -34,12 +34,8 @@ const dedupeBin = (() => {
 // expo-camera's peers (expo, react-native) would drag a few hundred packages in
 // and duplicates of their own, none of which this fixture is about.
 const workspaceYamlContent = "autoInstallPeers: false\n";
-const projects = [];
-afterEach(() => {
-    for (const dir of projects.splice(0)) {
-        rmSync(dir, { recursive: true, force: true });
-    }
-});
+const projects = createTempProjects("pnpm-dedup-e2e-");
+afterEach(projects.cleanup);
 const run = (cwd, command, args) => {
     const result = spawnSync(command, args, {
         cwd,
@@ -71,8 +67,7 @@ const resolutionsOf = (dir, packageName) => {
 const suite = pnpmAvailable ? describe : describe.skip;
 suite("pnpm-dedupe end to end", () => {
     it("converges the cluster and leaves pnpm holding it without an override", () => {
-        const dir = mkdtempSync(join(tmpdir(), "pnpm-dedup-e2e-"));
-        projects.push(dir);
+        const dir = projects.create();
         // only the manifest: the lockfile has to be the real resolution pnpm writes
         // here, not the trimmed one the unit-test fixture commits
         cpSync(join(fixtureDir, "package.json"), join(dir, "package.json"));

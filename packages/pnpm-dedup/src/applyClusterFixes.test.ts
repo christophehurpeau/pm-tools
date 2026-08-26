@@ -1,17 +1,11 @@
 import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ClusterFix, DuplicateSnapshot } from "pm-utils";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
+import { createTempProjects } from "./helpers/tempProjects.ts";
 
 const fix = (overrides: Partial<ClusterFix>): ClusterFix => ({
   members: [],
@@ -45,22 +39,17 @@ const manifestContent = [
 
 const workspaceYamlContent = "# keep me\nresolutionMode: time-based\n";
 
-const projects: string[] = [];
+const projects = createTempProjects("pnpm-dedup-apply-");
 
 const makeProject = (files: Record<string, string>): string => {
-  const dir = mkdtempSync(join(tmpdir(), "pnpm-dedup-apply-"));
-  projects.push(dir);
+  const dir = projects.create();
   for (const [name, content] of Object.entries(files)) {
     writeFileSync(join(dir, name), content);
   }
   return dir;
 };
 
-afterEach(() => {
-  for (const dir of projects.splice(0)) {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
+afterEach(projects.cleanup);
 
 const read = (dir: string, name: string): string =>
   readFileSync(join(dir, name), "utf8");

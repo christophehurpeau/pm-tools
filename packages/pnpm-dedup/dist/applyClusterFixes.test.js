@@ -1,10 +1,10 @@
 import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyClusterFixes } from "./applyClusterFixes.js";
+import { createTempProjects } from "./helpers/tempProjects.js";
 const fix = (overrides) => ({
     members: [],
     duplicatedMembers: [],
@@ -34,20 +34,15 @@ const manifestContent = [
     "",
 ].join("\n");
 const workspaceYamlContent = "# keep me\nresolutionMode: time-based\n";
-const projects = [];
+const projects = createTempProjects("pnpm-dedup-apply-");
 const makeProject = (files) => {
-    const dir = mkdtempSync(join(tmpdir(), "pnpm-dedup-apply-"));
-    projects.push(dir);
+    const dir = projects.create();
     for (const [name, content] of Object.entries(files)) {
         writeFileSync(join(dir, name), content);
     }
     return dir;
 };
-afterEach(() => {
-    for (const dir of projects.splice(0)) {
-        rmSync(dir, { recursive: true, force: true });
-    }
-});
+afterEach(projects.cleanup);
 const read = (dir, name) => readFileSync(join(dir, name), "utf8");
 const snapshot = (...resolutions) => new Set(resolutions);
 describe("applyClusterFixes", () => {

@@ -1,13 +1,13 @@
 import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildPackagesMap } from "./helpers/buildPackagesMap.js";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.js";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.js";
+import { createTempProjects } from "./helpers/tempProjects.js";
 import { readAndParseBunLock } from "./readAndParseBunLock.js";
 // The shipped tool against a real bun: a copy of the
 // `exact-pin-forces-downgrade` fixture, a real `bun install`, then the built
@@ -30,12 +30,8 @@ const dedupeBin = (() => {
     }
     return built;
 })();
-const projects = [];
-afterEach(() => {
-    for (const dir of projects.splice(0)) {
-        rmSync(dir, { recursive: true, force: true });
-    }
-});
+const projects = createTempProjects("bun-dedup-e2e-");
+afterEach(projects.cleanup);
 const run = (cwd, args) => {
     const result = spawnSync("bun", args, {
         cwd,
@@ -60,8 +56,7 @@ const resolutionsOf = (dir, packageName) => {
 const installedVersion = (dir, packageName) => JSON.parse(readFileSync(join(dir, "node_modules", packageName, "package.json"), "utf8")).version;
 describe("bun-dedupe end to end", () => {
     it("merges onto the pinned version and leaves bun installing it", () => {
-        const dir = mkdtempSync(join(tmpdir(), "bun-dedup-e2e-"));
-        projects.push(dir);
+        const dir = projects.create();
         // The lockfile comes along: bun resolves peers into it, and a fresh resolve
         // of expo-camera would pull the whole expo/react-native tree in with
         // duplicates of its own. The committed one is exactly the duplicate this

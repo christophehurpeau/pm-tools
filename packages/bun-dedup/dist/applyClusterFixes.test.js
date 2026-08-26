@@ -1,9 +1,9 @@
 import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { applyClusterFixes } from "./applyClusterFixes.js";
+import { createTempProjects } from "./helpers/tempProjects.js";
 const fix = (overrides) => ({
     members: [],
     duplicatedMembers: [],
@@ -32,20 +32,15 @@ const manifestContent = [
     "}",
     "",
 ].join("\n");
-const projects = [];
+const projects = createTempProjects("bun-dedup-apply-");
 const makeProject = (files) => {
-    const dir = mkdtempSync(join(tmpdir(), "bun-dedup-apply-"));
-    projects.push(dir);
+    const dir = projects.create();
     for (const [name, content] of Object.entries(files)) {
         writeFileSync(join(dir, name), content);
     }
     return dir;
 };
-afterEach(() => {
-    for (const dir of projects.splice(0)) {
-        rmSync(dir, { recursive: true, force: true });
-    }
-});
+afterEach(projects.cleanup);
 const read = (dir, name) => readFileSync(join(dir, name), "utf8");
 const snapshot = (...resolutions) => new Set(resolutions);
 const emptyLock = '{ "lockfileVersion": 1, "workspaces": {}, "packages": {} }';
