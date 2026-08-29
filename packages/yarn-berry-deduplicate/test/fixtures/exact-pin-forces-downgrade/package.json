@@ -1,0 +1,7 @@
+{
+  "name": "root-workspace",
+  "dependencies": {
+    "@yudiel/react-qr-scanner": "2.3.1",
+    "expo-camera": "57.0.3"
+  }
+}

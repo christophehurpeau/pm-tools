@@ -14,6 +14,9 @@ export interface ClusterExternalConstraint {
   requesterName: string | undefined;
   packageName: string;
   range: string;
+  // the requester declares the package under a key naming another package, which
+  // some package managers' overrides cannot repoint
+  isAlias?: boolean;
   // version this requester actually got, when the lockfile records it
   resolvedVersion?: string;
   workspace?: ClusterWorkspaceRef;
@@ -45,9 +48,13 @@ export interface ClusterDependent {
   requester: string;
   requesterName: string | undefined;
   range: string;
+  // see `ClusterExternalConstraint.isAlias`
+  isAlias?: boolean;
   workspace?: ClusterWorkspaceRef;
   // version this requester actually got, when the lockfile records it
   resolvedVersion?: string;
+  // see `ResolutionDependent.nonSemver`: reported, never weighed
+  nonSemver?: boolean;
 }
 
 export type ClusterDependentsMap = Map<string, ClusterDependent[]>;
@@ -234,6 +241,10 @@ export const identifyLockstepClusterFixes = (
 
     for (const member of clusterMembers) {
       for (const dependent of dependents.get(member) ?? []) {
+        // a range semver cannot read rules no version in or out; counted as an
+        // external constraint it would block every convergence it touches
+        if (dependent.nonSemver) continue;
+
         const isInternal =
           dependent.requesterName !== undefined &&
           memberSet.has(dependent.requesterName);
@@ -252,6 +263,7 @@ export const identifyLockstepClusterFixes = (
           requesterName: dependent.requesterName,
           packageName: member,
           range: dependent.range,
+          isAlias: dependent.isAlias,
           resolvedVersion: dependent.resolvedVersion,
           workspace: dependent.workspace,
         };

@@ -1,7 +1,7 @@
 import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.js";
+import { buildIdentifiedFixesMap } from "pm-utils";
 import { parsePackageId } from "./helpers/parsePnpmLockPackages.js";
 import { buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
 // Both fixtures declare the same single dependency; only the `dedupePeers`
@@ -90,7 +90,7 @@ describe("dedupePeers with an identified fix", () => {
     it("identifies the version every declared range accepts", () => {
         deepStrictEqual(fixesFor(mergeableDedupePeersScenario).get("printable-shell-command"), [
             {
-                megeableResolutions: [
+                mergeableResolutions: [
                     "printable-shell-command@5.0.7",
                     "printable-shell-command@5.3.1",
                 ],

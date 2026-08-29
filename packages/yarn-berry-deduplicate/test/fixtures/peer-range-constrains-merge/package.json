@@ -1,0 +1,7 @@
+{
+  "name": "root-workspace",
+  "dependencies": {
+    "holder": "2.0.0",
+    "peer-pkg": "^2.0.0"
+  }
+}

@@ -7,6 +7,7 @@ export interface ClusterExternalConstraint {
     requesterName: string | undefined;
     packageName: string;
     range: string;
+    isAlias?: boolean;
     resolvedVersion?: string;
     workspace?: ClusterWorkspaceRef;
 }
@@ -26,8 +27,10 @@ export interface ClusterDependent {
     requester: string;
     requesterName: string | undefined;
     range: string;
+    isAlias?: boolean;
     workspace?: ClusterWorkspaceRef;
     resolvedVersion?: string;
+    nonSemver?: boolean;
 }
 export type ClusterDependentsMap = Map<string, ClusterDependent[]>;
 export interface ClusterReuseFix {

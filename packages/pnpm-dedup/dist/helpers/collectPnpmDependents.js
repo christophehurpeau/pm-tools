@@ -1,4 +1,4 @@
-import { PackageDependencyDescriptorUtils } from "pm-utils";
+import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
 import { parsePackageId, resolveSnapshotDependency, } from "./parsePnpmLockPackages.js";
 const importerDepTypes = [
     "dependencies",
@@ -26,6 +26,10 @@ export function collectPnpmDependents(lock, onlyPackageNames) {
                 return;
             for (const [depName, { specifier }] of Object.entries(deps)) {
                 const parsedDep = PackageDependencyDescriptorUtils.parse(depName, specifier);
+                // `workspace:` and `catalog:` name something other than the npm package
+                // sharing this key, so they constrain no npm version
+                if (!isSemverComparable(parsedDep))
+                    continue;
                 add(parsedDep.npmName, {
                     key: `${importerPath === "." ? "package.json" : importerPath} in ${depType}`,
                     version: parsedDep.selector,

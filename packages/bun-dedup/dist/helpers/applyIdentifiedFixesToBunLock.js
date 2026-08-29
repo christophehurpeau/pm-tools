@@ -16,7 +16,7 @@ export function applyIdentifiedFixesToBunLock(bunLockResult, identifiedFixesMap)
             for (const [key, arr] of Object.entries(bunLockResult.packages)) {
                 const currentResolution = arr?.[0];
                 if (currentResolution &&
-                    fix.megeableResolutions.includes(currentResolution) &&
+                    fix.mergeableResolutions.includes(currentResolution) &&
                     currentResolution !== toResolution) {
                     bunLockResult.packages[key] = Array.isArray(toArray)
                         ? [...toArray]

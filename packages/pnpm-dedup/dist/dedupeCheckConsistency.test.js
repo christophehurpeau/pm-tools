@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.js";
+import { buildIdentifiedFixesMap } from "pm-utils";
 import { buildPnpmPackagesMap, collectPnpmDependents, filterDuplicatesPnpmPackagesMap, parsePnpmLockPackages, readPnpmLock, } from "./index.js";
 // These tests shell out to the real `pnpm` and require either network access or
 // a warm pnpm store; they are skipped when pnpm is not on PATH. `--lockfile-only`

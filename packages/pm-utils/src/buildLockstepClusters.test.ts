@@ -43,6 +43,41 @@ describe("buildLockstepClusters", () => {
     expect(buildLockstepClusters(graph)).toEqual([]);
   });
 
+  it("does not union when the anchor version is not installed", () => {
+    // Real case: `d@1.0.1` requests `type@^1.0.1`, so the range anchors on
+    // d's own version by coincidence — no `type@1.0.1` is installed, the
+    // request resolves to `type@1.2.0`, and the two do not move together.
+    const graph: LockstepGraph = {
+      d: [npm("1.0.1", { type: "^1.0.1" })],
+      esniff: [npm("2.0.1", { d: "^1.0.1", type: "^2.7.2" })],
+      type: [npm("1.2.0"), npm("2.7.2")],
+    };
+
+    expect(buildLockstepClusters(graph)).toEqual([]);
+  });
+
+  it("unions when the anchor version is installed alongside others", () => {
+    // Same shape, but the lock does carry `b@1.0.0`: the pin is real, and the
+    // duplicate `b@1.2.0` is what the cluster pass exists to collapse.
+    const graph: LockstepGraph = {
+      a: [npm("1.0.0", { b: "^1.0.0" })],
+      b: [npm("1.0.0"), npm("1.2.0")],
+    };
+
+    expect(buildLockstepClusters(graph)).toEqual([["a", "b"]]);
+  });
+
+  it("keeps unioning pnpm-style edges that store the resolved version", () => {
+    // pnpm records the resolved version, so the anchor is installed by
+    // construction and detection is unchanged.
+    const graph: LockstepGraph = {
+      a: [npm("7.28.0", { b: "7.28.0" })],
+      b: [npm("7.28.0")],
+    };
+
+    expect(buildLockstepClusters(graph)).toEqual([["a", "b"]]);
+  });
+
   it("ignores edges to packages absent from the graph and non-npm resolutions", () => {
     const graph: LockstepGraph = {
       a: [npm("1.0.0", { missing: "1.0.0", b: "1.0.0" })],

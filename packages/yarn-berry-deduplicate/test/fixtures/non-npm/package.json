@@ -1,0 +1,11 @@
+{
+  "name": "root-workspace",
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "from-git": "https://github.com/example/from-git.git#commit=abc123",
+    "local-lib": "workspace:*",
+    "resolve": "^1.22.8"
+  }
+}

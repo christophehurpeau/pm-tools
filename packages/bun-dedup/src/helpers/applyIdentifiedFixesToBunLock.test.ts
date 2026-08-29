@@ -4,7 +4,7 @@ import { ok, strictEqual } from "node:assert/strict";
 import { applyIdentifiedFixesToBunLock } from "./applyIdentifiedFixesToBunLock.ts";
 
 describe("applyIdentifiedFixesToBunLock", () => {
-  it("replaces megeable resolutions with target resolution", () => {
+  it("replaces mergeable resolutions with target resolution", () => {
     const bunLock: BunLockFile & { packages: Record<string, any> } = {
       lockfileVersion: 1,
       workspaces: {},
@@ -16,13 +16,13 @@ describe("applyIdentifiedFixesToBunLock", () => {
 
     const identified = new Map<
       string,
-      { megeableResolutions: string[]; to: string }[]
+      { mergeableResolutions: string[]; to: string }[]
     >([
       [
         "pkg",
         [
           {
-            megeableResolutions: ["pkg@0.9.0", "pkg@1.0.0"],
+            mergeableResolutions: ["pkg@0.9.0", "pkg@1.0.0"],
             to: "pkg@1.0.0",
           },
         ],
@@ -69,7 +69,7 @@ describe("applyIdentifiedFixesToBunLock", () => {
           "pkg",
           [
             {
-              megeableResolutions: ["pkg@1.0.0", "pkg@2.0.0"],
+              mergeableResolutions: ["pkg@1.0.0", "pkg@2.0.0"],
               to: "pkg@1.0.0",
             },
           ],

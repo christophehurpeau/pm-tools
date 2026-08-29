@@ -1,0 +1,6 @@
+{
+  "name": "root-workspace",
+  "devDependencies": {
+    "@pob/eslint-config": "65.5.0"
+  }
+}

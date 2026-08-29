@@ -77,6 +77,10 @@ describe("bun-dedupe end to end", () => {
         const applied = dedupe(dir);
         strictEqual(applied.status, 0, applied.output);
         ok(applied.output.includes("bun.lock updated"), applied.output);
+        // what it deduped, named: one copy of each package merged away, both sides
+        // counted so converging onto the older 3.0.3 does not read as a downgrade
+        ok(applied.output.includes("Deduped 2 packages, 2 copies merged:"), applied.output);
+        ok(applied.output.includes("barcode-detector: 2 versions (3.0.3, 3.2.2) -> 1 version (3.0.3)"), applied.output);
         // the rewrite only asks; bun is what applies it
         const reinstalled = install(dir);
         strictEqual(reinstalled.status, 0, reinstalled.output);

@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import type { BunLockFile } from "bun";
-import type { ResolutionFix } from "../identifyResolutionFixes.ts";
+import type { ResolutionFix } from "pm-utils";
 
 export interface ApplyFixesResult {
   changed: boolean;
@@ -35,7 +35,7 @@ export function applyIdentifiedFixesToBunLock(
         const currentResolution = arr?.[0];
         if (
           currentResolution &&
-          fix.megeableResolutions.includes(currentResolution) &&
+          fix.mergeableResolutions.includes(currentResolution) &&
           currentResolution !== toResolution
         ) {
           bunLockResult.packages[key] = Array.isArray(toArray)

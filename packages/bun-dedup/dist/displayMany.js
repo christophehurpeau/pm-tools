@@ -6,7 +6,7 @@ const stripName = (packageName, resolution) => resolution.startsWith(`${packageN
     ? resolution.slice(packageName.length + 1)
     : resolution;
 const toDedupeViews = (packageName, fixes) => (fixes ?? []).map((fix) => {
-    const from = fix.megeableResolutions
+    const from = fix.mergeableResolutions
         .filter((resolution) => resolution !== fix.to)
         .map((resolution) => stripName(packageName, resolution));
     const to = stripName(packageName, fix.to);
@@ -25,14 +25,20 @@ const toPackageViews = ({ duplicatesPackagesMap, dependents, identifiedFixesMap,
     }
     return {
         packageName,
-        resolutions: resolutions.map(({ resolution, installations }) => ({
+        resolutions: resolutions.map(({ resolution, package: bunPackage, installations }) => ({
             resolution,
+            version: bunPackage.type === "npm" ? bunPackage.version : undefined,
             installations,
         })),
         dependents: (dependents.get(packageName) ?? []).map((dependent) => ({
-            requester: dependent.key,
+            // the range alone does not say which declaration it comes from when the
+            // requester reaches the package through a key of another name
+            requester: dependent.aliasKey === undefined
+                ? dependent.key
+                : `${dependent.key} (as "${dependent.aliasKey}")`,
             range: dependent.version,
             resolvedVersion: dependent.resolvedVersion,
+            resolvedResolution: dependent.resolvedResolution,
         })),
         dedupe: toDedupeViews(packageName, identifiedFixesMap?.get(packageName)).filter((view) => view.from.length > 0),
     };
@@ -40,10 +46,13 @@ const toPackageViews = ({ duplicatesPackagesMap, dependents, identifiedFixesMap,
 export const displayMany = (options) => {
     renderDuplicatesReport({
         title: options.title,
+        notice: options.notice,
         packages: toPackageViews(options),
         totalDependencies: options.totalDependencies,
         clusterFixes: options.clusterFixes,
         dedupeCommand: "bun-dedupe",
+        whyCommand: "bun-why-duplicate",
+        details: options.details,
         color: options.color,
         log: options.log,
     });

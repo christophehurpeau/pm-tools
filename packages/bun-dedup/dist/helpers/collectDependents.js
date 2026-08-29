@@ -1,4 +1,4 @@
-import { PackageDependencyDescriptorUtils } from "pm-utils";
+import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
 // Path segments are the keys their parent declared, so an aliased dependency
 // sits under the alias, not under its own name. Dropping one segment means
 // dropping one declared key: two parts when it is scoped, one otherwise.
@@ -8,26 +8,19 @@ const parentPathOf = (path) => {
         .slice(0, segments.at(-2)?.startsWith("@") ? -2 : -1)
         .join("/");
 };
-/**
- * A bun.lock key is the install path of the package: `semver` at the top level,
- * `eslint-plugin-react/semver` for a copy nested under a dependent. So the
- * version a requester actually got is found the way node resolves it — nearest
- * enclosing path first, then up to the top level. `depKey` is the key the
- * requester declared, which is what the path segment carries.
- */
-const resolveInstalledVersion = (packages, requesterPath, depKey) => {
-    const versionAt = (key) => {
+const resolveInstalledPackage = ({ packages, requesterPath, depKey, npmName, }) => {
+    const packageAt = (key) => {
         const pkg = packages.get(key);
-        return pkg?.type === "npm" ? pkg.version : undefined;
+        return pkg?.name === npmName ? pkg : undefined;
     };
     let path = requesterPath;
     while (path !== "") {
-        const found = versionAt(`${path}/${depKey}`);
+        const found = packageAt(`${path}/${depKey}`);
         if (found !== undefined)
             return found;
         path = parentPathOf(path);
     }
-    return versionAt(depKey);
+    return packageAt(depKey);
 };
 export function collectDependents(packages, workspaces, onlyPackageNames) {
     const dependentsMap = new Map();
@@ -39,17 +32,38 @@ export function collectDependents(packages, workspaces, onlyPackageNames) {
             if (onlyPackageNames && !onlyPackageNames.includes(parsedDep.npmName)) {
                 continue;
             }
+            // A `workspace:`, `file:` or git declaration names a different package
+            // that happens to share this key, so it constrains no npm version, and it
+            // is flagged rather than read as a range: taken as one,
+            // `semver.satisfies` would answer "not satisfied" for every candidate and
+            // suppress the merges the real dependents allow. It is still recorded —
+            // such a copy is a resolution of its own in the report, and dropping the
+            // only declaration that asks for it leaves that copy with no explanation
+            // at all. The declaration is kept as written, protocol included, there
+            // being no range to keep instead.
+            const nonSemver = isSemverComparable(parsedDep) ? undefined : true;
             let dependentPackage = dependentsMap.get(parsedDep.npmName);
             if (!dependentPackage) {
                 dependentPackage = [];
                 dependentsMap.set(parsedDep.npmName, dependentPackage);
             }
+            const resolved = resolveInstalledPackage({
+                packages,
+                requesterPath: lookupPath,
+                depKey: parsedDep.key,
+                npmName: parsedDep.npmName,
+            });
             dependentPackage.push({
                 key,
-                version: depVersion,
+                version: nonSemver
+                    ? PackageDependencyDescriptorUtils.stringify(parsedDep)[1]
+                    : parsedDep.selector,
+                aliasKey: parsedDep.isAlias ? parsedDep.key : undefined,
                 bunPackage,
                 workspace,
-                resolvedVersion: resolveInstalledVersion(packages, lookupPath, parsedDep.key),
+                resolvedVersion: resolved?.type === "npm" ? resolved.version : undefined,
+                resolvedResolution: resolved && resolved.type !== "npm" ? resolved.resolution : undefined,
+                nonSemver,
             });
         }
     };

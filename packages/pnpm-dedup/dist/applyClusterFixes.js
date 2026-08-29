@@ -1,18 +1,19 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { applyWorkspaceRangeEdit, captureFiles, diffDuplicates, partitionUnconditionalOverrides, planClusterApply, renderApplyPlan, restoreFiles, shouldColorize, } from "pm-utils";
+import { applyWorkspaceRangeEdit, captureFiles, createPackageFilter, describeSkippedClusterFix, diffDuplicates, partitionUnconditionalOverrides, planClusterApply, renderApplyPlan, restoreFiles, selectClusterFixes, shouldColorize, } from "pm-utils";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.js";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.js";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.js";
 import { convergenceOverridesMinVersion, readPnpmVersion, supportsConvergenceOverrides, } from "./helpers/pnpmVersion.js";
 import { addOverrides, overrideKey } from "./helpers/pnpmWorkspaceYaml.js";
+import { lockPathOf } from "./helpers/projectDir.js";
 import { createManifestReader } from "./helpers/readInstalledManifest.js";
 import { runPnpm } from "./helpers/runPnpm.js";
 import { identifyClusterFixes } from "./identifyClusterFixes.js";
 import { readPnpmLock } from "./readPnpmLock.js";
 const issuesUrl = "https://github.com/christophehurpeau/pm-tools/issues";
 const defaultReadFixes = (projectDir) => {
-    const lock = readPnpmLock(join(projectDir, "pnpm-lock.yaml"));
+    const lock = readPnpmLock(lockPathOf(projectDir));
     return identifyClusterFixes(lock, buildPnpmPackagesMap(parsePnpmLockPackages(lock)), createManifestReader(projectDir));
 };
 const manifestPathOf = (projectDir, importerPath) => join(projectDir, importerPath === "." ? "" : importerPath, "package.json");
@@ -37,8 +38,10 @@ export const applyClusterFixes = ({ projectDir, dryRun = false, log = console.lo
 // reports "Already up to date" without ever re-reading a manifest. `dedupe`
 // re-resolves, and is also what runs right after this, so it is the only
 // honest thing to verify against.
-resolve = () => runPnpm(["dedupe"], { cwd: projectDir }).status, readFixes = defaultReadFixes, readDuplicates = readDuplicateSnapshot, pnpmVersion = () => readPnpmVersion(), convergenceOverrides = true, packageManagerResiduals, color = shouldColorize(), }) => {
-    const lockPath = join(projectDir, "pnpm-lock.yaml");
+resolve = () => runPnpm(["dedupe"], { cwd: projectDir }).status, readFixes = defaultReadFixes, readDuplicates = readDuplicateSnapshot, pnpmVersion = () => readPnpmVersion(), convergenceOverrides = true, filter, packageManagerResiduals, color = shouldColorize(), }) => {
+    const packageFilter = createPackageFilter(filter);
+    const readSelectedFixes = (dir) => selectClusterFixes(readFixes(dir), packageFilter);
+    const lockPath = lockPathOf(projectDir);
     const workspaceYamlPath = join(projectDir, "pnpm-workspace.yaml");
     const before = readDuplicates(lockPath);
     const unchanged = (status, plannedChangeCount = 0) => ({
@@ -48,9 +51,10 @@ resolve = () => runPnpm(["dedupe"], { cwd: projectDir }).status, readFixes = def
         stickyOverrides: [],
         plannedChangeCount,
     });
-    const fixes = readFixes(projectDir);
+    const { selected: fixes, skipped: filteredOut } = readSelectedFixes(projectDir);
     const plan = planClusterApply(fixes);
     const skipped = [
+        ...filteredOut.map(describeSkippedClusterFix),
         ...plan.unresolvableChanges.map((unresolvable) => `${unresolvable}: no workspace file recorded for it`),
         ...plan.conflicts.map((conflict) => `${conflict.packageName}: keeping ${conflict.kept}, ignoring ${conflict.dropped} asked by another cluster`),
     ];
@@ -143,7 +147,7 @@ resolve = () => runPnpm(["dedupe"], { cwd: projectDir }).status, readFixes = def
     // gone from its output once the edge points at the anchored version.
     const readState = () => ({
         duplicates: readDuplicates(lockPath),
-        reuses: reuseKeys(readFixes(projectDir)),
+        reuses: reuseKeys(readSelectedFixes(projectDir).selected),
     });
     // A step keeps its edits as long as it broke nothing: a widened range often
     // deduplicates nothing on its own and only makes the overrides applicable.

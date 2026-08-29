@@ -1,16 +1,17 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { applyWorkspaceRangeEdit, captureFiles, diffDuplicates, partitionUnconditionalOverrides, planClusterApply, renderApplyPlan, restoreFiles, shouldColorize, } from "pm-utils";
+import { applyWorkspaceRangeEdit, captureFiles, createPackageFilter, describeSkippedClusterFix, diffDuplicates, partitionUnconditionalOverrides, planClusterApply, renderApplyPlan, restoreFiles, selectClusterFixes, shouldColorize, } from "pm-utils";
 import { buildPackagesMap } from "./helpers/buildPackagesMap.js";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.js";
 import { addOverrides } from "./helpers/packageJsonOverrides.js";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.js";
+import { lockPathOf } from "./helpers/projectDir.js";
 import { runBun } from "./helpers/runBun.js";
 import { identifyClusterFixes } from "./identifyClusterFixes.js";
 import { readAndParseBunLock } from "./readAndParseBunLock.js";
 const issuesUrl = "https://github.com/christophehurpeau/pm-tools/issues";
 const defaultReadFixes = (projectDir) => {
-    const lock = readAndParseBunLock(join(projectDir, "bun.lock"));
+    const lock = readAndParseBunLock(lockPathOf(projectDir));
     const packages = parseBunLockPackages(lock);
     return identifyClusterFixes(buildPackagesMap(packages), packages, lock.workspaces);
 };
@@ -18,14 +19,32 @@ const defaultReadFixes = (projectDir) => {
 // project directory itself
 const manifestPathOf = (projectDir, importerPath) => join(projectDir, importerPath, "package.json");
 const describeOverride = (override) => `"${override.packageName}": "${override.version}"`;
+/**
+ * A bun override never repoints an edge declared through an npm alias
+ * (`"psc-pinned": "npm:printable-shell-command@~5.0.0"`) — measured against bun
+ * 1.3, keying the override by the alias or by the real name alike. The override
+ * is still written, because an in-cluster requester declaring the package
+ * directly is repointed by it, but a package no direct edge reaches cannot
+ * converge this way and the revert that follows would otherwise say nothing.
+ */
+const aliasOnlyRequesters = (fixes, packageName) => {
+    const constraints = fixes
+        .flatMap((fix) => fix.externalConstraints)
+        .filter((constraint) => constraint.packageName === packageName);
+    return constraints.length > 0 && constraints.every((c) => c.isAlias === true)
+        ? constraints.map((constraint) => constraint.requester)
+        : [];
+};
 const reuseKeys = (fixes) => new Set(fixes.flatMap((fix) => fix.reuseFixes.map((reuse) => `${reuse.requesterName}>${reuse.packageName}@${reuse.to}`)));
 export const applyClusterFixes = ({ projectDir, dryRun = false, log = console.log, 
 // `bun install` is the only way to reach a version whose manifest the lockfile
 // does not carry, and the only thing that cascades a family's internal pins.
 resolve = () => runBun(["install"], { cwd: projectDir }).status, 
 // the result has to be what CI would install from the manifests alone
-verifyFrozen = () => runBun(["install", "--frozen-lockfile"], { cwd: projectDir }).status, readFixes = defaultReadFixes, readDuplicates = readDuplicateSnapshot, packageManagerResiduals, color = shouldColorize(), }) => {
-    const lockPath = join(projectDir, "bun.lock");
+verifyFrozen = () => runBun(["install", "--frozen-lockfile"], { cwd: projectDir }).status, readFixes = defaultReadFixes, readDuplicates = readDuplicateSnapshot, filter, packageManagerResiduals, color = shouldColorize(), }) => {
+    const packageFilter = createPackageFilter(filter);
+    const readSelectedFixes = (dir) => selectClusterFixes(readFixes(dir), packageFilter);
+    const lockPath = lockPathOf(projectDir);
     const rootManifestPath = join(projectDir, "package.json");
     const before = readDuplicates(lockPath);
     const unchanged = (status, plannedChangeCount = 0) => ({
@@ -35,12 +54,13 @@ verifyFrozen = () => runBun(["install", "--frozen-lockfile"], { cwd: projectDir 
         stickyOverrides: [],
         plannedChangeCount,
     });
-    const fixes = readFixes(projectDir);
+    const { selected: fixes, skipped: filteredOut } = readSelectedFixes(projectDir);
     const plan = planClusterApply(fixes);
     // a bun override applies to every requester of the package, so one a
     // third-party range rejects would force that dependent too
     const { safe: plannedOverrides, rejected } = partitionUnconditionalOverrides(fixes, plan.overrides);
     const skipped = [
+        ...filteredOut.map(describeSkippedClusterFix),
         ...plan.unresolvableChanges.map((unresolvable) => `${unresolvable}: no workspace file recorded for it`),
         ...plan.conflicts.map((conflict) => `${conflict.packageName}: keeping ${conflict.kept}, ignoring ${conflict.dropped} asked by another cluster`),
         ...rejected.flatMap(({ override, rejectedBy }) => rejectedBy.map((constraint) => `override ${describeOverride(override)}: ${constraint.requesterName ?? "workspace"} requires "${constraint.range}", and a bun override would force it too`)),
@@ -113,7 +133,7 @@ verifyFrozen = () => runBun(["install", "--frozen-lockfile"], { cwd: projectDir 
     // gone from its output once the edge points at the anchored version.
     const readState = () => ({
         duplicates: readDuplicates(lockPath),
-        reuses: reuseKeys(readFixes(projectDir)),
+        reuses: reuseKeys(readSelectedFixes(projectDir).selected),
     });
     // A step keeps its edits as long as it broke nothing: a widened range often
     // deduplicates nothing on its own and only makes the overrides applicable.
@@ -175,6 +195,10 @@ verifyFrozen = () => runBun(["install", "--frozen-lockfile"], { cwd: projectDir 
     log(`Adding overrides to ${rootManifestPath}:`);
     for (const override of outstanding) {
         log(`  ${describeOverride(override)} (${override.reason})`);
+        const aliased = aliasOnlyRequesters(fixes, override.packageName);
+        if (aliased.length > 0) {
+            log(`    every requester of ${override.packageName} declares it through an alias (${aliased.join(", ")}); a bun override does not reach those edges`);
+        }
     }
     writeFileSync(rootManifestPath, addOverrides(rootManifestBefore.content ?? "{}", new Map(outstanding.map((override) => [override.packageName, override.version]))));
     const withOverrides = resolveAndCheck("the overrides");

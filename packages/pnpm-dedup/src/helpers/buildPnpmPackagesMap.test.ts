@@ -101,4 +101,19 @@ describe("buildPnpmPackagesMap", () => {
     ok(typesVersions.has("8.59.1"));
     ok(typesVersions.has("8.61.0"));
   });
+
+  // `aliased-swapped-names`: identity comes from the package id, so the two real
+  // `typescript` copies meet and the `@typescript/typescript6` the `typescript`
+  // key points at stays on its own.
+  it("identifies packages by their id when alias keys are swapped", () => {
+    const duplicates = filterDuplicatesPnpmPackagesMap(
+      buildFor("aliased-swapped-names"),
+    );
+
+    deepStrictEqual(Object.keys(duplicates), ["typescript"]);
+    deepStrictEqual(
+      versionsOf(duplicates, "typescript"),
+      new Set(["5.9.3", "7.0.2"]),
+    );
+  });
 });

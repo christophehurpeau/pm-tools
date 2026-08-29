@@ -1,18 +1,30 @@
-import { Glob } from "bun";
-import { renderApplyPlan } from "pm-utils";
+import {
+  buildIdentifiedFixesMap,
+  countDuplicatedPackages,
+  createPackageFilter,
+  diffVersionsSnapshots,
+  renderApplyPlan,
+  renderDedupeSummary,
+  selectExplainedPackages,
+  selectPackages,
+} from "pm-utils";
+import type { PackageFilterOptions, VersionsSnapshot } from "pm-utils";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { displayMany } from "./displayMany.ts";
 import { applyIdentifiedFixesToBunLock } from "./helpers/applyIdentifiedFixesToBunLock.ts";
-import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.ts";
 import {
   buildPackagesMap,
   filterDuplicatesPackagesMap,
 } from "./helpers/buildPackagesMap.ts";
 import { collectDependents } from "./helpers/collectDependents.ts";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
+import { lockPathOf, resolveBunProjectDir } from "./helpers/projectDir.ts";
+import {
+  readVersionsSnapshot,
+  versionsSnapshotOf,
+} from "./helpers/versionsSnapshot.ts";
 import { writeBunLockFile } from "./helpers/writeBunLockFile.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
-import { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
 import { readAndParseBunLock } from "./readAndParseBunLock.ts";
 
 export { displayMany } from "./displayMany.ts";
@@ -21,22 +33,56 @@ export { readAndParseBunLock } from "./readAndParseBunLock.ts";
 export { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
 export { buildPackagesMap } from "./helpers/buildPackagesMap.ts";
 export { collectDependents } from "./helpers/collectDependents.ts";
-export { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
+export {
+  readVersionsSnapshot,
+  versionsSnapshotOf,
+} from "./helpers/versionsSnapshot.ts";
+export { identifyResolutionFixes } from "pm-utils";
+export type { ResolutionFix } from "pm-utils";
 export { identifyClusterFixes } from "./identifyClusterFixes.ts";
 export { writeBunLockFile } from "./helpers/writeBunLockFile.ts";
 
-export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
-  const glob = new Glob(packageNameToFilter);
+interface ReadProjectResult {
+  bunLockResult: ReturnType<typeof readAndParseBunLock>;
+  packages: ReturnType<typeof parseBunLockPackages>;
+  packagesMap: ReturnType<typeof buildPackagesMap>;
+}
 
-  const bunLockResult = readAndParseBunLock();
+const readProject = (projectDir: string): ReadProjectResult => {
+  const bunLockResult = readAndParseBunLock(lockPathOf(projectDir));
   const packages = parseBunLockPackages(bunLockResult);
-  const packagesMap = buildPackagesMap(packages);
+  return { bunLockResult, packages, packagesMap: buildPackagesMap(packages) };
+};
 
-  const filteredPackages = Object.fromEntries(
-    Object.entries(packagesMap).filter(
-      ([packageName, resolutions]) =>
-        glob.match(packageName) && (all || resolutions.length > 1),
-    ),
+export interface WhyDuplicateOptions {
+  filter?: PackageFilterOptions;
+  // keeps packages the lockfile resolves only once, which a listing drops
+  all?: boolean;
+  // every dependent of every version, instead of one line per package
+  details?: boolean;
+}
+
+export function whyDuplicate({
+  filter: filterOptions,
+  all = false,
+  details = false,
+}: WhyDuplicateOptions): void {
+  const filter = createPackageFilter(filterOptions);
+
+  const projectDir = resolveBunProjectDir();
+  if (projectDir === null) return;
+  const { bunLockResult, packages, packagesMap } = readProject(projectDir);
+
+  const {
+    packages: filteredPackages,
+    title,
+    notice,
+  } = selectExplainedPackages({ packagesMap, filter, all });
+
+  const dependents = collectDependents(
+    packages,
+    bunLockResult.workspaces,
+    Object.keys(filteredPackages),
   );
 
   // A duplicate is often only explainable by its family: show the cluster fixes
@@ -45,47 +91,58 @@ export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
     packagesMap,
     packages,
     bunLockResult.workspaces,
-  ).filter((fix) => fix.members.some((member) => glob.match(member)));
+  ).filter((fix) => fix.members.some(filter.selects));
 
   displayMany({
-    title: all ? "matches" : "duplicates",
+    title,
+    notice,
     duplicatesPackagesMap: filteredPackages,
-    dependents: collectDependents(
-      packages,
-      bunLockResult.workspaces,
-      Object.keys(filteredPackages),
-    ),
+    dependents,
     // the whole lockfile, so the count means the same whatever the filter
     totalDependencies: Object.keys(packagesMap).length,
+    // the same fixes the listing shows: explaining one package is no reason to
+    // stay silent on what would collapse it
+    identifiedFixesMap: buildIdentifiedFixesMap(filteredPackages, dependents),
     clusterFixes: matchedClusterFixes,
+    details,
   });
 }
 
-export function listDuplicates(): void {
-  const bunLockResult = readAndParseBunLock();
-  const packages = parseBunLockPackages(bunLockResult);
-  const packagesMap = buildPackagesMap(packages);
-  const duplicatesPackagesMap = filterDuplicatesPackagesMap(packagesMap);
+export interface ListDuplicatesOptions {
+  filter?: PackageFilterOptions;
+  details?: boolean;
+}
+
+export function listDuplicates({
+  filter: filterOptions,
+  details = false,
+}: ListDuplicatesOptions = {}): void {
+  const filter = createPackageFilter(filterOptions);
+
+  const projectDir = resolveBunProjectDir();
+  if (projectDir === null) return;
+  const { bunLockResult, packages, packagesMap } = readProject(projectDir);
+  const duplicatesPackagesMap = selectPackages(
+    filterDuplicatesPackagesMap(packagesMap),
+    filter,
+  );
   const dependents = collectDependents(
     packages,
     bunLockResult.workspaces,
     Object.keys(duplicatesPackagesMap),
   );
-  const identifedFixesMap = new Map<
-    string,
-    ReturnType<typeof identifyResolutionFixes>
-  >(
-    Object.entries(duplicatesPackagesMap).map(([packageName, resolutions]) => [
-      packageName,
-      identifyResolutionFixes(resolutions, dependents),
-    ]),
+  const identifedFixesMap = buildIdentifiedFixesMap(
+    duplicatesPackagesMap,
+    dependents,
   );
 
+  // as in `whyDuplicate`: a family is shown whole as soon as it holds a
+  // selected member, because that is what explains the duplicate
   const clusterFixes = identifyClusterFixes(
     packagesMap,
     packages,
     bunLockResult.workspaces,
-  );
+  ).filter((fix) => fix.members.some(filter.selects));
 
   displayMany({
     title: "duplicates",
@@ -94,6 +151,7 @@ export function listDuplicates(): void {
     totalDependencies: Object.keys(packagesMap).length,
     identifiedFixesMap: identifedFixesMap,
     clusterFixes,
+    details,
   });
 }
 
@@ -106,11 +164,16 @@ export interface FixDuplicatesOptions {
   // the cluster pass edits package.json and runs `bun install`; the pure-lock
   // pass that follows only rewrites the lockfile
   clusters?: boolean;
+  // restricts which packages may be touched, for deduplicating a large lockfile
+  // a family at a time
+  filter?: PackageFilterOptions;
 }
 
 interface PlannedLockRewrite {
   bunLockResult: ReturnType<typeof readAndParseBunLock>;
   lockResult: ReturnType<typeof applyIdentifiedFixesToBunLock>;
+  // every version the rewritten copy resolves to, for the summary of the run
+  versions: VersionsSnapshot;
   // the lockfile rewrite is the one thing the cluster pass does not know about,
   // so it is reported as the residual on top of the cluster plan
   residuals: string | undefined;
@@ -119,11 +182,16 @@ interface PlannedLockRewrite {
 // Reads bun.lock as it stands on disk and applies the pure-lock fixes to the
 // parsed copy. In memory only: nothing reaches disk until `writeBunLockFile`,
 // so this doubles as the dry-run probe.
-const planLockRewrite = (): PlannedLockRewrite => {
-  const bunLockResult = readAndParseBunLock();
-  const packages = parseBunLockPackages(bunLockResult);
-  const packagesMap = buildPackagesMap(packages);
-  const duplicatesPackagesMap = filterDuplicatesPackagesMap(packagesMap);
+const planLockRewrite = (
+  projectDir: string,
+  filterOptions: PackageFilterOptions | undefined,
+): PlannedLockRewrite => {
+  const filter = createPackageFilter(filterOptions);
+  const { bunLockResult, packages, packagesMap } = readProject(projectDir);
+  const duplicatesPackagesMap = selectPackages(
+    filterDuplicatesPackagesMap(packagesMap),
+    filter,
+  );
 
   const dependents = collectDependents(
     packages,
@@ -139,6 +207,9 @@ const planLockRewrite = (): PlannedLockRewrite => {
   return {
     bunLockResult,
     lockResult,
+    // read back from the rewritten copy, so the summary reports what the run
+    // produced rather than what it aimed for
+    versions: versionsSnapshotOf(parseBunLockPackages(bunLockResult)),
     residuals: lockResult.changed
       ? `bun.lock would be rewritten for ${lockResult.changedKeys.length} entrie(s): ${lockResult.changedKeys.join(", ")}`
       : undefined,
@@ -151,27 +222,29 @@ const planLockRewrite = (): PlannedLockRewrite => {
 export function fixDuplicates({
   mode = "apply",
   clusters = true,
+  filter,
 }: FixDuplicatesOptions = {}): void {
+  const projectDir = resolveBunProjectDir();
+  if (projectDir === null) return;
   const dryRun = mode !== "apply";
+
+  // Read before the cluster pass touches anything: `bun install` rewrites the
+  // lockfile, and the summary compares the whole run against this.
+  const before = readVersionsSnapshot(lockPathOf(projectDir));
 
   // Only a dry run needs the residuals up front, to name them in the plan the
   // cluster pass prints. An apply plans the rewrite *after* the cluster pass,
   // against the lockfile `bun install` left behind.
-  const probe = dryRun ? planLockRewrite() : null;
+  const probe = dryRun ? planLockRewrite(projectDir, filter) : null;
 
   const clusterOutcome = clusters
     ? applyClusterFixes({
-        projectDir: process.cwd(),
+        projectDir,
         dryRun,
+        filter,
         packageManagerResiduals: probe?.residuals,
       })
     : null;
-
-  if (clusterOutcome?.status === "applied") {
-    console.log(
-      `Cluster fixes: ${clusterOutcome.before.size} duplicate resolutions -> ${clusterOutcome.after.size}`,
-    );
-  }
 
   if (dryRun) {
     // the cluster pass renders the plan; without it there is nothing else to say
@@ -195,17 +268,32 @@ export function fixDuplicates({
   // The cluster pass runs `bun install`, which rewrites bun.lock on disk — so
   // the pure-lock pass has to plan against the file as it stands now. Planning
   // it earlier and writing that copy back would clobber the cluster result.
-  const { bunLockResult, lockResult } = planLockRewrite();
+  const { bunLockResult, lockResult, versions } = planLockRewrite(
+    projectDir,
+    filter,
+  );
 
   if (lockResult.changed) {
-    writeBunLockFile(bunLockResult);
+    writeBunLockFile(bunLockResult, lockPathOf(projectDir));
+  }
+
+  // Both passes at once: the cluster pass already rewrote the lockfile through
+  // `bun install`, and this copy carries the merges made on top of it.
+  const deduped = diffVersionsSnapshots(before, versions);
+  renderDedupeSummary({
+    deduped,
+    remainingDuplicates: countDuplicatedPackages(versions),
+    whyCommand: "bun-why-duplicate",
+  });
+
+  if (lockResult.changed) {
     console.log("bun.lock updated");
     console.log("Please run `bun i` to apply the changes");
     console.log(
       "If you want to format properly bun.lock again, you need to update a dependency",
       " eg (`bun update typescript && bun i`)",
     );
-  } else {
+  } else if (deduped.length === 0) {
     console.log("Nothing safe to dedupe identified");
   }
 }

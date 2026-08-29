@@ -1,6 +1,6 @@
 import { describe, it } from "bun:test";
 import { ok, strictEqual } from "node:assert/strict";
-import { buildIdentifiedFixesMap } from "./buildIdentifiedFixesMap.ts";
+import { buildIdentifiedFixesMap } from "pm-utils";
 import type { PackageResolution, PackagesMap } from "./buildPackagesMap.ts";
 import type { DependentsMap } from "./collectDependents.ts";
 

@@ -15,7 +15,8 @@
         "pm-utils",
         "yarn-why-duplicate",
         "bun-dedup",
-        "pnpm-dedup"
+        "pnpm-dedup",
+        "yarn-berry-deduplicate"
       ]
     },
     "project": {

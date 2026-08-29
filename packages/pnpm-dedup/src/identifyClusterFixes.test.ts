@@ -378,6 +378,17 @@ describe("identifyClusterFixes", () => {
     );
   });
 
+  // `aliased-swapped-names`: the importer pins the real `typescript` at 7.0.2
+  // through the `@typescript/native` key while `tool` needs 5.9.3, and the
+  // `typescript` key holds an unrelated package. Nothing converges, and nothing
+  // may propose editing the declaration that names the other package.
+  it("leaves an exact pin declared under a swapped alias key alone", () => {
+    deepStrictEqual(
+      clusterFixesFor("aliased-swapped-names", () => undefined),
+      [],
+    );
+  });
+
   it("reports a cluster no member can leave as not dedupable", () => {
     // metro pins hermes-parser exactly at 0.35.0 and @react-native/* at 0.36.1,
     // and hermes-estree only exists twice because hermes-parser does: nothing

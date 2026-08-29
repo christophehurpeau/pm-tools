@@ -1,0 +1,30 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "app": "1.0.0",
+        "helper": "workspace:*",
+        "semver": "latest",
+        "left-pad": "file:../left-pad",
+        "kleur": "link:../kleur",
+        "chalk": "jsr:^5.0.0",
+        "picocolors": "catalog:default",
+        "yocto": "someproto:whatever",
+      },
+    },
+    "packages/helper": {
+      "name": "helper",
+      "version": "3.0.0",
+    },
+  },
+  "packages": {
+    "app": ["app@1.0.0", "", { "dependencies": { "helper": "^1.0.0", "semver": "^7.0.0" } }, "sha512-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=="],
+
+    "helper": ["helper@workspace:packages/helper"],
+
+    "semver": ["semver@7.8.1", "", {}, "sha512-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc=="],
+
+    "app/helper": ["helper@1.2.0", "", {}, "sha512-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=="],
+  }
+}

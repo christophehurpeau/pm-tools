@@ -3,19 +3,23 @@ import type {
   ClusterFix,
   DuplicateDedupeView,
   DuplicatePackageView,
+  DuplicatesReportTitle,
+  ResolutionFix,
 } from "pm-utils";
 import semver from "semver";
 import type { PackagesMap } from "./helpers/buildPackagesMap.ts";
 import type { DependentsMap } from "./helpers/collectDependents.ts";
-import type { ResolutionFix } from "./identifyResolutionFixes.ts";
 
 export interface DisplayManyOptions {
-  title: "duplicates" | "matches";
+  title: DuplicatesReportTitle;
+  // headline for a report whose packages are not duplicates
+  notice?: string;
   duplicatesPackagesMap: PackagesMap;
   dependents: DependentsMap;
   totalDependencies: number;
   identifiedFixesMap?: Map<string, ResolutionFix[]>;
   clusterFixes?: ClusterFix[];
+  details?: boolean;
   color?: boolean;
   log?: (message?: string) => void;
 }
@@ -32,7 +36,7 @@ const toDedupeViews = (
   fixes: ResolutionFix[] | undefined,
 ): DuplicateDedupeView[] =>
   (fixes ?? []).map((fix) => {
-    const from = fix.megeableResolutions
+    const from = fix.mergeableResolutions
       .filter((resolution) => resolution !== fix.to)
       .map((resolution) => stripName(packageName, resolution));
     const to = stripName(packageName, fix.to);
@@ -60,14 +64,23 @@ const toPackageViews = ({
 
     return {
       packageName,
-      resolutions: resolutions.map(({ resolution, installations }) => ({
-        resolution,
-        installations,
-      })),
+      resolutions: resolutions.map(
+        ({ resolution, package: bunPackage, installations }) => ({
+          resolution,
+          version: bunPackage.type === "npm" ? bunPackage.version : undefined,
+          installations,
+        }),
+      ),
       dependents: (dependents.get(packageName) ?? []).map((dependent) => ({
-        requester: dependent.key,
+        // the range alone does not say which declaration it comes from when the
+        // requester reaches the package through a key of another name
+        requester:
+          dependent.aliasKey === undefined
+            ? dependent.key
+            : `${dependent.key} (as "${dependent.aliasKey}")`,
         range: dependent.version,
         resolvedVersion: dependent.resolvedVersion,
+        resolvedResolution: dependent.resolvedResolution,
       })),
       dedupe: toDedupeViews(
         packageName,
@@ -79,10 +92,13 @@ const toPackageViews = ({
 export const displayMany = (options: DisplayManyOptions): void => {
   renderDuplicatesReport({
     title: options.title,
+    notice: options.notice,
     packages: toPackageViews(options),
     totalDependencies: options.totalDependencies,
     clusterFixes: options.clusterFixes,
     dedupeCommand: "bun-dedupe",
+    whyCommand: "bun-why-duplicate",
+    details: options.details,
     color: options.color,
     log: options.log,
   });

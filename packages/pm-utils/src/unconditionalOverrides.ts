@@ -15,15 +15,12 @@ export interface PartitionedOverrides {
   rejected: RejectedOverride[];
 }
 
-const accepts = (version: string, range: string): boolean => {
-  try {
-    return semver.satisfies(version, range, { includePrerelease: true });
-  } catch {
-    // a selector semver cannot read (`npm:`, a git url) says nothing about the
-    // version, so it is no reason to drop the override
-    return true;
-  }
-};
+// A selector semver cannot read (`workspace:`, a git url) says nothing about the
+// version, so it is no reason to drop the override. `semver.satisfies` answers
+// `false` rather than throwing on one, hence the explicit check.
+const accepts = (version: string, range: string): boolean =>
+  semver.validRange(range) === null ||
+  semver.satisfies(version, range, { includePrerelease: true });
 
 /**
  * Split the planned overrides for a package manager whose overrides apply to

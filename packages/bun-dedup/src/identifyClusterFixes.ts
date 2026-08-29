@@ -55,7 +55,9 @@ const toClusterDependents = (
         requester: dependent.key,
         requesterName: dependent.bunPackage?.name,
         range: dependent.version,
+        isAlias: dependent.aliasKey !== undefined,
         resolvedVersion: dependent.resolvedVersion,
+        nonSemver: dependent.nonSemver,
         workspace: dependent.workspace
           ? {
               path: dependent.workspace.path,

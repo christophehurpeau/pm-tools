@@ -55,6 +55,19 @@ describe("toLockstepGraph", () => {
             ok(resolution.dependencies.debug?.startsWith("4."));
         }
     });
+    // `aliased-swapped-names`: the keys the importer uses name each other's
+    // package. The graph is keyed by npm name, so `@typescript/typescript6` has to
+    // stay its own name and `tool`'s edge has to land on the real `typescript`.
+    it("keeps swapped alias keys apart", () => {
+        const graph = graphFor("aliased-swapped-names");
+        deepStrictEqual(Object.keys(graph).toSorted(), [
+            "@typescript/typescript6",
+            "tool",
+            "typescript",
+        ]);
+        deepStrictEqual(graph.tool?.[0]?.dependencies, { typescript: "5.9.3" });
+        strictEqual(graph.typescript?.length, 2);
+    });
     it("marks non-npm resolutions so cluster detection skips them", () => {
         const nonNpm = Object.values(graphFor("non-npm"))
             .flat()

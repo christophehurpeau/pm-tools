@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { identifyResolutionFixes } from "pm-utils";
 import type { PackageResolution } from "./helpers/buildPnpmPackagesMap.ts";
 import type { Dependent } from "./helpers/collectPnpmDependents.ts";
-import { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
 
 const loadResolutionsFixture = (fileName: string): PackageResolution[] => {
   return JSON.parse(
@@ -71,7 +71,7 @@ describe("identifyResolutionFixes", () => {
     const fixes = identifyResolutionFixes(resolutions, objetToMap(dependents));
     expect(fixes).toEqual([
       {
-        megeableResolutions: [
+        mergeableResolutions: [
           "printable-shell-command@5.0.7",
           "printable-shell-command@5.0.8",
         ],

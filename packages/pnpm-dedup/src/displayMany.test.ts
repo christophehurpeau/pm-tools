@@ -41,6 +41,7 @@ const renderDuplicates = (
     ),
     totalDependencies: Object.keys(packagesMap).length,
     clusterFixes,
+    details: true,
     color: false,
     log: (message = "") => {
       buffer += `${message}\n`;
@@ -111,22 +112,19 @@ const singletonFix = (overrides: Partial<ClusterFix> = {}): ClusterFix => ({
 });
 
 describe("displayMany", () => {
-  it("renders resolutions and dependents for a duplicated package", () => {
+  it("groups every dependent under the version it resolved to", () => {
     const output = renderDuplicates("duplicated-babel-frame");
     ok(output.startsWith("Found "));
-    ok(output.includes("@babel/code-frame:"));
-    ok(output.includes("  Resolutions:"));
-    ok(output.includes("    - @babel/code-frame@7.26.2"));
-    ok(output.includes("  Dependents:"));
-    ok(output.includes('package.json in dependencies requires "7.26.2"'));
-    // the list step computes no fix
-    ok(!output.includes("Dedupe:"));
+    ok(output.includes("@babel/code-frame — 2 versions"));
+    ok(output.includes('package.json in dependencies  requires "7.26.2"'));
+    // pnpm defers the per-package merge to `pnpm dedupe`
+    ok(!output.includes("can be deduped"));
   });
 
   it("renders the printable-shell-command duplicate", () => {
     const output = renderDuplicates("duplicated-printable-shell-command");
-    ok(output.includes("printable-shell-command:"));
-    ok(output.includes("    - printable-shell-command@5.0.7"));
+    ok(output.includes("printable-shell-command — 2 versions"));
+    ok(output.includes("  5.0.7"));
   });
 
   it("reports no duplicates for a clean lockfile", () => {
@@ -137,8 +135,12 @@ describe("displayMany", () => {
 
   it("maps a cluster of one to the versions that would collapse", () => {
     const output = renderDuplicates("duplicated-babel-frame", [singletonFix()]);
-    ok(output.includes("  Dedupe:"));
-    ok(output.includes("    - 7.26.2 -> 7.29.7 (upgrade)"));
+    ok(
+      output.includes(
+        "@babel/code-frame — 2 versions, can be deduped to 7.29.7 (upgrade)",
+      ),
+    );
+    ok(output.includes("  7.26.2  can be deduped to 7.29.7 (upgrade)"));
     // a lone package is no family, so it gets no cluster section
     ok(!output.includes("Lockstep clusters:"));
   });
@@ -147,7 +149,7 @@ describe("displayMany", () => {
     const output = renderDuplicates("duplicated-babel-frame", [singletonFix()]);
     ok(
       lastLine(output).startsWith(
-        "Found 39 dependencies, 1 duplicate, 1 dedupable. Run `pnpm-dedupe`",
+        "Found 39 dependencies, 1 duplicate, at least 1 dedupable (deduping may remove more). Run `pnpm-dedupe`",
       ),
     );
   });
@@ -162,29 +164,27 @@ describe("displayMany", () => {
         applicable: false,
       }),
     ]);
-    ok(!output.includes("Dedupe:"));
+    ok(!output.includes("can be deduped"));
     ok(lastLine(output).includes("0 dedupable"));
   });
 
-  it("shows the declared range next to the version it resolved to", () => {
+  it("files a declared range under the version it resolved to", () => {
     const output = renderDowngrade();
     ok(
       output.includes(
-        '    - @yudiel/react-qr-scanner@2.3.1 requires "3.0.3"\n',
+        '    - expo-camera@57.0.3              requires "^3.0.0"',
       ),
     );
     ok(
-      output.includes(
-        '    - expo-camera@57.0.3 requires "^3.0.0", resolved 3.2.2',
-      ),
+      output.includes('    - @yudiel/react-qr-scanner@2.3.1  requires "3.0.3"'),
     );
   });
 
   it("names the downgrade a converging dependent has to take", () => {
     const output = renderDowngrade();
-    ok(output.includes("    - 3.2.2 -> 3.0.3 (downgrade)"));
+    ok(output.includes("  3.2.2  can be deduped to 3.0.3 (downgrade)"));
     // zxing-wasm cannot converge: `^2.1.2` against an exact 3.1.3
-    ok(lastLine(output).includes("2 duplicates, 1 dedupable"));
+    ok(lastLine(output).includes("2 duplicates, at least 1 dedupable"));
   });
 
   it("forwards the cluster fixes", () => {
@@ -195,7 +195,9 @@ describe("displayMany", () => {
         "cluster 1 — metro* [2 packages, 2 duplicated, 2 fixable]:",
       ),
     );
-    ok(lastLine(output).includes("2 dedupable"));
+    // the family's own members are not in this lockfile's duplicates, so the
+    // count — which follows the listed packages — stays at zero
+    ok(lastLine(output).includes("0 dedupable"));
   });
 
   it("renders a cluster from a lockfile with no per-package duplicate", () => {

@@ -1,6 +1,6 @@
 import { describe, it } from "bun:test";
 import { ok, strictEqual } from "node:assert/strict";
-import { buildIdentifiedFixesMap } from "./buildIdentifiedFixesMap.js";
+import { buildIdentifiedFixesMap } from "pm-utils";
 describe("buildIdentifiedFixesMap", () => {
     it("builds a map even when there are no fixes", () => {
         const fakeResolution = {

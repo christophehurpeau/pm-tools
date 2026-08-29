@@ -79,6 +79,10 @@ export const identifyLockstepClusterFixes = (clusters, members, dependents) => {
         const membersWithExternalDependent = new Set();
         for (const member of clusterMembers) {
             for (const dependent of dependents.get(member) ?? []) {
+                // a range semver cannot read rules no version in or out; counted as an
+                // external constraint it would block every convergence it touches
+                if (dependent.nonSemver)
+                    continue;
                 const isInternal = dependent.requesterName !== undefined &&
                     memberSet.has(dependent.requesterName);
                 if (isInternal) {
@@ -95,6 +99,7 @@ export const identifyLockstepClusterFixes = (clusters, members, dependents) => {
                     requesterName: dependent.requesterName,
                     packageName: member,
                     range: dependent.range,
+                    isAlias: dependent.isAlias,
                     resolvedVersion: dependent.resolvedVersion,
                     workspace: dependent.workspace,
                 };

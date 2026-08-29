@@ -4,7 +4,10 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { readAndParseBunLock } from "../readAndParseBunLock.ts";
 import type { PackageResolution } from "./buildPackagesMap.ts";
-import { buildPackagesMap } from "./buildPackagesMap.ts";
+import {
+  buildPackagesMap,
+  filterDuplicatesPackagesMap,
+} from "./buildPackagesMap.ts";
 import { parseBunLockPackages } from "./parseBunLockPackages.ts";
 
 const loadResolutionsFixture = (fileName: string): PackageResolution[] => {
@@ -143,5 +146,40 @@ describe("buildPackagesMap", () => {
       resolutions,
       loadResolutionsFixture("printable-shell-command-5.0.7-5.0.8.json"),
     );
+  });
+
+  // `aliased-swapped-names`: the root declares `"@typescript/native":
+  // "npm:typescript@7.0.2"` and `"typescript":
+  // "npm:@typescript/typescript6@6.0.2"`, so both keys name a package other than
+  // themselves. Identity has to come from the resolution, or the real
+  // `typescript` copies never meet and the unrelated `@typescript/typescript6`
+  // joins them.
+  it("identifies packages by their resolution when alias keys are swapped", () => {
+    const bunLock = readAndParseBunLock(
+      fixturesBase("../../test/fixtures/aliased-swapped-names/bun.lock"),
+    );
+    const packagesMap = buildPackagesMap(parseBunLockPackages(bunLock));
+
+    deepStrictEqual(
+      packagesMap.typescript?.map((resolution) => [
+        resolution.resolution,
+        resolution.installations,
+      ]),
+      [
+        ["typescript@7.0.2", ["@typescript/native"]],
+        ["typescript@5.9.3", ["tool/typescript"]],
+      ],
+    );
+
+    deepStrictEqual(
+      packagesMap["@typescript/typescript6"]?.map(
+        (resolution) => resolution.resolution,
+      ),
+      ["@typescript/typescript6@6.0.2"],
+    );
+
+    deepStrictEqual(Object.keys(filterDuplicatesPackagesMap(packagesMap)), [
+      "typescript",
+    ]);
   });
 });

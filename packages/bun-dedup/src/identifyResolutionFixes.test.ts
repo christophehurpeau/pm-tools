@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { identifyResolutionFixes } from "pm-utils";
 import {
   type PackageResolution,
   buildPackagesMap,
@@ -11,8 +12,10 @@ import {
   collectDependents,
 } from "./helpers/collectDependents.ts";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
-import { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
 import { readAndParseBunLock } from "./readAndParseBunLock.ts";
+
+const fixturesBase = (rel: string) =>
+  fileURLToPath(new URL(rel, import.meta.url));
 
 const loadResolutionsFixture = (fileName: string): PackageResolution[] => {
   return JSON.parse(
@@ -80,7 +83,7 @@ describe("identifyResolutionFixes", () => {
     const fixes = identifyResolutionFixes(resolutions, objetToMap(dependents));
     expect(fixes).toEqual([
       {
-        megeableResolutions: [
+        mergeableResolutions: [
           "printable-shell-command@5.0.7",
           "printable-shell-command@5.0.8",
         ],
@@ -114,7 +117,7 @@ describe("identifyResolutionFixes", () => {
       identifyResolutionFixes(duplicates["barcode-detector"]!, dependents),
     ).toEqual([
       {
-        megeableResolutions: [
+        mergeableResolutions: [
           "barcode-detector@3.0.3",
           "barcode-detector@3.2.2",
         ],
@@ -127,6 +130,93 @@ describe("identifyResolutionFixes", () => {
     expect(
       identifyResolutionFixes(duplicates["zxing-wasm"]!, dependents),
     ).toEqual([]);
+  });
+
+  // `aliased-range-constrains-merge`: the root declares
+  // `"psc-pinned": "npm:printable-shell-command@~5.0.0"`, so its constraint only
+  // counts once the alias is stripped down to `~5.0.0`. Reading the raw
+  // `npm:…` value as a range makes semver answer "not satisfied" for every
+  // candidate, which hides 5.0.8 — the one version covering all three
+  // dependents — and merges 5.0.7 up onto 5.3.1 instead, breaking `~5.0.0`.
+  it("honours the range an aliased dependent declares", () => {
+    const bunLock = readAndParseBunLock(
+      fileURLToPath(
+        new URL(
+          "../test/fixtures/aliased-range-constrains-merge/bun.lock",
+          import.meta.url,
+        ),
+      ),
+    );
+    const packages = parseBunLockPackages(bunLock);
+    const duplicates = filterDuplicatesPackagesMap(buildPackagesMap(packages));
+    const dependents = collectDependents(
+      packages,
+      bunLock.workspaces,
+      Object.keys(duplicates),
+    );
+
+    expect(
+      identifyResolutionFixes(
+        duplicates["printable-shell-command"]!,
+        dependents,
+      ),
+    ).toEqual([
+      {
+        mergeableResolutions: [
+          "printable-shell-command@5.0.7",
+          "printable-shell-command@5.0.8",
+          "printable-shell-command@5.3.1",
+        ],
+        to: "printable-shell-command@5.0.8",
+      },
+    ]);
+  });
+
+  // `aliased-swapped-names`: the root pins the real `typescript` at 7.0.2 through
+  // the `@typescript/native` key while `tool` needs `^5.9.0`. No candidate covers
+  // both, so the pin stays put — reading it as unsatisfiable instead would leave
+  // it vouching for nothing and let 7.0.2 be merged up onto 5.9.3.
+  it("leaves an exact pin declared under an alias key alone", () => {
+    const bunLock = readAndParseBunLock(
+      fixturesBase("../test/fixtures/aliased-swapped-names/bun.lock"),
+    );
+    const packages = parseBunLockPackages(bunLock);
+    const duplicates = filterDuplicatesPackagesMap(buildPackagesMap(packages));
+    const dependents = collectDependents(
+      packages,
+      bunLock.workspaces,
+      Object.keys(duplicates),
+    );
+
+    expect(Object.keys(duplicates)).toEqual(["typescript"]);
+    expect(identifyResolutionFixes(duplicates.typescript!, dependents)).toEqual(
+      [],
+    );
+  });
+
+  // Same shape, with a root range wide enough to merge on: the fix has to name
+  // the two real `typescript` resolutions and never the `@typescript/typescript6`
+  // sitting under the `typescript` key.
+  it("merges the copies an alias key reaches without touching its namesake", () => {
+    const bunLock = readAndParseBunLock(
+      fixturesBase("../test/fixtures/aliased-swapped-names-mergeable/bun.lock"),
+    );
+    const packages = parseBunLockPackages(bunLock);
+    const duplicates = filterDuplicatesPackagesMap(buildPackagesMap(packages));
+    const dependents = collectDependents(
+      packages,
+      bunLock.workspaces,
+      Object.keys(duplicates),
+    );
+
+    expect(identifyResolutionFixes(duplicates.typescript!, dependents)).toEqual(
+      [
+        {
+          mergeableResolutions: ["typescript@7.0.2", "typescript@7.1.0"],
+          to: "typescript@7.1.0",
+        },
+      ],
+    );
   });
 
   it("should not identify any fix for the typescript-eslint duplicates", () => {

@@ -1,0 +1,7 @@
+{
+  "name": "root-workspace",
+  "dependencies": {
+    "printable-shell-command": "^5.1.0",
+    "psc": "npm:printable-shell-command@~5.0.0"
+  }
+}

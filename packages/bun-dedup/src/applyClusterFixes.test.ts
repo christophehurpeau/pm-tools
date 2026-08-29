@@ -273,6 +273,65 @@ describe("applyClusterFixes", () => {
     ok(logs.some((line) => line.includes("Skipped override")));
   });
 
+  const metroFamilyFix = fix({
+    ...metroFix,
+    members: ["metro", "metro-config"],
+    duplicatedMembers: ["metro-config"],
+  });
+
+  it("skips a cluster the filter only selects part of", () => {
+    const dir = makeProject({
+      "package.json": manifestContent,
+      "bun.lock": emptyLock,
+    });
+    const logs: string[] = [];
+
+    const outcome = applyClusterFixes({
+      projectDir: dir,
+      color: false,
+      dryRun: true,
+      log: (message = "") => logs.push(message),
+      filter: { include: ["metro-config"] },
+      readFixes: () => [metroFamilyFix],
+      readDuplicates: () => snapshot("metro-config@0.84.5"),
+      verifyFrozen: () => {
+        throw new Error("a dry run must not verify");
+      },
+      resolve: () => {
+        throw new Error("a dry run must not resolve");
+      },
+    });
+
+    strictEqual(outcome.plannedChangeCount, 0);
+    strictEqual(read(dir, "package.json"), manifestContent);
+    ok(logs.some((line) => line.includes("metro not selected by the filter")));
+  });
+
+  it("keeps a cluster the filter selects whole", () => {
+    const dir = makeProject({
+      "package.json": manifestContent,
+      "bun.lock": emptyLock,
+    });
+
+    const outcome = applyClusterFixes({
+      projectDir: dir,
+      color: false,
+      dryRun: true,
+      log: () => undefined,
+      filter: { include: ["metro*"] },
+      readFixes: () => [metroFamilyFix],
+      readDuplicates: () => snapshot("metro-config@0.84.5"),
+      verifyFrozen: () => {
+        throw new Error("a dry run must not verify");
+      },
+      resolve: () => {
+        throw new Error("a dry run must not resolve");
+      },
+    });
+
+    ok(outcome.plannedChangeCount > 0);
+  });
+
   it("writes nothing on a dry run", () => {
     const dir = makeProject({
       "package.json": manifestContent,

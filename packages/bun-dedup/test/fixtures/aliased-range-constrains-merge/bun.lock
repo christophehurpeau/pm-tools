@@ -1,0 +1,23 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "app": "1.0.0",
+        "legacy": "1.0.0",
+        "psc-pinned": "npm:printable-shell-command@~5.0.0",
+      },
+    },
+  },
+  "packages": {
+    "app": ["app@1.0.0", "", { "dependencies": { "printable-shell-command": "^5.0.0" } }, "sha512-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=="],
+
+    "legacy": ["legacy@1.0.0", "", { "dependencies": { "printable-shell-command": "5.0.8" } }, "sha512-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=="],
+
+    "printable-shell-command": ["printable-shell-command@5.3.1", "", {}, "sha512-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc=="],
+
+    "psc-pinned": ["printable-shell-command@5.0.7", "", {}, "sha512-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd=="],
+
+    "legacy/printable-shell-command": ["printable-shell-command@5.0.8", "", {}, "sha512-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee=="],
+  }
+}

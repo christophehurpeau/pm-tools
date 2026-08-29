@@ -1,14 +1,9 @@
 import semver from "semver";
-const accepts = (version, range) => {
-    try {
-        return semver.satisfies(version, range, { includePrerelease: true });
-    }
-    catch {
-        // a selector semver cannot read (`npm:`, a git url) says nothing about the
-        // version, so it is no reason to drop the override
-        return true;
-    }
-};
+// A selector semver cannot read (`workspace:`, a git url) says nothing about the
+// version, so it is no reason to drop the override. `semver.satisfies` answers
+// `false` rather than throwing on one, hence the explicit check.
+const accepts = (version, range) => semver.validRange(range) === null ||
+    semver.satisfies(version, range, { includePrerelease: true });
 /**
  * Split the planned overrides for a package manager whose overrides apply to
  * every requester of the package, whatever range it declares (bun's

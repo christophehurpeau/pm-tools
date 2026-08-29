@@ -7,6 +7,7 @@ export interface DependentRange {
     resolvedVersion?: string;
     requesterName?: string;
     workspace?: ClusterWorkspaceRef;
+    peer?: true;
 }
 export type DependentRangesMap = Map<string, DependentRange[]>;
 /**

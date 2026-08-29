@@ -37,8 +37,8 @@
     "test:coverage:lcov": "TS_NODE_PROJECT=tsconfig.test.json npx c8 --reporter=lcov --src ./lib node --test test/*.js"
   },
   "dependencies": {
-    "@yarnpkg/core": "4.0.3",
-    "semver": "7.6.0"
+    "@yarnpkg/core": "4.9.1",
+    "semver": "7.8.5"
   },
   "engines": {
     "node": ">=22.18.0"

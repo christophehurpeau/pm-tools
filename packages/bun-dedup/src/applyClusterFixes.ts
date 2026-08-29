@@ -3,11 +3,14 @@ import { join, relative } from "node:path";
 import {
   applyWorkspaceRangeEdit,
   captureFiles,
+  createPackageFilter,
+  describeSkippedClusterFix,
   diffDuplicates,
   partitionUnconditionalOverrides,
   planClusterApply,
   renderApplyPlan,
   restoreFiles,
+  selectClusterFixes,
   shouldColorize,
 } from "pm-utils";
 import type {
@@ -15,13 +18,16 @@ import type {
   ClusterFix,
   DuplicateSnapshot,
   FileSnapshot,
+  PackageFilterOptions,
   PlannedManifestEdit,
   PlannedOverride,
+  SelectedClusterFixes,
 } from "pm-utils";
 import { buildPackagesMap } from "./helpers/buildPackagesMap.ts";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.ts";
 import { addOverrides } from "./helpers/packageJsonOverrides.ts";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
+import { lockPathOf } from "./helpers/projectDir.ts";
 import { runBun } from "./helpers/runBun.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import { readAndParseBunLock } from "./readAndParseBunLock.ts";
@@ -53,6 +59,9 @@ export interface ApplyClusterFixesOptions {
   verifyFrozen?: () => number | null;
   readFixes?: (projectDir: string) => ClusterFix[];
   readDuplicates?: (lockPath: string) => DuplicateSnapshot;
+  // restricts which packages may be touched, for deduplicating a large lockfile
+  // a family at a time
+  filter?: PackageFilterOptions;
   // what `bun install` itself would still change, for the dry-run report. Only
   // the caller runs that probe, so only it can say.
   packageManagerResiduals?: string;
@@ -62,7 +71,7 @@ export interface ApplyClusterFixesOptions {
 }
 
 const defaultReadFixes = (projectDir: string): ClusterFix[] => {
-  const lock = readAndParseBunLock(join(projectDir, "bun.lock"));
+  const lock = readAndParseBunLock(lockPathOf(projectDir));
   const packages = parseBunLockPackages(lock);
   return identifyClusterFixes(
     buildPackagesMap(packages),
@@ -78,6 +87,27 @@ const manifestPathOf = (projectDir: string, importerPath: string): string =>
 
 const describeOverride = (override: PlannedOverride): string =>
   `"${override.packageName}": "${override.version}"`;
+
+/**
+ * A bun override never repoints an edge declared through an npm alias
+ * (`"psc-pinned": "npm:printable-shell-command@~5.0.0"`) — measured against bun
+ * 1.3, keying the override by the alias or by the real name alike. The override
+ * is still written, because an in-cluster requester declaring the package
+ * directly is repointed by it, but a package no direct edge reaches cannot
+ * converge this way and the revert that follows would otherwise say nothing.
+ */
+const aliasOnlyRequesters = (
+  fixes: ClusterFix[],
+  packageName: string,
+): string[] => {
+  const constraints = fixes
+    .flatMap((fix) => fix.externalConstraints)
+    .filter((constraint) => constraint.packageName === packageName);
+
+  return constraints.length > 0 && constraints.every((c) => c.isAlias === true)
+    ? constraints.map((constraint) => constraint.requester)
+    : [];
+};
 
 interface ApplyState {
   duplicates: DuplicateSnapshot;
@@ -107,10 +137,15 @@ export const applyClusterFixes = ({
     runBun(["install", "--frozen-lockfile"], { cwd: projectDir }).status,
   readFixes = defaultReadFixes,
   readDuplicates = readDuplicateSnapshot,
+  filter,
   packageManagerResiduals,
   color = shouldColorize(),
 }: ApplyClusterFixesOptions): ClusterApplyOutcome => {
-  const lockPath = join(projectDir, "bun.lock");
+  const packageFilter = createPackageFilter(filter);
+  const readSelectedFixes = (dir: string): SelectedClusterFixes =>
+    selectClusterFixes(readFixes(dir), packageFilter);
+
+  const lockPath = lockPathOf(projectDir);
   const rootManifestPath = join(projectDir, "package.json");
 
   const before = readDuplicates(lockPath);
@@ -125,7 +160,8 @@ export const applyClusterFixes = ({
     plannedChangeCount,
   });
 
-  const fixes = readFixes(projectDir);
+  const { selected: fixes, skipped: filteredOut } =
+    readSelectedFixes(projectDir);
   const plan = planClusterApply(fixes);
 
   // a bun override applies to every requester of the package, so one a
@@ -136,6 +172,7 @@ export const applyClusterFixes = ({
   );
 
   const skipped = [
+    ...filteredOut.map(describeSkippedClusterFix),
     ...plan.unresolvableChanges.map(
       (unresolvable) => `${unresolvable}: no workspace file recorded for it`,
     ),
@@ -247,7 +284,7 @@ export const applyClusterFixes = ({
   // gone from its output once the edge points at the anchored version.
   const readState = (): ApplyState => ({
     duplicates: readDuplicates(lockPath),
-    reuses: reuseKeys(readFixes(projectDir)),
+    reuses: reuseKeys(readSelectedFixes(projectDir).selected),
   });
 
   // A step keeps its edits as long as it broke nothing: a widened range often
@@ -328,6 +365,12 @@ export const applyClusterFixes = ({
   log(`Adding overrides to ${rootManifestPath}:`);
   for (const override of outstanding) {
     log(`  ${describeOverride(override)} (${override.reason})`);
+    const aliased = aliasOnlyRequesters(fixes, override.packageName);
+    if (aliased.length > 0) {
+      log(
+        `    every requester of ${override.packageName} declares it through an alias (${aliased.join(", ")}); a bun override does not reach those edges`,
+      );
+    }
   }
   writeFileSync(
     rootManifestPath,

@@ -1,0 +1,9 @@
+{
+  "name": "app",
+  "dependencies": {
+    "lodash": "^4.17.0"
+  },
+  "devDependencies": {
+    "semver": "^7.6.0"
+  }
+}

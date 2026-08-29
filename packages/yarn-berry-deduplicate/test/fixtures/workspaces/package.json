@@ -1,0 +1,9 @@
+{
+  "name": "root-workspace",
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "semver": "^7.7.0"
+  }
+}

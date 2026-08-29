@@ -1,0 +1,8 @@
+{
+  "name": "yarn-berry-deduplicate-e2e",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "yarn@4.10.3"
+}

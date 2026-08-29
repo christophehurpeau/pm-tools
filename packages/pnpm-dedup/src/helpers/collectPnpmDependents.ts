@@ -1,9 +1,10 @@
-import { PackageDependencyDescriptorUtils } from "pm-utils";
+import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
 import type { PnpmLockFile } from "../pnpmLockTypes.ts";
 import {
   parsePackageId,
   resolveSnapshotDependency,
 } from "./parsePnpmLockPackages.ts";
+import type { PnpmProtocol } from "./pnpmProtocol.ts";
 
 export interface Dependent {
   key: string;
@@ -43,10 +44,13 @@ export function collectPnpmDependents(
       const deps = project[depType];
       if (!deps) return;
       for (const [depName, { specifier }] of Object.entries(deps)) {
-        const parsedDep = PackageDependencyDescriptorUtils.parse(
+        const parsedDep = PackageDependencyDescriptorUtils.parse<PnpmProtocol>(
           depName,
           specifier,
         );
+        // `workspace:` and `catalog:` name something other than the npm package
+        // sharing this key, so they constrain no npm version
+        if (!isSemverComparable(parsedDep)) continue;
         add(parsedDep.npmName, {
           key: `${importerPath === "." ? "package.json" : importerPath} in ${depType}`,
           version: parsedDep.selector,

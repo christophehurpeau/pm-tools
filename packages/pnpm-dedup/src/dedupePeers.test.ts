@@ -1,7 +1,7 @@
 import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { buildIdentifiedFixesMap } from "./helpers/buildIdentifiedFixesMap.ts";
+import { buildIdentifiedFixesMap } from "pm-utils";
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { parsePackageId } from "./helpers/parsePnpmLockPackages.ts";
 import {
@@ -156,7 +156,7 @@ describe("dedupePeers with an identified fix", () => {
       fixesFor(mergeableDedupePeersScenario).get("printable-shell-command"),
       [
         {
-          megeableResolutions: [
+          mergeableResolutions: [
             "printable-shell-command@5.0.7",
             "printable-shell-command@5.3.1",
           ],

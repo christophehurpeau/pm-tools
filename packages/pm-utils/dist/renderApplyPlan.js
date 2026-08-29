@@ -1,5 +1,5 @@
 import { createColorize, shouldColorize } from "./reportColors.js";
-const plural = (count, singular, pluralForm) => `${count} ${count === 1 ? singular : pluralForm}`;
+import { plural } from "./reportText.js";
 /**
  * The plan a dedupe run would apply, shared by `--check` and `--dry-run`. The
  * returned `changeCount` is what `--check` gates its exit code on.

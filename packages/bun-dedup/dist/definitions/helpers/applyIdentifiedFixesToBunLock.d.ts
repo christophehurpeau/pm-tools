@@ -1,5 +1,5 @@
 import type { BunLockFile } from "bun";
-import type { ResolutionFix } from "../identifyResolutionFixes.ts";
+import type { ResolutionFix } from "pm-utils";
 export interface ApplyFixesResult {
     changed: boolean;
     changedKeys: string[];

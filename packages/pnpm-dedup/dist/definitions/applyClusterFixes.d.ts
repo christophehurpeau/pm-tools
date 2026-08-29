@@ -1,4 +1,4 @@
-import type { ClusterFix, DuplicateSnapshot, PlannedOverride } from "pm-utils";
+import type { ClusterFix, DuplicateSnapshot, PackageFilterOptions, PlannedOverride } from "pm-utils";
 export type ClusterApplyStatus = "applied" | "dry-run" | "kept-overrides" | "not-supported" | "nothing-to-do" | "reverted";
 export interface ClusterApplyOutcome {
     status: ClusterApplyStatus;
@@ -16,8 +16,9 @@ export interface ApplyClusterFixesOptions {
     readDuplicates?: (lockPath: string) => DuplicateSnapshot;
     pnpmVersion?: () => string | null;
     convergenceOverrides?: boolean;
+    filter?: PackageFilterOptions;
     packageManagerResiduals?: string;
     color?: boolean;
 }
-export declare const applyClusterFixes: ({ projectDir, dryRun, log, resolve, readFixes, readDuplicates, pnpmVersion, convergenceOverrides, packageManagerResiduals, color, }: ApplyClusterFixesOptions) => ClusterApplyOutcome;
+export declare const applyClusterFixes: ({ projectDir, dryRun, log, resolve, readFixes, readDuplicates, pnpmVersion, convergenceOverrides, filter, packageManagerResiduals, color, }: ApplyClusterFixesOptions) => ClusterApplyOutcome;
 //# sourceMappingURL=applyClusterFixes.d.ts.map

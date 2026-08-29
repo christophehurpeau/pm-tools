@@ -1,4 +1,5 @@
 import { createColorize, shouldColorize } from "./reportColors.ts";
+import { plural } from "./reportText.ts";
 
 export interface ApplyPlanFileChange {
   // repo-relative
@@ -24,9 +25,6 @@ export interface ApplyPlanOptions {
 export interface ApplyPlanSummary {
   changeCount: number;
 }
-
-const plural = (count: number, singular: string, pluralForm: string): string =>
-  `${count} ${count === 1 ? singular : pluralForm}`;
 
 /**
  * The plan a dedupe run would apply, shared by `--check` and `--dry-run`. The

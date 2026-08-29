@@ -252,6 +252,54 @@ describe("applyClusterFixes", () => {
         strictEqual(read(dir, "package.json"), manifestContent);
         strictEqual(existsSync(join(dir, "pnpm-workspace.yaml")), false);
     });
+    const metroFamilyFix = fix({
+        ...metroFix,
+        members: ["metro", "metro-config"],
+        duplicatedMembers: ["metro-config"],
+    });
+    it("skips a cluster the filter only selects part of", () => {
+        const dir = makeProject({
+            "package.json": manifestContent,
+            "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+        });
+        const logs = [];
+        const outcome = applyClusterFixes({
+            projectDir: dir,
+            color: false,
+            dryRun: true,
+            log: (message = "") => logs.push(message),
+            pnpmVersion: () => "11.17.0",
+            filter: { include: ["metro-config"] },
+            readFixes: () => [metroFamilyFix],
+            readDuplicates: () => snapshot("metro-config@0.84.5"),
+            resolve: () => {
+                throw new Error("a dry run must not resolve");
+            },
+        });
+        strictEqual(outcome.plannedChangeCount, 0);
+        strictEqual(read(dir, "package.json"), manifestContent);
+        ok(logs.some((line) => line.includes("metro not selected by the filter")));
+    });
+    it("keeps a cluster the filter selects whole", () => {
+        const dir = makeProject({
+            "package.json": manifestContent,
+            "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+        });
+        const outcome = applyClusterFixes({
+            projectDir: dir,
+            color: false,
+            dryRun: true,
+            log: () => undefined,
+            pnpmVersion: () => "11.17.0",
+            filter: { include: ["metro*"] },
+            readFixes: () => [metroFamilyFix],
+            readDuplicates: () => snapshot("metro-config@0.84.5"),
+            resolve: () => {
+                throw new Error("a dry run must not resolve");
+            },
+        });
+        ok(outcome.plannedChangeCount > 0);
+    });
     it("writes nothing on a dry run", () => {
         const dir = makeProject({
             "package.json": manifestContent,

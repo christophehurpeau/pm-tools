@@ -3,7 +3,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { readAndParseBunLock } from "../readAndParseBunLock.js";
-import { buildPackagesMap } from "./buildPackagesMap.js";
+import { buildPackagesMap, filterDuplicatesPackagesMap, } from "./buildPackagesMap.js";
 import { parseBunLockPackages } from "./parseBunLockPackages.js";
 const loadResolutionsFixture = (fileName) => {
     return JSON.parse(fs.readFileSync(fileURLToPath(new URL(`../../test/fixtures/resolutions/${fileName}`, import.meta.url)), 
@@ -92,6 +92,27 @@ describe("buildPackagesMap", () => {
         ok(resolutions);
         strictEqual(resolutions.length, 2); // Expecting two different versions
         deepStrictEqual(resolutions, loadResolutionsFixture("printable-shell-command-5.0.7-5.0.8.json"));
+    });
+    // `aliased-swapped-names`: the root declares `"@typescript/native":
+    // "npm:typescript@7.0.2"` and `"typescript":
+    // "npm:@typescript/typescript6@6.0.2"`, so both keys name a package other than
+    // themselves. Identity has to come from the resolution, or the real
+    // `typescript` copies never meet and the unrelated `@typescript/typescript6`
+    // joins them.
+    it("identifies packages by their resolution when alias keys are swapped", () => {
+        const bunLock = readAndParseBunLock(fixturesBase("../../test/fixtures/aliased-swapped-names/bun.lock"));
+        const packagesMap = buildPackagesMap(parseBunLockPackages(bunLock));
+        deepStrictEqual(packagesMap.typescript?.map((resolution) => [
+            resolution.resolution,
+            resolution.installations,
+        ]), [
+            ["typescript@7.0.2", ["@typescript/native"]],
+            ["typescript@5.9.3", ["tool/typescript"]],
+        ]);
+        deepStrictEqual(packagesMap["@typescript/typescript6"]?.map((resolution) => resolution.resolution), ["@typescript/typescript6@6.0.2"]);
+        deepStrictEqual(Object.keys(filterDuplicatesPackagesMap(packagesMap)), [
+            "typescript",
+        ]);
     });
 });
 //# sourceMappingURL=buildPackagesMap.test.js.map

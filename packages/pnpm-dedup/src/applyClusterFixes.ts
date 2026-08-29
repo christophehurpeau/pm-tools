@@ -3,11 +3,14 @@ import { join, relative } from "node:path";
 import {
   applyWorkspaceRangeEdit,
   captureFiles,
+  createPackageFilter,
+  describeSkippedClusterFix,
   diffDuplicates,
   partitionUnconditionalOverrides,
   planClusterApply,
   renderApplyPlan,
   restoreFiles,
+  selectClusterFixes,
   shouldColorize,
 } from "pm-utils";
 import type {
@@ -15,8 +18,10 @@ import type {
   ClusterFix,
   DuplicateSnapshot,
   FileSnapshot,
+  PackageFilterOptions,
   PlannedManifestEdit,
   PlannedOverride,
+  SelectedClusterFixes,
 } from "pm-utils";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.ts";
@@ -27,6 +32,7 @@ import {
   supportsConvergenceOverrides,
 } from "./helpers/pnpmVersion.ts";
 import { addOverrides, overrideKey } from "./helpers/pnpmWorkspaceYaml.ts";
+import { lockPathOf } from "./helpers/projectDir.ts";
 import { createManifestReader } from "./helpers/readInstalledManifest.ts";
 import { runPnpm } from "./helpers/runPnpm.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
@@ -64,6 +70,9 @@ export interface ApplyClusterFixesOptions {
   // false writes plain overrides instead, which pnpm applies to every requester
   // whatever range it declares
   convergenceOverrides?: boolean;
+  // restricts which packages may be touched, for deduplicating a large lockfile
+  // a family at a time
+  filter?: PackageFilterOptions;
   // what `pnpm dedupe` itself would still change, for the dry-run report. Only
   // the caller runs that probe, so only it can say.
   packageManagerResiduals?: string;
@@ -73,7 +82,7 @@ export interface ApplyClusterFixesOptions {
 }
 
 const defaultReadFixes = (projectDir: string): ClusterFix[] => {
-  const lock = readPnpmLock(join(projectDir, "pnpm-lock.yaml"));
+  const lock = readPnpmLock(lockPathOf(projectDir));
   return identifyClusterFixes(
     lock,
     buildPnpmPackagesMap(parsePnpmLockPackages(lock)),
@@ -134,10 +143,14 @@ export const applyClusterFixes = ({
   readDuplicates = readDuplicateSnapshot,
   pnpmVersion = () => readPnpmVersion(),
   convergenceOverrides = true,
+  filter,
   packageManagerResiduals,
   color = shouldColorize(),
 }: ApplyClusterFixesOptions): ClusterApplyOutcome => {
-  const lockPath = join(projectDir, "pnpm-lock.yaml");
+  const packageFilter = createPackageFilter(filter);
+  const readSelectedFixes = (dir: string): SelectedClusterFixes =>
+    selectClusterFixes(readFixes(dir), packageFilter);
+  const lockPath = lockPathOf(projectDir);
   const workspaceYamlPath = join(projectDir, "pnpm-workspace.yaml");
 
   const before = readDuplicates(lockPath);
@@ -152,10 +165,12 @@ export const applyClusterFixes = ({
     plannedChangeCount,
   });
 
-  const fixes = readFixes(projectDir);
+  const { selected: fixes, skipped: filteredOut } =
+    readSelectedFixes(projectDir);
   const plan = planClusterApply(fixes);
 
   const skipped = [
+    ...filteredOut.map(describeSkippedClusterFix),
     ...plan.unresolvableChanges.map(
       (unresolvable) => `${unresolvable}: no workspace file recorded for it`,
     ),
@@ -294,7 +309,7 @@ export const applyClusterFixes = ({
   // gone from its output once the edge points at the anchored version.
   const readState = (): ApplyState => ({
     duplicates: readDuplicates(lockPath),
-    reuses: reuseKeys(readFixes(projectDir)),
+    reuses: reuseKeys(readSelectedFixes(projectDir).selected),
   });
 
   // A step keeps its edits as long as it broke nothing: a widened range often

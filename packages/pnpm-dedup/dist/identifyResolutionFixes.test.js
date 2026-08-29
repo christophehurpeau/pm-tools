@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { identifyResolutionFixes } from "./identifyResolutionFixes.js";
+import { identifyResolutionFixes } from "pm-utils";
 const loadResolutionsFixture = (fileName) => {
     return JSON.parse(fs.readFileSync(fileURLToPath(new URL(`../test/fixtures/resolutions/${fileName}`, import.meta.url)), 
     // eslint-disable-next-line unicorn/prefer-json-parse-buffer
@@ -37,7 +37,7 @@ describe("identifyResolutionFixes", () => {
         const fixes = identifyResolutionFixes(resolutions, objetToMap(dependents));
         expect(fixes).toEqual([
             {
-                megeableResolutions: [
+                mergeableResolutions: [
                     "printable-shell-command@5.0.7",
                     "printable-shell-command@5.0.8",
                 ],

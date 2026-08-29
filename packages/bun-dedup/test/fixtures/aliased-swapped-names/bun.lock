@@ -1,0 +1,23 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "tool": "1.0.0",
+      },
+      "devDependencies": {
+        "@typescript/native": "npm:typescript@7.0.2",
+        "typescript": "npm:@typescript/typescript6@6.0.2",
+      },
+    },
+  },
+  "packages": {
+    "@typescript/native": ["typescript@7.0.2", "", {}, "sha512-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=="],
+
+    "tool": ["tool@1.0.0", "", { "dependencies": { "typescript": "^5.9.0" } }, "sha512-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb=="],
+
+    "typescript": ["@typescript/typescript6@6.0.2", "", {}, "sha512-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc=="],
+
+    "tool/typescript": ["typescript@5.9.3", "", {}, "sha512-dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd=="],
+  }
+}

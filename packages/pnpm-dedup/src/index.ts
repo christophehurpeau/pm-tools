@@ -1,4 +1,9 @@
-import picomatch from "picomatch";
+import {
+  createPackageFilter,
+  selectExplainedPackages,
+  selectPackages,
+} from "pm-utils";
+import type { PackageFilterOptions } from "pm-utils";
 import { displayMany } from "./displayMany.ts";
 import {
   buildPnpmPackagesMap,
@@ -8,6 +13,7 @@ import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
 import type { DependentRangesMap } from "./helpers/collectDependentRanges.ts";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.ts";
+import { lockPathOf, resolvePnpmProjectDir } from "./helpers/projectDir.ts";
 import type {
   ManifestReader,
   ManifestReaderStats,
@@ -30,6 +36,7 @@ export {
 } from "./helpers/buildPnpmPackagesMap.ts";
 export { collectPnpmDependents } from "./helpers/collectPnpmDependents.ts";
 export { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
+export { readVersionsSnapshot } from "./helpers/versionsSnapshot.ts";
 export {
   createManifestReader,
   createManifestReaderWithStats,
@@ -63,21 +70,34 @@ function collectRanges(
   );
 }
 
-export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
-  const isMatch = picomatch(packageNameToFilter);
+export interface WhyDuplicateOptions {
+  filter?: PackageFilterOptions;
+  // keeps packages the lockfile resolves only once, which a listing drops
+  all?: boolean;
+  // every dependent of every version, instead of one line per package
+  details?: boolean;
+}
 
-  const lock = readPnpmLock();
+export function whyDuplicate({
+  filter: filterOptions,
+  all = false,
+  details = false,
+}: WhyDuplicateOptions): void {
+  const filter = createPackageFilter(filterOptions);
+
+  const projectDir = resolvePnpmProjectDir();
+  if (projectDir === null) return;
+  const lock = readPnpmLock(lockPathOf(projectDir));
   const parsed = parsePnpmLockPackages(lock);
   const packagesMap = buildPnpmPackagesMap(parsed);
 
-  const filteredPackages = Object.fromEntries(
-    Object.entries(packagesMap).filter(
-      ([packageName, resolutions]) =>
-        isMatch(packageName) && (all || resolutions.length > 1),
-    ),
-  );
+  const {
+    packages: filteredPackages,
+    title,
+    notice,
+  } = selectExplainedPackages({ packagesMap, filter, all });
 
-  const { readManifest, stats } = createManifestReaderWithStats(process.cwd());
+  const { readManifest, stats } = createManifestReaderWithStats(projectDir);
 
   // A duplicate is often only explainable by its family: show the cluster fixes
   // covering the matched packages, not just their own dependents.
@@ -85,33 +105,55 @@ export function whyDuplicate(packageNameToFilter: string, all: boolean): void {
     lock,
     packagesMap,
     readManifest,
-  ).filter((fix) => fix.members.some((member) => isMatch(member)));
+  ).filter((fix) => fix.members.some(filter.selects));
 
   displayMany({
-    title: all ? "matches" : "duplicates",
+    title,
+    notice,
     duplicatesPackagesMap: filteredPackages,
     dependents: collectRanges(lock, filteredPackages, readManifest),
     // the whole lockfile, so the count means the same whatever the filter
     totalDependencies: Object.keys(packagesMap).length,
     clusterFixes: matchedClusterFixes,
+    details,
   });
   warnWhenNoManifests(stats());
 }
 
-export function listDuplicates(): void {
-  const lock = readPnpmLock();
+export interface ListDuplicatesOptions {
+  filter?: PackageFilterOptions;
+  details?: boolean;
+}
+
+export function listDuplicates({
+  filter: filterOptions,
+  details = false,
+}: ListDuplicatesOptions = {}): void {
+  const filter = createPackageFilter(filterOptions);
+
+  const projectDir = resolvePnpmProjectDir();
+  if (projectDir === null) return;
+  const lock = readPnpmLock(lockPathOf(projectDir));
   const parsed = parsePnpmLockPackages(lock);
   const packagesMap = buildPnpmPackagesMap(parsed);
-  const duplicatesPackagesMap = filterDuplicatesPnpmPackagesMap(packagesMap);
+  const duplicatesPackagesMap = selectPackages(
+    filterDuplicatesPnpmPackagesMap(packagesMap),
+    filter,
+  );
 
-  const { readManifest, stats } = createManifestReaderWithStats(process.cwd());
+  const { readManifest, stats } = createManifestReaderWithStats(projectDir);
 
   displayMany({
     title: "duplicates",
     duplicatesPackagesMap,
     dependents: collectRanges(lock, duplicatesPackagesMap, readManifest),
     totalDependencies: Object.keys(packagesMap).length,
-    clusterFixes: identifyClusterFixes(lock, packagesMap, readManifest),
+    // as in `whyDuplicate`: a family is shown whole as soon as it holds a
+    // selected member, because that is what explains the duplicate
+    clusterFixes: identifyClusterFixes(lock, packagesMap, readManifest).filter(
+      (fix) => fix.members.some(filter.selects),
+    ),
+    details,
   });
   warnWhenNoManifests(stats());
 }

@@ -125,4 +125,15 @@ describe("identifyClusterFixes", () => {
     );
     expect(fixes).toEqual([]);
   });
+
+  // `aliased-swapped-names`: `typescript` and `@typescript/typescript6` are
+  // unrelated packages that only look connected through the keys the root gave
+  // them, and nothing depends on either co-versioned. Clustering them would put
+  // an exact pin and an unrelated package in one family.
+  it("does not cluster packages that only share an alias key", () => {
+    const fixes = loadFixtureClusterFixes(
+      "../test/fixtures/aliased-swapped-names/bun.lock",
+    );
+    expect(fixes).toEqual([]);
+  });
 });

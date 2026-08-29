@@ -119,10 +119,18 @@ suite("pnpm-dedupe end to end", () => {
       ),
       applied.output,
     );
+    // what it deduped, named: two packages, one copy of each merged away
     ok(
-      applied.output.includes("Cluster fixes: 4 duplicate resolutions -> 0"),
+      applied.output.includes("Deduped 2 packages, 2 copies merged:"),
       applied.output,
     );
+    ok(
+      applied.output.includes(
+        "barcode-detector: 2 versions (3.0.3, 3.2.2) -> 1 version (3.0.3)",
+      ),
+      applied.output,
+    );
+    ok(applied.output.includes("No duplicate left."), applied.output);
 
     // what matters is the lockfile pnpm was left with
     strictEqual(readDuplicateSnapshot(lockPath(dir)).size, 0);
