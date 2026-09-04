@@ -49,7 +49,7 @@
     "tsc": "tsc"
   },
   "dependencies": {
-    "@types/bun": "1.3.14",
+    "@types/bun": "1.4.1",
     "json5": "2.2.3",
     "pm-utils": "workspace:*",
     "semver": "7.8.5",
