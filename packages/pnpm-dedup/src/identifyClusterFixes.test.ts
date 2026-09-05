@@ -383,10 +383,36 @@ describe("identifyClusterFixes", () => {
   // `typescript` key holds an unrelated package. Nothing converges, and nothing
   // may propose editing the declaration that names the other package.
   it("leaves an exact pin declared under a swapped alias key alone", () => {
+    const fixes = clusterFixesFor("aliased-swapped-names", () => undefined);
     deepStrictEqual(
-      clusterFixesFor("aliased-swapped-names", () => undefined),
-      [],
+      fixes.map((fix) => fix.members),
+      [["typescript"]],
     );
+    strictEqual(fixes[0]!.applicable, false);
+    deepStrictEqual(fixes[0]!.workspaceChanges, []);
+  });
+
+  // The same swapped keys, with `typescript` sitting in a lockstep family (its
+  // platform binaries) as it does from 7.0.0 on: the family makes the cluster
+  // big enough to escape the singleton guard above, and the pin is then the only
+  // thing standing between the dedupe and a rewrite of `"@typescript/native":
+  // "npm:typescript@7.0.2"` into `npm:typescript@6.0.3` — the alias repointed at
+  // the very package it exists to sit beside.
+  it("never repoints an alias to converge its family", () => {
+    const fix = clusterFixesFor(
+      "aliased-swapped-names-cluster",
+      (name, version) =>
+        name === "@typescript/typescript6" && version === "6.0.2"
+          ? { dependencies: { typescript: "^6" } }
+          : undefined,
+    ).find((candidate) => candidate.members.includes("typescript"));
+
+    ok(fix);
+    strictEqual(fix.members.length, 3);
+    deepStrictEqual(fix.duplicatedMembers, ["typescript"]);
+    strictEqual(fix.applicable, false);
+    strictEqual(fix.target, null);
+    deepStrictEqual(fix.workspaceChanges, []);
   });
 
   it("reports a cluster no member can leave as not dedupable", () => {

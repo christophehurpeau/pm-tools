@@ -68,8 +68,9 @@ export const identifyLockstepClusterFixes = (clusters, members, dependents) => {
             ];
         }));
         const externalConstraints = [];
-        // third-party ranges: the only ones that can rule a version out. A workspace
-        // range belongs to the user, so it never blocks — it is ranked against
+        // ranges that can rule a version out: a third-party one, and a workspace one
+        // declared through an alias key. A workspace range under the package's own
+        // name belongs to the user, so it never blocks — it is ranked against
         // instead (`pinsToEdit`), and proposed for editing only when nothing else
         // deduplicates anything.
         const bindingByMember = new Map();
@@ -107,7 +108,17 @@ export const identifyLockstepClusterFixes = (clusters, members, dependents) => {
                 membersWithExternalDependent.add(member);
                 // An exact workspace pin is as binding as a third-party range: the user
                 // chose that version, so the family has to live with it.
-                if (constraint.requesterName === undefined) {
+                //
+                // A workspace declaration made through an alias key is binding outright:
+                // `"@typescript/native": "npm:typescript@7.0.2"` asks for a copy under a
+                // name of its own, beside whatever the `typescript` key resolves to.
+                // Moving its version is not a dedupe of the family, it is the undoing of
+                // the alias — so the range blocks the candidate instead of being
+                // proposed for editing. It only ever blocks a version the alias range
+                // already rejects, which is exactly the case where the edit would
+                // repoint the alias at another package version.
+                if (constraint.requesterName === undefined &&
+                    constraint.isAlias !== true) {
                     workspaceConstraints.push(constraint);
                     if (semver.valid(constraint.range) !== null) {
                         exactWorkspacePins.push(constraint);

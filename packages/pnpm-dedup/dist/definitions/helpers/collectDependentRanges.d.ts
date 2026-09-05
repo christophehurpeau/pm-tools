@@ -6,6 +6,7 @@ export interface DependentRange {
     range: string;
     resolvedVersion?: string;
     requesterName?: string;
+    aliasKey?: string;
     workspace?: ClusterWorkspaceRef;
     peer?: true;
 }

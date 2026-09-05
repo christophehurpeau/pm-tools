@@ -18,6 +18,10 @@ export interface DependentRange {
   resolvedVersion?: string;
   // npm name of the requester, or undefined for an importer (workspace) one
   requesterName?: string;
+  // the key the declaration sits under, when it names another package
+  // (`"@typescript/native": "npm:typescript@7.0.2"`). The range constrains
+  // `typescript` all the same, but the declaration is not `typescript`'s
+  aliasKey?: string;
   // set for importer dependents only: where the range is declared on disk
   workspace?: ClusterWorkspaceRef;
   // the range comes from `peerDependencies`. pnpm resolves the peer like any
@@ -142,6 +146,7 @@ export const collectDependentRanges = (
           range: parsed.selector,
           // an aliased importer entry stores `realName@version`, not a version
           resolvedVersion: resolveSnapshotDependency(depName, version).version,
+          ...(parsed.isAlias ? { aliasKey: parsed.key } : {}),
           workspace: { path: importerPath, depType },
         });
       }
@@ -166,6 +171,7 @@ export const collectDependentRanges = (
           range: source?.range ?? version,
           resolvedVersion: version,
           requesterName: dependent.name,
+          ...(name === depName ? {} : { aliasKey: depName }),
           ...(source?.peer ? { peer: source.peer } : {}),
         });
       }

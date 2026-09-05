@@ -12,6 +12,7 @@ const dependents = (entries) => new Map(entries.map(([name, list]) => [
         requester: dependent.requester,
         requesterName: dependent.requesterName,
         range: dependent.range,
+        isAlias: dependent.isAlias,
         resolvedVersion: dependent.resolvedVersion,
         workspace: dependent.workspace,
     })),
@@ -216,6 +217,42 @@ describe("identifyLockstepClusterFixes", () => {
         expect(fix.target).toBe("2.0.0");
         expect(fix.convergentMembers).toEqual(["leaf"]);
         expect(fix.workspaceChanges.map((change) => `${change.range} -> ${change.to}`)).toEqual(["~1.0.0 -> 2.0.0"]);
+    });
+    it("never proposes editing a workspace range declared under an alias key", () => {
+        // Same shape as above, with the workspace declaring leaf through a key of
+        // its own (`"leaf-1": "npm:leaf@~1.0.0"`). Moving that range to 2.0.0 would
+        // not converge the family, it would repoint the alias at the copy it was
+        // created to sit beside — so the range blocks 2.0.0 like a third party's,
+        // and the cluster is reported as not dedupable.
+        const fix = identifyLockstepClusterFixes([["leaf", "other"]], {
+            leaf: { npmVersions: ["1.0.0", "2.0.0"], resolutionCount: 2 },
+            other: { npmVersions: ["2.0.0"], resolutionCount: 1 },
+        }, dependents([
+            [
+                "leaf",
+                [
+                    {
+                        requester: "package.json",
+                        range: "~1.0.0",
+                        isAlias: true,
+                        resolvedVersion: "1.0.0",
+                        workspace: { path: ".", depType: "devDependencies" },
+                    },
+                    {
+                        requester: "other@2.0.0",
+                        requesterName: "other",
+                        range: "2.0.0",
+                    },
+                ],
+            ],
+            [
+                "other",
+                [{ requester: "app@1", requesterName: "app", range: "2.0.0" }],
+            ],
+        ]))[0];
+        expect(fix.target).toBe(null);
+        expect(fix.applicable).toBe(false);
+        expect(fix.workspaceChanges).toEqual([]);
     });
     it("prefers a target that respects the workspace range over one that edits it", () => {
         // 1.0.0 collapses leaf without touching the workspace range, so the 2.0.0

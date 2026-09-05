@@ -72,7 +72,12 @@ const toPackageViews = ({
         }),
       ),
       dependents: (dependents.get(packageName) ?? []).map((dependent) => ({
-        requester: dependent.key,
+        // the range alone does not say which declaration it comes from when the
+        // requester reaches the package through a key of another name
+        requester:
+          dependent.aliasKey === undefined
+            ? dependent.key
+            : `${dependent.key} (as "${dependent.aliasKey}")`,
         range: dependent.range,
         resolvedVersion: dependent.resolvedVersion,
         peer: dependent.peer,

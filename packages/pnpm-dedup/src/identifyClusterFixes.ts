@@ -73,6 +73,7 @@ const toClusterDependents = (
         requester: dependent.key,
         requesterName: dependent.requesterName,
         range: dependent.range,
+        isAlias: dependent.aliasKey !== undefined,
         resolvedVersion: dependent.resolvedVersion,
         workspace: dependent.workspace,
       })),

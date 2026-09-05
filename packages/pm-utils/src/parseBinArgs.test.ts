@@ -45,7 +45,9 @@ describe("parseBinArgs", () => {
   it("parses the arguments it knows", () => {
     const parsed = parse(["--check", "lodash"]);
 
-    deepStrictEqual(parsed?.values, { check: true });
+    // `parseArgs` returns a null-prototype `values`, and `deepStrictEqual`
+    // compares prototypes.
+    deepStrictEqual(parsed?.values, { __proto__: null, check: true });
     deepStrictEqual(parsed?.positionals, ["lodash"]);
   });
 

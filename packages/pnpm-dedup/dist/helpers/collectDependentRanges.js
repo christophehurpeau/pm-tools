@@ -85,6 +85,7 @@ export const collectDependentRanges = (lock, duplicatePackageNames, readManifest
                     range: parsed.selector,
                     // an aliased importer entry stores `realName@version`, not a version
                     resolvedVersion: resolveSnapshotDependency(depName, version).version,
+                    ...(parsed.isAlias ? { aliasKey: parsed.key } : {}),
                     workspace: { path: importerPath, depType },
                 });
             }
@@ -106,6 +107,7 @@ export const collectDependentRanges = (lock, duplicatePackageNames, readManifest
                     range: source?.range ?? version,
                     resolvedVersion: version,
                     requesterName: dependent.name,
+                    ...(name === depName ? {} : { aliasKey: depName }),
                     ...(source?.peer ? { peer: source.peer } : {}),
                 });
             }

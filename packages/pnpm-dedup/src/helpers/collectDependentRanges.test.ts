@@ -174,7 +174,9 @@ describe("collectDependentRanges", () => {
   // `aliased-swapped-names`: the importer reaches the real `typescript` through
   // the `@typescript/native` key and hands the `typescript` key to another
   // package. The dependent has to be filed under the npm name the specifier
-  // targets, with the range and the version the alias resolved to.
+  // targets, with the range and the version the alias resolved to, and the key
+  // it was declared under — that key is what makes the declaration binding
+  // rather than a range the dedupe may rewrite.
   it("resolves an importer alias whose key names another package", () => {
     const ranges = rangesFor("aliased-swapped-names", [
       "typescript",
@@ -186,6 +188,7 @@ describe("collectDependentRanges", () => {
         key: "package.json in devDependencies",
         range: "7.0.2",
         resolvedVersion: "7.0.2",
+        aliasKey: "@typescript/native",
         workspace: { path: ".", depType: "devDependencies" },
       },
       {
@@ -201,6 +204,7 @@ describe("collectDependentRanges", () => {
         key: "package.json in devDependencies",
         range: "6.0.2",
         resolvedVersion: "6.0.2",
+        aliasKey: "typescript",
         workspace: { path: ".", depType: "devDependencies" },
       },
     ]);
@@ -225,6 +229,7 @@ describe("collectDependentRanges", () => {
           key: "package.json in devDependencies",
           range: "5.0.7",
           resolvedVersion: "5.0.7",
+          aliasKey: "printable-shell-command-pinned",
           workspace: { path: ".", depType: "devDependencies" },
         },
       ],

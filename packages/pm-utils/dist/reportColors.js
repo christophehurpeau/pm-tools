@@ -9,9 +9,10 @@ const palette = {
     packageName: { hex: "#d7875f", ansi256: 173 },
 };
 /**
- * `styleText`'s own stream detection is not portable: bun emits escape codes
- * whether or not stdout is a TTY, and ignores the `stream` / `validateStream`
- * options. The bins run under both runtimes, so the decision is taken here.
+ * `styleText`'s own stream detection always looks at `process.stdout`, and bun
+ * has emitted escape codes regardless of it in the past. The bins run under
+ * both runtimes and also report on stderr, so the decision is taken here and
+ * `styleText` is called with `validateStream: false`.
  */
 export const shouldColorize = (stream = process.stdout) => {
     const { FORCE_COLOR, NO_COLOR, TERM } = process.env;
@@ -42,7 +43,7 @@ const paletteCode = (style) => {
 const styled = (styles, text) => {
     const requested = Array.isArray(styles) ? styles : [styles];
     const named = requested.filter((style) => !isPaletteStyle(style));
-    const inner = named.length > 0 ? styleText(named, text) : text;
+    const inner = named.length > 0 ? styleText(named, text, { validateStream: false }) : text;
     const paletteStyle = requested.find(isPaletteStyle);
     return paletteStyle === undefined
         ? inner

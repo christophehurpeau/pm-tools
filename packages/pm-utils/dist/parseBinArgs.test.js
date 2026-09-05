@@ -22,7 +22,11 @@ const withCapturedOutput = (run) => {
         return { result: run(), output: lines.join("\n") };
     }
     finally {
-        process.exitCode = exitCodeBefore;
+        if (process.exitCode !== exitCodeBefore) {
+            // bun ignores `process.exitCode = undefined` (node resets it), so the
+            // whole run would end on 1 with every test passing.
+            process.exitCode = exitCodeBefore ?? 0;
+        }
     }
 };
 describe("parseBinArgs", () => {
@@ -33,7 +37,9 @@ describe("parseBinArgs", () => {
     });
     it("parses the arguments it knows", () => {
         const parsed = parse(["--check", "lodash"]);
-        deepStrictEqual(parsed?.values, { check: true });
+        // `parseArgs` returns a null-prototype `values`, and `deepStrictEqual`
+        // compares prototypes.
+        deepStrictEqual(parsed?.values, { __proto__: null, check: true });
         deepStrictEqual(parsed?.positionals, ["lodash"]);
     });
     it("prints the usage and stops on --help", () => {
