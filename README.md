@@ -8,15 +8,15 @@
 
 <h3>📦 Packages</h3>
 
-This repository is a monorepo that we manage using [Yarn Workspaces](https://yarnpkg.com/features/workspaces).
+This repository is a monorepo managed with [bun workspaces](https://bun.com/docs/install/workspaces).
 
 | Package                                                   | Version                                                                                                                                              | Description                                     |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| [bun-dedup](packages/bun-dedup)                           | <a href="https://npmjs.org/package/bun-dedup"><img src="https://img.shields.io/npm/v/bun-dedup.svg?style=flat-square"></a>                           | Simple bin to know why a package is duplicated  |
+| [bun-dedup](packages/bun-dedup)                           | <a href="https://npmjs.org/package/bun-dedup"><img src="https://img.shields.io/npm/v/bun-dedup.svg?style=flat-square"></a>                           | List duplicates and dedupe bun lock file        |
 | [pm-utils](packages/pm-utils)                             | <a href="https://npmjs.org/package/pm-utils"><img src="https://img.shields.io/npm/v/pm-utils.svg?style=flat-square"></a>                             | package manager utils                           |
-| [yarn-why-duplicate](packages/yarn-why-duplicate)         | <a href="https://npmjs.org/package/yarn-why-duplicate"><img src="https://img.shields.io/npm/v/yarn-why-duplicate.svg?style=flat-square"></a>         | Simple bin to know why a package is duplicated  |
 | [pnpm-dedup](packages/pnpm-dedup)                         | <a href="https://npmjs.org/package/pnpm-dedup"><img src="https://img.shields.io/npm/v/pnpm-dedup.svg?style=flat-square"></a>                         | List duplicates and dedupe pnpm lock file       |
 | [yarn-berry-deduplicate](packages/yarn-berry-deduplicate) | <a href="https://npmjs.org/package/yarn-berry-deduplicate"><img src="https://img.shields.io/npm/v/yarn-berry-deduplicate.svg?style=flat-square"></a> | List duplicates and dedupe yarn berry lock file |
+| [yarn-why-duplicate](packages/yarn-why-duplicate)         | <a href="https://npmjs.org/package/yarn-why-duplicate"><img src="https://img.shields.io/npm/v/yarn-why-duplicate.svg?style=flat-square"></a>         | Simple bin to know why a package is duplicated  |
 
 Every tool here answers the same two questions, for a different package manager:
 
@@ -122,8 +122,7 @@ that blocked it.
 bun install
 bun test          # TZ=UTC, includes end-to-end tests that run the real package managers
 bun run tsc
-bun run lint
-bun run checks    # dependency consistency across the workspace
+bun run lint      # oxfmt, oxlint, eslint
 ```
 
 Source is `.ts` run directly — no build step is needed to run the bins.

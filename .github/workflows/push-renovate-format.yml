@@ -1,17 +1,18 @@
-name: Commit changes on @pob/root update
+name: Run format on renovate update
 
 on:
   push:
     branches:
-      - "renovate/pob-root"
-      - "renovate/pob-root-**"
-      - "renovate/major-pob-root"
+      - "renovate/oxfmt-**"
+      - "renovate/major-oxfmt"
+      - "renovate/prettier-**"
+      - "renovate/major-prettier"
 
 permissions:
   contents: write
 
 jobs:
-  run-install-and-commit-modified-files:
+  run-format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -26,18 +27,10 @@ jobs:
           node-version: 24
 
       - name: Install Dependencies
-        # no immutable here
-        run: bun i
-        env:
-          YARN_ENABLE_IMMUTABLE_INSTALLS: false
+        run: bun i --frozen-lockfile
 
-      - name: Run pob-root-postinstall
-        run: bun run pob-root-postinstall
-
-      - name: Run pob update
-        run: npx pob update --force
-        env:
-          YARN_ENABLE_IMMUTABLE_INSTALLS: false
+      - name: Run format
+        run: bun run format
 
       - name: Check for added or modified files
         id: git-check-modified
@@ -49,7 +42,5 @@ jobs:
           git add .
           git -c user.name="Christophe Hurpeau" \
             -c user.email="christophehurpeau@users.noreply.github.com" \
-            commit -m "chore: update pob root" --author="github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+            commit -m "style: format" --author="github-actions[bot] <actions@github.com>"
           git push --no-verify
-        env:
-          YARN_ENABLE_IMMUTABLE_INSTALLS: false

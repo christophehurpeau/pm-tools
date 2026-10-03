@@ -4,6 +4,9 @@
   "description": "package manager utils",
   "keywords": [],
   "homepage": "https://github.com/christophehurpeau/pm-tools",
+  "bugs": {
+    "url": "https://github.com/christophehurpeau/pm-tools/issues"
+  },
   "license": "MIT",
   "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
   "repository": {
@@ -30,8 +33,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "bun run lint:eslint",
+    "lint": "bun run lint:oxlint && bun run lint:eslint",
     "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/pm-utils'",
+    "lint:oxlint": "bun run --cwd '../..' oxlint --quiet 'packages/pm-utils'",
     "test": "bun run --cwd '../..' test -- 'packages/pm-utils'",
     "tsc": "tsc"
   },
@@ -43,7 +47,8 @@
   "devDependencies": {
     "@types/bun": "1.3.14",
     "@types/picomatch": "4.0.3",
-    "typescript": "6.0.3"
+    "@typescript/native": "npm:typescript@7.0.2",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "engines": {
     "node": ">=22.18.0"

@@ -8,7 +8,7 @@
   ],
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "bugs": {
-    "url": "https://github.com/christophehurpeau/yarn-why-duplicate/issues"
+    "url": "https://github.com/christophehurpeau/pm-tools/issues"
   },
   "license": "ISC",
   "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
@@ -30,11 +30,10 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "lint": "bun run lint:eslint",
+    "lint": "bun run lint:oxlint && bun run lint:eslint",
     "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/yarn-why-duplicate'",
-    "test": "bun run --cwd '../..' test -- 'packages/yarn-why-duplicate'",
-    "test:coverage:json": "npx c8 --reporter=json --all --src ./lib node --test test/*.js",
-    "test:coverage:lcov": "TS_NODE_PROJECT=tsconfig.test.json npx c8 --reporter=lcov --src ./lib node --test test/*.js"
+    "lint:oxlint": "bun run --cwd '../..' oxlint --quiet 'packages/yarn-why-duplicate'",
+    "test": "bun run --cwd '../..' test -- 'packages/yarn-why-duplicate'"
   },
   "dependencies": {
     "@yarnpkg/core": "4.9.1",

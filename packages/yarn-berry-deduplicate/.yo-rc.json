@@ -5,7 +5,8 @@
       "testing": {
         "runner": "node",
         "codecov": false
-      }
+      },
+      "e2e": false
     },
     "project": {
       "type": "lib",

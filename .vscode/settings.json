@@ -1,6 +1,7 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
+  // typescript 7 is provided by the TypeScriptTeam.native-preview extension.
+  // "typescript" resolves to the typescript 6 api package, which has no
+  // tsserver, so it cannot be used as "typescript.tsdk".
 
   // set bun as package manager to run scripts and tasks
   "npm.packageManager": "bun",
@@ -9,6 +10,7 @@
   "editor.formatOnSave": true,
   "eslint.codeActionsOnSave.mode": "all",
   "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "always",
     "source.fixAll.eslint": "always",
     "source.organizeImports": "never"
   },

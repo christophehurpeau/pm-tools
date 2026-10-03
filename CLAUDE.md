@@ -35,9 +35,9 @@ Dedupe runs in two passes. The **cluster pass** edits `package.json` and re-runs
 
 ## Working in this repo
 
-- Managed with **bun** workspaces (`bun.lock`, `bunfig.toml`) — the README's "Yarn Workspaces" line is stale.
-- `bun test` (root, `TZ=UTC`), `bun run tsc`, `bun run lint`, `bun run checks` (dependency consistency).
-- Source is `.ts` run directly — no build step needed to run bins. `bun run build` only emits `dist/` type definitions + JS for publishing; `dist/` is committed, which is why `bunfig.toml` excludes it from test discovery.
+- Managed with **bun** workspaces (`bun.lock`, `bunfig.toml`).
+- `bun test` (root, `TZ=UTC`), `bun run tsc`, `bun run lint` (oxfmt, oxlint, then eslint).
+- Source is `.ts` run directly — no build step needed to run bins. `bun run build` only emits `dist/` type definitions + JS for publishing; `dist/` is gitignored and built by CI before release, and `bunfig.toml` excludes it from test discovery since a local build leaves it in place.
 - No function resolves a lockfile path on its own: every read/write takes an explicit path, built by each package's `helpers/projectDir.ts` (`lockPathOf`, `resolve<Pm>ProjectDir`) from a `projectDir` that `pm-utils`' `resolveProjectDir` found by walking up from the working directory — that is what lets the bins run from a subdirectory. A default relative path (`readAndParseBunLock(filepath = "bun.lock")`) silently means "the working directory" and reintroduces the bug; keep the parameter required. `resolveProjectDir` returns null when there is no lockfile, having printed the reason and set the exit code — the `parseBinArgs` contract, and why the entry functions guard with `if (projectDir === null) return`.
 - Tests live next to the source (`src/**/*.test.ts`). End-to-end dedupe tests create real temp projects and invoke the real package manager (`src/helpers/tempProjects.ts`, `runBun.ts` / `runPnpm.ts` / `runYarn.ts`) — they are slow and require the PM on PATH.
 - Lockfile fixtures under `test/fixtures/<scenario>/` must be byte-exact: assert that parsing and re-serializing one returns it unchanged, or a "leaves a clean lockfile alone" test will fail on formatting rather than on behaviour. For yarn, a bare `yarn` is corepack's 1.x in a project that pins nothing, so a berry fixture carries `packageManager` and its own `.yarnrc.yml`, and the e2e suite probes `yarn --version` **inside the fixture** before deciding to run.

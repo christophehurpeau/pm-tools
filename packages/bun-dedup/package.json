@@ -9,7 +9,7 @@
   ],
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "bugs": {
-    "url": "https://github.com/christophehurpeau/bun-dedup/issues"
+    "url": "https://github.com/christophehurpeau/pm-tools/issues"
   },
   "license": "ISC",
   "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
@@ -41,11 +41,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "bun run lint:eslint",
+    "lint": "bun run lint:oxlint && bun run lint:eslint",
     "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/bun-dedup'",
+    "lint:oxlint": "bun run --cwd '../..' oxlint --quiet 'packages/bun-dedup'",
     "test": "bun run --cwd '../..' test -- 'packages/bun-dedup'",
-    "test:coverage:json": "npx c8 --reporter=json --all --src ./lib node --test test/*.js",
-    "test:coverage:lcov": "TS_NODE_PROJECT=tsconfig.test.json npx c8 --reporter=lcov --src ./lib node --test test/*.js",
     "tsc": "tsc"
   },
   "dependencies": {
@@ -53,10 +52,11 @@
     "json5": "2.2.3",
     "pm-utils": "workspace:*",
     "semver": "7.8.5",
-    "tslib": "2.8.1"
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "typescript": "6.0.3"
+    "@typescript/native": "npm:typescript@7.0.2",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "engines": {
     "node": ">=22.18.0"

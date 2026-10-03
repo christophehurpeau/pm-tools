@@ -1,6 +1,4 @@
-// Backported to node 22.13, so every version this package supports has it
-// except the 23.0-23.4 window the engines range admits only in theory.
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
+// Backported to node 22.13: allowed in eslint.config.js.
 import { styleText } from "node:util";
 
 // One hue for package identifiers, the scope a shade deeper than the name it

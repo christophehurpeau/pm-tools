@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "private": true,
   "homepage": "https://github.com/christophehurpeau/pm-tools",
+  "bugs": {
+    "url": "https://github.com/christophehurpeau/pm-tools/issues"
+  },
   "license": "ISC",
   "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
   "repository": "https://github.com/christophehurpeau/pm-tools.git",
@@ -13,26 +16,24 @@
   "scripts": {
     "build": "bun run build:definitions",
     "build:definitions": "tsc -b",
-    "checks": "node scripts/check-packages.js",
     "format": "oxfmt",
     "format:check": "oxfmt --check .",
-    "lint": "bun run format && bun run lint:eslint",
+    "lint": "bun run format && bun run lint:oxlint && bun run lint:eslint",
     "lint:eslint": "eslint --quiet .",
-    "lint:prettier": "pob-root-prettier --check .",
-    "lint:prettier:fix": "pob-root-prettier --write .",
+    "lint:oxlint": "oxlint --quiet",
     "prepare": "pob-root-postinstall",
     "test": "TZ=UTC bun test",
     "test:coverage": "TZ=UTC bun test --coverage ",
-    "test:coverage:json": "TZ=UTC bun test --coverage --coverage-report=json",
+    "test:coverage:generate": "TZ=UTC bun test --coverage --coverage-report=json",
     "test:watch": "TZ=UTC bun test --watch",
     "tsc": "tsc -b"
   },
   "devDependencies": {
-    "@pob/eslint-config": "65.4.3",
-    "@pob/root": "24.2.1",
-    "check-package-dependencies": "11.1.1",
-    "eslint": "10.4.0",
-    "typescript": "6.0.3"
+    "@pob/eslint-config": "67.10.0",
+    "@pob/root": "27.11.0",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "eslint": "10.8.1",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "commitlint": {
     "extends": [
