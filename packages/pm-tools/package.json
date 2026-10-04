@@ -1,0 +1,35 @@
+{
+  "name": "pm-tools",
+  "version": "0.0.1-pre",
+  "description": "Find out why a dependency is duplicated in a lockfile, and dedupe it. Name reserved for the pm-tools monorepo; install one of its packages instead.",
+  "keywords": [
+    "bun",
+    "dedupe",
+    "duplicate",
+    "lockfile",
+    "package manager",
+    "pnpm",
+    "yarn"
+  ],
+  "homepage": "https://github.com/christophehurpeau/pm-tools",
+  "bugs": {
+    "url": "https://github.com/christophehurpeau/pm-tools/issues"
+  },
+  "license": "MIT",
+  "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/christophehurpeau/pm-tools.git",
+    "directory": "packages/pm-tools"
+  },
+  "files": [],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "pob": {}
+}

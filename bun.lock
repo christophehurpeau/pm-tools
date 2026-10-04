@@ -33,7 +33,7 @@
     },
     "packages/pm-dedup-core": {
       "name": "pm-dedup-core",
-      "version": "0.0.0",
+      "version": "1.0.0-pre",
       "dependencies": {
         "picomatch": "4.0.4",
         "semver": "7.8.5",
@@ -45,6 +45,10 @@
         "@typescript/native": "npm:typescript@7.0.2",
         "typescript": "npm:@typescript/typescript6@6.0.2",
       },
+    },
+    "packages/pm-tools": {
+      "name": "pm-tools",
+      "version": "0.0.1-pre",
     },
     "packages/pnpm-dedup": {
       "name": "pnpm-dedup",
@@ -878,6 +882,8 @@
     "pluralize": ["pluralize@8.0.0", "", {}, "sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA=="],
 
     "pm-dedup-core": ["pm-dedup-core@workspace:packages/pm-dedup-core"],
+
+    "pm-tools": ["pm-tools@workspace:packages/pm-tools"],
 
     "pnpm-dedup": ["pnpm-dedup@workspace:packages/pnpm-dedup"],
 
