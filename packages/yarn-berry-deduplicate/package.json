@@ -1,6 +1,6 @@
 {
   "name": "yarn-berry-deduplicate",
-  "version": "7.0.0",
+  "version": "2.1.0",
   "description": "List duplicates and dedupe yarn berry lock file",
   "keywords": [
     "dedupe",

@@ -1,6 +1,6 @@
 {
   "name": "pm-tools",
-  "version": "0.0.1-pre",
+  "version": "2.1.0",
   "description": "Find out why a dependency is duplicated in a lockfile, and dedupe it. Name reserved for the pm-tools monorepo; install one of its packages instead.",
   "keywords": [
     "bun",

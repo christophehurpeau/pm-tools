@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.0](https://github.com/christophehurpeau/pm-tools/compare/v2.0.0...v2.1.0) (2026-10-04)
+
+### Features
+
+* add experimental bun-why-duplicate
+* improvements, docs and yarn support
+* rename pm-utils to pm-dedup-core, point bins at dist, add bun-dedup bin alias
+
+### Bug Fixes
+
+* **deps:** update dependency @yarnpkg/core to v4.9.2 ([#178](https://github.com/christophehurpeau/pm-tools/issues/178))
+
 ## [2.0.0](https://github.com/christophehurpeau/yarn-why-duplicate/compare/v1.2.0...v2.0.0) (2023-11-05)
 
 
