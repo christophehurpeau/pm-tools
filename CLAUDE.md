@@ -16,7 +16,6 @@ Two things every tool does:
 | [pnpm-dedup](packages/pnpm-dedup)                         | `pnpm-dedupe`, `pnpm-why-duplicate` — reads `pnpm-lock.yaml`.                                                                               |
 | [yarn-berry-deduplicate](packages/yarn-berry-deduplicate) | `yarn-berry-deduplicate`, `yarn-berry-why-duplicate` — reads yarn berry `yarn.lock`.                                                        |
 | [yarn-why-duplicate](packages/yarn-why-duplicate)         | Older, plain-JS tool that parses `yarn why` output. Not TypeScript, not on the shared core.                                                 |
-| [pm-tools](packages/pm-tools)                             | Empty package that reserves the monorepo's name on npm. Ships nothing; keep it that way.                                                    |
 
 `bun-dedup`, `pnpm-dedup` and `yarn-berry-deduplicate` follow the same shape: `src/index.ts` (public API), `src/bin/*.ts`, `src/helpers/*` for the PM-specific lockfile parsing / graph building, then delegate the actual algorithm to `pm-dedup-core`. When changing behavior in one, check whether the others need the same change or whether the logic belongs in `pm-dedup-core`.
 
