@@ -1,4 +1,4 @@
-import type { LockstepGraph, LockstepResolution } from "pm-utils";
+import type { LockstepGraph, LockstepResolution } from "pm-dedup-core";
 import type { PnpmLockFile } from "../pnpmLockTypes.ts";
 import type { PackagesMap } from "./buildPnpmPackagesMap.ts";
 import { resolveSnapshotDependency } from "./parsePnpmLockPackages.ts";

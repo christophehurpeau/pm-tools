@@ -7,8 +7,8 @@ import {
   renderDedupeSummary,
   selectExplainedPackages,
   selectPackages,
-} from "pm-utils";
-import type { PackageFilterOptions, VersionsSnapshot } from "pm-utils";
+} from "pm-dedup-core";
+import type { PackageFilterOptions, VersionsSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { displayMany } from "./displayMany.ts";
 import { applyIdentifiedFixesToBunLock } from "./helpers/applyIdentifiedFixesToBunLock.ts";
@@ -37,8 +37,8 @@ export {
   readVersionsSnapshot,
   versionsSnapshotOf,
 } from "./helpers/versionsSnapshot.ts";
-export { identifyResolutionFixes } from "pm-utils";
-export type { ResolutionFix } from "pm-utils";
+export { identifyResolutionFixes } from "pm-dedup-core";
+export type { ResolutionFix } from "pm-dedup-core";
 export { identifyClusterFixes } from "./identifyClusterFixes.ts";
 export { writeBunLockFile } from "./helpers/writeBunLockFile.ts";
 

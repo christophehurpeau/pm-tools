@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { identifyResolutionFixes } from "pm-utils";
+import { identifyResolutionFixes } from "pm-dedup-core";
 import type { PackageResolution } from "./helpers/buildPnpmPackagesMap.ts";
 import type { Dependent } from "./helpers/collectPnpmDependents.ts";
 

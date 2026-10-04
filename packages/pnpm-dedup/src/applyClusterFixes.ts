@@ -12,7 +12,7 @@ import {
   restoreFiles,
   selectClusterFixes,
   shouldColorize,
-} from "pm-utils";
+} from "pm-dedup-core";
 import type {
   ApplyPlanFileChange,
   ClusterFix,
@@ -22,7 +22,7 @@ import type {
   PlannedManifestEdit,
   PlannedOverride,
   SelectedClusterFixes,
-} from "pm-utils";
+} from "pm-dedup-core";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.ts";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.ts";

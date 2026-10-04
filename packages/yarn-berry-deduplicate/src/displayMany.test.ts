@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { buildIdentifiedFixesMap } from "pm-utils";
+import { buildIdentifiedFixesMap } from "pm-dedup-core";
 import { displayMany } from "./displayMany.ts";
 import type { DisplayManyOptions } from "./displayMany.ts";
 import { filterDuplicatesYarnPackagesMap } from "./helpers/buildYarnPackagesMap.ts";
@@ -7,7 +7,7 @@ import { collectYarnDependents } from "./helpers/collectYarnDependents.ts";
 import { loadFixture } from "./helpers/fixtures.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 
-// The report layout is covered in pm-utils (`renderDuplicatesReport`); these
+// The report layout is covered in pm-dedup-core (`renderDuplicatesReport`); these
 // only check that the yarn.lock model is mapped onto it correctly.
 const render = (
   scenario: string,

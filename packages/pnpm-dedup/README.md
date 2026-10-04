@@ -215,4 +215,4 @@ dedupe({
 The lockfile parsing and graph building steps are exported too (`readPnpmLock`,
 `parsePnpmLockPackages`, `buildPnpmPackagesMap`, `collectPnpmDependents`,
 `collectDependentRanges`, `toLockstepGraph`), for building something else on
-top; the algorithm itself lives in [pm-utils](../pm-utils).
+top; the algorithm itself lives in [pm-dedup-core](../pm-dedup-core).

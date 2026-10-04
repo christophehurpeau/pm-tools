@@ -1,5 +1,8 @@
-import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
-import type { ClusterWorkspaceRef } from "pm-utils";
+import {
+  PackageDependencyDescriptorUtils,
+  isSemverComparable,
+} from "pm-dedup-core";
+import type { ClusterWorkspaceRef } from "pm-dedup-core";
 import type { PnpmLockFile } from "../pnpmLockTypes.ts";
 import {
   parsePackageId,

@@ -1,4 +1,7 @@
-import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
+import {
+  PackageDependencyDescriptorUtils,
+  isSemverComparable,
+} from "pm-dedup-core";
 import type { PnpmLockFile } from "../pnpmLockTypes.ts";
 import {
   parsePackageId,

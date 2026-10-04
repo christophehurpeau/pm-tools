@@ -6,7 +6,7 @@
   "bugs": {
     "url": "https://github.com/christophehurpeau/pm-tools/issues"
   },
-  "license": "ISC",
+  "license": "MIT",
   "author": "Christophe Hurpeau <christophe@hurpeau.com> (https://christophe.hurpeau.com)",
   "repository": "https://github.com/christophehurpeau/pm-tools.git",
   "workspaces": [
@@ -14,8 +14,9 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "bun run build:definitions",
+    "build": "bun run clean && bun run build:definitions",
     "build:definitions": "tsc -b",
+    "clean": "rm -rf packages/*/dist packages/*/node_modules/.cache/tsc",
     "format": "oxfmt",
     "format:check": "oxfmt --check .",
     "lint": "bun run format && bun run lint:oxlint && bun run lint:eslint",

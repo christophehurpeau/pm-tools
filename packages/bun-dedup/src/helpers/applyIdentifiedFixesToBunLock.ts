@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import type { BunLockFile } from "bun";
-import type { ResolutionFix } from "pm-utils";
+import type { ResolutionFix } from "pm-dedup-core";
 
 export interface ApplyFixesResult {
   changed: boolean;

@@ -196,4 +196,4 @@ fixDuplicates({
 The lockfile parsing and graph building steps are exported too
 (`readAndParseYarnLock`, `parseYarnLockPackages`, `buildYarnPackagesMap`,
 `collectYarnDependents`, `toLockstepGraph`, `writeYarnLockFile`), for building
-something else on top; the algorithm itself lives in [pm-utils](../pm-utils).
+something else on top; the algorithm itself lives in [pm-dedup-core](../pm-dedup-core).

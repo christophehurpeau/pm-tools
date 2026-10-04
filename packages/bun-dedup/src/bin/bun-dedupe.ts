@@ -5,7 +5,7 @@ import {
   packageFilterUsage,
   parseBinArgs,
   toPackageFilterOptions,
-} from "pm-utils";
+} from "pm-dedup-core";
 import { fixDuplicates } from "../index.ts";
 import type { DedupeMode } from "../index.ts";
 

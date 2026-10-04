@@ -1,5 +1,5 @@
-import { buildVersionsSnapshot } from "pm-utils";
-import type { VersionsSnapshot } from "pm-utils";
+import { buildVersionsSnapshot } from "pm-dedup-core";
+import type { VersionsSnapshot } from "pm-dedup-core";
 import { readAndParseYarnLock } from "../readYarnLock.ts";
 import { parseYarnLockPackages } from "./parseYarnLockPackages.ts";
 import type { YarnLockPackages } from "./parseYarnLockPackages.ts";

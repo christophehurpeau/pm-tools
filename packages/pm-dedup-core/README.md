@@ -1,5 +1,5 @@
 <h1 align="center">
-  pm-utils
+  pm-dedup-core
 </h1>
 
 <p align="center">
@@ -7,16 +7,16 @@
 </p>
 
 <p align="center">
-  <a href="https://npmjs.org/package/pm-utils"><img src="https://img.shields.io/npm/v/pm-utils.svg?style=flat-square" alt="npm version"></a>
-  <a href="https://npmjs.org/package/pm-utils"><img src="https://img.shields.io/npm/dw/pm-utils.svg?style=flat-square" alt="npm downloads"></a>
-  <a href="https://npmjs.org/package/pm-utils"><img src="https://img.shields.io/node/v/pm-utils.svg?style=flat-square" alt="node version"></a>
-  <a href="https://npmjs.org/package/pm-utils"><img src="https://img.shields.io/npm/types/pm-utils.svg?style=flat-square" alt="types"></a>
+  <a href="https://npmjs.org/package/pm-dedup-core"><img src="https://img.shields.io/npm/v/pm-dedup-core.svg?style=flat-square" alt="npm version"></a>
+  <a href="https://npmjs.org/package/pm-dedup-core"><img src="https://img.shields.io/npm/dw/pm-dedup-core.svg?style=flat-square" alt="npm downloads"></a>
+  <a href="https://npmjs.org/package/pm-dedup-core"><img src="https://img.shields.io/node/v/pm-dedup-core.svg?style=flat-square" alt="node version"></a>
+  <a href="https://npmjs.org/package/pm-dedup-core"><img src="https://img.shields.io/npm/types/pm-dedup-core.svg?style=flat-square" alt="types"></a>
 </p>
 
 ## Install
 
 ```bash
-npm install --save pm-utils
+npm install --save pm-dedup-core
 ```
 
 ## Usage
@@ -38,7 +38,7 @@ import {
   createPackageFilter,
   findProjectRoot,
   identifyResolutionFixes,
-} from "pm-utils";
+} from "pm-dedup-core";
 
 const projectDir = findProjectRoot({ lockfileName: "bun.lock" }); // null when there is none
 const filter = createPackageFilter({

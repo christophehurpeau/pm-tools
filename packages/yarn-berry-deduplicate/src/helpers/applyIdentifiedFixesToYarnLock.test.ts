@@ -3,8 +3,8 @@ import {
   buildIdentifiedFixesMap,
   createPackageFilter,
   selectPackages,
-} from "pm-utils";
-import type { PackageFilterOptions, ResolutionFix } from "pm-utils";
+} from "pm-dedup-core";
+import type { PackageFilterOptions, ResolutionFix } from "pm-dedup-core";
 import { applyIdentifiedFixesToYarnLock } from "./applyIdentifiedFixesToYarnLock.ts";
 import { filterDuplicatesYarnPackagesMap } from "./buildYarnPackagesMap.ts";
 import { collectYarnDependents } from "./collectYarnDependents.ts";

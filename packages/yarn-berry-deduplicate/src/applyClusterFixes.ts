@@ -12,7 +12,7 @@ import {
   restoreFiles,
   selectClusterFixes,
   shouldColorize,
-} from "pm-utils";
+} from "pm-dedup-core";
 import type {
   ApplyPlanFileChange,
   ClusterFix,
@@ -22,7 +22,7 @@ import type {
   PlannedManifestEdit,
   PlannedOverride,
   SelectedClusterFixes,
-} from "pm-utils";
+} from "pm-dedup-core";
 import { buildYarnPackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import {
   collectWorkspaces,

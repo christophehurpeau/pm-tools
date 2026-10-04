@@ -1,11 +1,11 @@
-import { renderDuplicatesReport } from "pm-utils";
+import { renderDuplicatesReport } from "pm-dedup-core";
 import type {
   ClusterFix,
   DuplicateDedupeView,
   DuplicatePackageView,
   DuplicatesReportTitle,
   ResolutionFix,
-} from "pm-utils";
+} from "pm-dedup-core";
 import semver from "semver";
 import type { PackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import type { DependentsMap } from "./helpers/collectYarnDependents.ts";

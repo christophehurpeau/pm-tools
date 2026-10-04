@@ -56,9 +56,9 @@ merged — and its sibling `yarn-berry-deduplicate` applies the merges.
 
 ## Notes
 
-- CLI only: there is no importable API. The `exports` map points `.` at
-  `./lib/index.js`, which the package does not ship, and exposes no subpath —
-  so `import "yarn-why-duplicate"` fails. Internally the bin is three steps,
+- CLI only: there is no importable API. The `exports` map only exposes
+  `./package.json`, so `import "yarn-why-duplicate"` fails by design. Internally
+  the bin is three steps,
   `readAndParseYarnWhy` → `identifyDuplicates` → `displayDuplicates`, each in
   its own file under `lib/` and each unit-tested against recorded `yarn why`
   output in `test/fixtures/`.

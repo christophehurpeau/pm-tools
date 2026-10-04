@@ -7,8 +7,8 @@ import {
   renderDedupeSummary,
   selectExplainedPackages,
   selectPackages,
-} from "pm-utils";
-import type { PackageFilterOptions, VersionsSnapshot } from "pm-utils";
+} from "pm-dedup-core";
+import type { PackageFilterOptions, VersionsSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { displayMany } from "./displayMany.ts";
 import { applyIdentifiedFixesToYarnLock } from "./helpers/applyIdentifiedFixesToYarnLock.ts";
@@ -69,8 +69,8 @@ export {
 } from "./helpers/versionsSnapshot.ts";
 export { applyIdentifiedFixesToYarnLock } from "./helpers/applyIdentifiedFixesToYarnLock.ts";
 export { writeYarnLockFile } from "./helpers/writeYarnLockFile.ts";
-export { identifyResolutionFixes } from "pm-utils";
-export type { ResolutionFix } from "pm-utils";
+export { identifyResolutionFixes } from "pm-dedup-core";
+export type { ResolutionFix } from "pm-dedup-core";
 
 interface ReadProjectResult {
   entries: ReturnType<typeof readAndParseYarnLock>;

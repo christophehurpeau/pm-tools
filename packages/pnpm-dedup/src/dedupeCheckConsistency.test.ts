@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildIdentifiedFixesMap } from "pm-utils";
+import { buildIdentifiedFixesMap } from "pm-dedup-core";
 import {
   buildPnpmPackagesMap,
   collectPnpmDependents,

@@ -1,10 +1,10 @@
-import { renderDuplicatesReport } from "pm-utils";
+import { renderDuplicatesReport } from "pm-dedup-core";
 import type {
   ClusterFix,
   DuplicateDedupeView,
   DuplicatePackageView,
   DuplicatesReportTitle,
-} from "pm-utils";
+} from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import type { DependentRangesMap } from "./helpers/collectDependentRanges.ts";
 

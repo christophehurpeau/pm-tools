@@ -1,4 +1,4 @@
-import type { ResolutionFix } from "pm-utils";
+import type { ResolutionFix } from "pm-dedup-core";
 import { packageEntries } from "./syml.ts";
 import type { YarnEntries, YarnEntry } from "./syml.ts";
 import { splitEntryKey } from "./yarnDescriptor.ts";

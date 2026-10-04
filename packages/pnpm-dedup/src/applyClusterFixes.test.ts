@@ -3,7 +3,7 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ClusterFix, DuplicateSnapshot } from "pm-utils";
+import type { ClusterFix, DuplicateSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { createTempProjects } from "./helpers/tempProjects.ts";
 

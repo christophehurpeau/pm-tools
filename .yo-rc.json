@@ -12,7 +12,7 @@
       "typescript": true,
       "eslint": true,
       "packageNames": [
-        "pm-utils",
+        "pm-dedup-core",
         "yarn-why-duplicate",
         "bun-dedup",
         "pnpm-dedup",

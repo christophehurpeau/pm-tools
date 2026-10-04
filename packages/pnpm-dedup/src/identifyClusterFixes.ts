@@ -1,9 +1,12 @@
-import { buildLockstepClusters, identifyLockstepClusterFixes } from "pm-utils";
+import {
+  buildLockstepClusters,
+  identifyLockstepClusterFixes,
+} from "pm-dedup-core";
 import type {
   ClusterDependentsMap,
   ClusterFix,
   ClusterMembersMap,
-} from "pm-utils";
+} from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
 import type { ManifestReader } from "./helpers/readInstalledManifest.ts";
@@ -14,7 +17,7 @@ export type {
   ClusterExternalConstraint,
   ClusterFix,
   ClusterReuseFix,
-} from "pm-utils";
+} from "pm-dedup-core";
 
 // A lone duplicated package is a cluster of one: nothing co-versions with it,
 // but it converges through the same mechanism — the dependents that hold its

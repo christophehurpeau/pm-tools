@@ -1,5 +1,8 @@
-import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
-import type { PackageDependencyDescriptor } from "pm-utils";
+import {
+  PackageDependencyDescriptorUtils,
+  isSemverComparable,
+} from "pm-dedup-core";
+import type { PackageDependencyDescriptor } from "pm-dedup-core";
 import type { Workspace } from "./collectWorkspaces.ts";
 import type { YarnLockPackages, YarnPackage } from "./parseYarnLockPackages.ts";
 import type { YarnProtocol } from "./yarnProtocol.ts";

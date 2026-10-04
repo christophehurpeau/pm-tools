@@ -1,4 +1,4 @@
-import type { DuplicateSnapshot } from "pm-utils";
+import type { DuplicateSnapshot } from "pm-dedup-core";
 import { readPnpmLock } from "../readPnpmLock.ts";
 import {
   buildPnpmPackagesMap,

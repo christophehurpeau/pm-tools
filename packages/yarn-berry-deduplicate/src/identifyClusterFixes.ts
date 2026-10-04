@@ -1,9 +1,12 @@
-import { buildLockstepClusters, identifyLockstepClusterFixes } from "pm-utils";
+import {
+  buildLockstepClusters,
+  identifyLockstepClusterFixes,
+} from "pm-dedup-core";
 import type {
   ClusterDependentsMap,
   ClusterFix,
   ClusterMembersMap,
-} from "pm-utils";
+} from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import type { Workspace } from "./helpers/collectWorkspaces.ts";
 import { collectYarnDependents } from "./helpers/collectYarnDependents.ts";
@@ -14,7 +17,7 @@ export type {
   ClusterExternalConstraint,
   ClusterFix,
   ClusterReuseFix,
-} from "pm-utils";
+} from "pm-dedup-core";
 
 const toClusterMembers = (
   packagesMap: PackagesMap,

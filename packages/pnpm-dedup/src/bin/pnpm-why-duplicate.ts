@@ -5,7 +5,7 @@ import {
   toWhyDuplicateRequest,
   whyDuplicateParseArgsOptions,
   whyDuplicateUsage,
-} from "pm-utils";
+} from "pm-dedup-core";
 import { listDuplicates, whyDuplicate } from "../index.ts";
 
 const usage = `Usage: pnpm-why-duplicate [package] [options]

@@ -17,8 +17,10 @@
 
 Requires `bun.lock` (the text lockfile, `bun install --save-text-lockfile` if
 the project still has `bun.lockb`). Nothing needs to be installed: `bunx` fetches
-the package, and `-p bun-dedup` is what tells it which one, since neither bin is
-named after the package.
+the package. The bins are `bun-why-duplicate` and `bun-dedupe`, plus `bun-dedup`
+as an alias of the latter — that one matches the package name, so `bunx bun-dedup`
+runs the dedupe with no flag. For the other two, `-p bun-dedup` is what tells
+`bunx` which package to fetch.
 
 Installing it (`bun add -d bun-dedup`) is only worth it to pin a version — for a
 CI gate, say. `bunx <bin>` then finds the local bin and the `-p` can be dropped.
@@ -185,4 +187,4 @@ fixDuplicates({
 The lockfile parsing and graph building steps are exported too
 (`readAndParseBunLock`, `parseBunLockPackages`, `buildPackagesMap`,
 `collectDependents`, `writeBunLockFile`), for building something else on top;
-the algorithm itself lives in [pm-utils](../pm-utils).
+the algorithm itself lives in [pm-dedup-core](../pm-dedup-core).

@@ -2,7 +2,7 @@ import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ClusterFix, DuplicateSnapshot } from "pm-utils";
+import type { ClusterFix, DuplicateSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { createTempProjects } from "./helpers/tempProjects.ts";
 

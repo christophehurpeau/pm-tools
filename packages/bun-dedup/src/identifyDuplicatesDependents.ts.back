@@ -1,5 +1,5 @@
 /* eslint-disable complexity */
-import { PackageDependencyDescriptorUtils } from "pm-utils";
+import { PackageDependencyDescriptorUtils } from "pm-dedup-core";
 import { compare as compareRange } from "semver";
 import { parseSelector } from "./bunResolvedUtils.ts";
 import type { BunLockFile } from "bun";

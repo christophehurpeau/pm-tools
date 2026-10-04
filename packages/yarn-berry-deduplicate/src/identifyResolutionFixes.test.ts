@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { buildIdentifiedFixesMap } from "pm-utils";
-import type { ResolutionFix } from "pm-utils";
+import { buildIdentifiedFixesMap } from "pm-dedup-core";
+import type { ResolutionFix } from "pm-dedup-core";
 import { filterDuplicatesYarnPackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import { collectYarnDependents } from "./helpers/collectYarnDependents.ts";
 import { loadFixture } from "./helpers/fixtures.ts";

@@ -1,5 +1,8 @@
 import type { BunLockFile } from "bun";
-import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
+import {
+  PackageDependencyDescriptorUtils,
+  isSemverComparable,
+} from "pm-dedup-core";
 import type { BunProtocol } from "./bunProtocol.ts";
 import type { BunLockPackages, BunPackage } from "./parseBunLockPackages.ts";
 

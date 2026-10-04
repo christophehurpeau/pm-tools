@@ -1,5 +1,8 @@
-import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
-import type { LockstepGraph } from "pm-utils";
+import {
+  PackageDependencyDescriptorUtils,
+  isSemverComparable,
+} from "pm-dedup-core";
+import type { LockstepGraph } from "pm-dedup-core";
 import type { PackagesMap } from "./buildPackagesMap.ts";
 import type { BunProtocol } from "./bunProtocol.ts";
 

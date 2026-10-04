@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ClusterFix, DuplicateSnapshot } from "pm-utils";
+import type { ClusterFix, DuplicateSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { createTempProjects } from "./helpers/tempProjects.ts";
 

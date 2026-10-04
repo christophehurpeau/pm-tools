@@ -1,5 +1,5 @@
-import { buildVersionsSnapshot } from "pm-utils";
-import type { VersionsSnapshot } from "pm-utils";
+import { buildVersionsSnapshot } from "pm-dedup-core";
+import type { VersionsSnapshot } from "pm-dedup-core";
 import { readPnpmLock } from "../readPnpmLock.ts";
 import { parsePnpmLockPackages } from "./parsePnpmLockPackages.ts";
 

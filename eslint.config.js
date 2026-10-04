@@ -34,13 +34,31 @@ export default [
     },
   },
   {
+    // `bin` points at the compiled `dist/bin/*.js`; tsc carries the shebang
+    // over from `src/bin/*.ts`, so that is where the rule has to check it.
+    files: ["packages/{pnpm-dedup,yarn-berry-deduplicate}/src/bin/*.ts"],
+    rules: {
+      "n/hashbang": [
+        "error",
+        {
+          convertPath: {
+            "src/bin/*.ts": ["^src/bin/(.+)\\.ts$", "dist/bin/$1.js"],
+          },
+        },
+      ],
+    },
+  },
+  {
     files: ["packages/bun-dedup/**/*.ts"],
     rules: {
       "n/hashbang": [
         "error",
         {
+          convertPath: {
+            "src/bin/*.ts": ["^src/bin/(.+)\\.ts$", "dist/bin/$1.js"],
+          },
           executableMap: {
-            ".js": "node",
+            ".js": "bun",
             ".ts": "bun",
           },
         },

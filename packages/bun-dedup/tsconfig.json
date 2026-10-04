@@ -18,9 +18,9 @@
     "allowImportingTsExtensions": true,
 
     "paths": {
-      "pm-utils": ["../../packages/pm-utils/src"],
-      "pm-utils/*": ["../../packages/pm-utils/src/*"]
+      "pm-dedup-core": ["../../packages/pm-dedup-core/src"],
+      "pm-dedup-core/*": ["../../packages/pm-dedup-core/src/*"]
     }
   },
-  "references": [{ "path": "../../packages/pm-utils/tsconfig.json" }]
+  "references": [{ "path": "../../packages/pm-dedup-core/tsconfig.json" }]
 }

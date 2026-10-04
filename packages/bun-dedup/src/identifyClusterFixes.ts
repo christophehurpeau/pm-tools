@@ -1,10 +1,13 @@
 import type { BunLockFile } from "bun";
-import { buildLockstepClusters, identifyLockstepClusterFixes } from "pm-utils";
+import {
+  buildLockstepClusters,
+  identifyLockstepClusterFixes,
+} from "pm-dedup-core";
 import type {
   ClusterDependentsMap,
   ClusterFix,
   ClusterMembersMap,
-} from "pm-utils";
+} from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildPackagesMap.ts";
 import { collectDependents } from "./helpers/collectDependents.ts";
 import type { BunLockPackages } from "./helpers/parseBunLockPackages.ts";
@@ -14,7 +17,7 @@ export type {
   ClusterExternalConstraint,
   ClusterFix,
   ClusterReuseFix,
-} from "pm-utils";
+} from "pm-dedup-core";
 
 const toClusterMembers = (
   packagesMap: PackagesMap,

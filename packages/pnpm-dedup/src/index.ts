@@ -2,8 +2,8 @@ import {
   createPackageFilter,
   selectExplainedPackages,
   selectPackages,
-} from "pm-utils";
-import type { PackageFilterOptions } from "pm-utils";
+} from "pm-dedup-core";
+import type { PackageFilterOptions } from "pm-dedup-core";
 import { displayMany } from "./displayMany.ts";
 import {
   buildPnpmPackagesMap,

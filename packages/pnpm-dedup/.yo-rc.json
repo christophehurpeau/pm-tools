@@ -9,9 +9,7 @@
       "e2e": false
     },
     "project": {
-      "type": "lib",
-      "packageManager": "yarn",
-      "yarnNodeLinker": "node-modules"
+      "type": "lib"
     }
   }
 }

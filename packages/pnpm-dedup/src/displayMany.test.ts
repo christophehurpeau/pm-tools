@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { ok } from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import type { ClusterFix } from "pm-utils";
+import type { ClusterFix } from "pm-dedup-core";
 import { displayMany } from "./displayMany.ts";
 import {
   buildPnpmPackagesMap,
@@ -17,7 +17,7 @@ import { readPnpmLock } from "./readPnpmLock.ts";
 const fixturesBase = (rel: string) =>
   fileURLToPath(new URL(rel, import.meta.url));
 
-// The report layout is covered in pm-utils (`renderDuplicatesReport`); these
+// The report layout is covered in pm-dedup-core (`renderDuplicatesReport`); these
 // only check that the pnpm lockfile model is mapped onto it correctly.
 const renderDuplicates = (
   scenario: string,

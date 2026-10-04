@@ -13,7 +13,7 @@ This repository is a monorepo managed with [bun workspaces](https://bun.com/docs
 | Package                                                   | Version                                                                                                                                              | Description                                     |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | [bun-dedup](packages/bun-dedup)                           | <a href="https://npmjs.org/package/bun-dedup"><img src="https://img.shields.io/npm/v/bun-dedup.svg?style=flat-square"></a>                           | List duplicates and dedupe bun lock file        |
-| [pm-utils](packages/pm-utils)                             | <a href="https://npmjs.org/package/pm-utils"><img src="https://img.shields.io/npm/v/pm-utils.svg?style=flat-square"></a>                             | package manager utils                           |
+| [pm-dedup-core](packages/pm-dedup-core)                   | <a href="https://npmjs.org/package/pm-dedup-core"><img src="https://img.shields.io/npm/v/pm-dedup-core.svg?style=flat-square"></a>                   | package manager utils                           |
 | [pnpm-dedup](packages/pnpm-dedup)                         | <a href="https://npmjs.org/package/pnpm-dedup"><img src="https://img.shields.io/npm/v/pnpm-dedup.svg?style=flat-square"></a>                         | List duplicates and dedupe pnpm lock file       |
 | [yarn-berry-deduplicate](packages/yarn-berry-deduplicate) | <a href="https://npmjs.org/package/yarn-berry-deduplicate"><img src="https://img.shields.io/npm/v/yarn-berry-deduplicate.svg?style=flat-square"></a> | List duplicates and dedupe yarn berry lock file |
 | [yarn-why-duplicate](packages/yarn-why-duplicate)         | <a href="https://npmjs.org/package/yarn-why-duplicate"><img src="https://img.shields.io/npm/v/yarn-why-duplicate.svg?style=flat-square"></a>         | Simple bin to know why a package is duplicated  |
@@ -49,9 +49,9 @@ bunx -p bun-dedup bun-dedupe                       # apply it
 
 The other two are the same with their own runner and package:
 `pnpm dlx --package pnpm-dedup pnpm-why-duplicate`,
-`yarn dlx -p yarn-berry-deduplicate yarn-berry-why-duplicate`. Two commands match
-their package name and need no flag: `pnpm dlx pnpm-dedup` and
-`yarn dlx yarn-berry-deduplicate`.
+`yarn dlx -p yarn-berry-deduplicate yarn-berry-why-duplicate`. Each dedupe
+command also answers to its package name and needs no flag: `bunx bun-dedup`,
+`pnpm dlx pnpm-dedup` and `yarn dlx yarn-berry-deduplicate`.
 
 Installing as a devDependency is only worth it to pin a version, for a CI gate
 say; the bins are then run with `bunx` / `pnpm exec` / `yarn exec`.

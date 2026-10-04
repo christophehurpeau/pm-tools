@@ -1,6 +1,6 @@
 {
-  "name": "pm-utils",
-  "version": "0.0.0",
+  "name": "pm-dedup-core",
+  "version": "1.0.0-pre",
   "description": "package manager utils",
   "keywords": [],
   "homepage": "https://github.com/christophehurpeau/pm-tools",
@@ -12,7 +12,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/christophehurpeau/pm-tools.git",
-    "directory": "packages/pm-utils"
+    "directory": "packages/pm-dedup-core"
   },
   "files": [
     "src",
@@ -34,9 +34,9 @@
   "scripts": {
     "build": "tsc",
     "lint": "bun run lint:oxlint && bun run lint:eslint",
-    "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/pm-utils'",
-    "lint:oxlint": "bun run --cwd '../..' oxlint --quiet 'packages/pm-utils'",
-    "test": "bun run --cwd '../..' test -- 'packages/pm-utils'",
+    "lint:eslint": "bun run --cwd '../..' eslint --quiet 'packages/pm-dedup-core'",
+    "lint:oxlint": "bun run --cwd '../..' oxlint --quiet 'packages/pm-dedup-core'",
+    "test": "bun run --cwd '../..' test -- 'packages/pm-dedup-core'",
     "tsc": "tsc"
   },
   "dependencies": {

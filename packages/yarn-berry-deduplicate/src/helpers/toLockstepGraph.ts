@@ -1,5 +1,8 @@
-import { PackageDependencyDescriptorUtils, isSemverComparable } from "pm-utils";
-import type { LockstepGraph } from "pm-utils";
+import {
+  PackageDependencyDescriptorUtils,
+  isSemverComparable,
+} from "pm-dedup-core";
+import type { LockstepGraph } from "pm-dedup-core";
 import type { PackagesMap } from "./buildYarnPackagesMap.ts";
 import type { YarnProtocol } from "./yarnProtocol.ts";
 

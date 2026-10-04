@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createTempProjects } from "../helpers/tempProjects.ts";
 
-// The bins run straight from `src`, which is what the `bin` field points at.
+// The bins run from `src` under the test runtime; the `bin` field points at the
+// built copy in `dist/bin`, which the end-to-end suite covers.
 const binPath = (name: string): string =>
   fileURLToPath(new URL(`./${name}.ts`, import.meta.url));
 

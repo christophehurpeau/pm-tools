@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { resolveProjectDir } from "pm-utils";
+import { resolveProjectDir } from "pm-dedup-core";
 
 const lockfileName = "pnpm-lock.yaml";
 

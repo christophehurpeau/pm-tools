@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { fileURLToPath } from "node:url";
-import type { ClusterFix, ResolutionFix } from "pm-utils";
+import type { ClusterFix, ResolutionFix } from "pm-dedup-core";
 import { displayMany } from "./displayMany.ts";
 import type { DisplayManyOptions } from "./displayMany.ts";
 import {
@@ -12,7 +12,7 @@ import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import { readAndParseBunLock } from "./readAndParseBunLock.ts";
 
-// The report layout is covered in pm-utils (`renderDuplicatesReport`); these
+// The report layout is covered in pm-dedup-core (`renderDuplicatesReport`); these
 // only check that the bun.lock model is mapped onto it correctly.
 const render = (
   scenario: string,

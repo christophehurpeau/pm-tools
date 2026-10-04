@@ -3,8 +3,8 @@ import {
   createPackageFilter,
   diffVersionsSnapshots,
   renderDedupeSummary,
-} from "pm-utils";
-import type { PackageFilterOptions } from "pm-utils";
+} from "pm-dedup-core";
+import type { PackageFilterOptions } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { lockPathOf, resolvePnpmProjectDir } from "./helpers/projectDir.ts";
 import { runPnpm } from "./helpers/runPnpm.ts";

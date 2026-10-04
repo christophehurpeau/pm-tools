@@ -1,4 +1,4 @@
-import type { DuplicateSnapshot } from "pm-utils";
+import type { DuplicateSnapshot } from "pm-dedup-core";
 import { readAndParseBunLock } from "../readAndParseBunLock.ts";
 import {
   buildPackagesMap,
