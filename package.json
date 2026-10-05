@@ -1,6 +1,5 @@
 {
   "name": "pm-tools-monorepo",
-  "version": "2.1.2",
   "private": true,
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "bugs": {
