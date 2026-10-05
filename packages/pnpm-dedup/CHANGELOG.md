@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.1](https://github.com/christophehurpeau/pm-tools/compare/pnpm-dedup@2.2.0...pnpm-dedup@2.2.1) (2026-10-05)
+
+Version bump for dependency: pm-dedup-core
+
+
 ## 2.2.0 (2026-10-05)
 
 ### Features

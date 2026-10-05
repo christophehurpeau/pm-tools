@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.0.1](https://github.com/christophehurpeau/pm-tools/compare/yarn-berry-deduplicate@7.0.0...yarn-berry-deduplicate@7.0.1) (2026-10-05)
+
+Version bump for dependency: pm-dedup-core
+
+
 ## 7.0.0 (2026-10-05)
 
 ### Features
