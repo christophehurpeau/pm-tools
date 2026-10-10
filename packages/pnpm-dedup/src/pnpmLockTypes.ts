@@ -13,6 +13,7 @@ export interface ProjectSnapshot {
   dependencies?: Record<string, PnpmImporterDependency>;
   devDependencies?: Record<string, PnpmImporterDependency>;
   optionalDependencies?: Record<string, PnpmImporterDependency>;
+  packageManagerDependencies?: Record<string, PnpmImporterDependency>;
 }
 
 export interface PackageMeta {

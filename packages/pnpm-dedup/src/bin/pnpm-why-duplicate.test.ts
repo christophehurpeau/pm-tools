@@ -78,4 +78,25 @@ describe("pnpm-why-duplicate", () => {
       );
     });
   });
+
+  it("reports on a lockfile that also resolves the package manager", () => {
+    const result = runBin(
+      "pnpm-why-duplicate",
+      project("package-manager-document"),
+      ["--details"],
+    );
+
+    strictEqual(result.stderr, "");
+    strictEqual(result.status, 0);
+    strictEqual(
+      result.stdout,
+      runBin(
+        "pnpm-why-duplicate",
+        project("duplicated-printable-shell-command"),
+        ["--details"],
+      ).stdout,
+    );
+    ok(result.stdout.includes("printable-shell-command"));
+    ok(!result.stdout.includes("@pnpm/exe"));
+  });
 });

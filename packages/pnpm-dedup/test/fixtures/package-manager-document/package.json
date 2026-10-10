@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "betterdisplaycli": ">=0.2.0",
+    "printable-shell-command": "5.0.7"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^12.0.0",
+      "onFail": "download"
+    }
+  }
+}
