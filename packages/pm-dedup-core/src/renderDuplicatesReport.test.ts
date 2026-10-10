@@ -32,7 +32,6 @@ const clusterFix = (overrides: Partial<ClusterFix> = {}): ClusterFix => ({
   excludedMembers: [],
   anchor: null,
   reuseFixes: [],
-  floatingMembers: [],
   workspaceChanges: [],
   reResolutionSet: ["metro"],
   externalConstraints: [metroPin],
@@ -443,13 +442,6 @@ describe("renderDuplicatesReport", () => {
     ok(render({ clusterFixes: [clusterFix()] }).includes("(1 member follows)"));
   });
 
-  it("names the members whose version the resolver picks", () => {
-    const output = render({
-      clusterFixes: [clusterFix({ floatingMembers: ["metro-config"] })],
-    });
-    ok(output.includes("    Resolver picks: metro-config"));
-  });
-
   it("has no Dedupe section for an unfixable cluster", () => {
     const output = render({
       clusterFixes: [
@@ -678,7 +670,6 @@ describe("renderDuplicatesReport", () => {
               nonNpmCount: 0,
             },
           },
-          floatingMembers: ["metro-config-long-name"],
           anchor: "0.84.5",
           reuseFixes: [
             {

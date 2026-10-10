@@ -31,7 +31,6 @@ const fixWith = (constraints: ClusterExternalConstraint[]): ClusterFix => ({
   excludedMembers: [],
   anchor: null,
   reuseFixes: [],
-  floatingMembers: [],
   workspaceChanges: [],
   reResolutionSet: [],
   externalConstraints: constraints,

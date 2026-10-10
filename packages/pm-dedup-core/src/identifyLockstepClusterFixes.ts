@@ -103,9 +103,6 @@ export interface ClusterFix {
   anchor: string | null;
   // open ranges that could have reused the anchored version and did not
   reuseFixes: ClusterReuseFix[];
-  // members the package manager has to re-resolve, at a version only it can
-  // pick: nothing pins them, so the result has to be verified after installing
-  floatingMembers: string[];
   // workspace ranges to edit before installing, exact pins included: a pin is a
   // decision, so it is a last resort (see `betterCandidate`), not immutable. A
   // declaration made through an alias key is the exception — it binds
@@ -132,8 +129,6 @@ interface Candidate {
   convergentMembers: string[];
   // duplicated members that do not, with the third-party ranges to blame
   excluded: Map<string, ClusterExternalConstraint[]>;
-  // members the resolver has to move, version unknown
-  floatingMembers: string[];
   // workspace pins that would have to be edited to reach this version
   pinsToEdit: ClusterExternalConstraint[];
   // members this version is installed for, among those free to move
@@ -368,29 +363,6 @@ export const identifyLockstepClusterFixes = (
         return floor !== null && semver.eq(floor, version);
       });
 
-    // Whether a member could hold a version it does not hold today. When every
-    // requester asks through an open range (`*`, `0.83 - 0.86`), its current
-    // version is an accident of resolution rather than a constraint: the
-    // resolver is free to land it elsewhere, and which version that is is not
-    // ours to name. Anything exactly pinned, or pinned to the line it already
-    // carries (`^0.87.0` on an 0.87.0), is not re-resolvable.
-    const isReResolvable = (member: string): boolean => {
-      const ranges = externalRangesOn(member);
-      if (ranges.length === 0) return true;
-
-      const floors = ranges.map(rangeFloor);
-      if (floors.includes(null)) return false;
-
-      const highestFloor = floors
-        .filter((floor): floor is string => floor !== null)
-        .toSorted((a, b) => semver.rcompare(a, b))[0]!;
-
-      return (
-        ranges.every((range) => accepts(highestFloor, range)) &&
-        !isInstalled(member, highestFloor)
-      );
-    };
-
     const duplicatedSet = new Set(duplicatedMembers);
 
     // Members that end up on `version`, as a fixed point: start from those free
@@ -399,27 +371,11 @@ export const identifyLockstepClusterFixes = (
     // whoever an in-cluster requester pins elsewhere. Iterating matters because
     // such a requester only stops pinning if it converges too, and the family's
     // dependency edges run both ways.
-    // Members whose version the resolver will choose: they hold a version the
-    // family is leaving, and nothing pins them to it. Their current pins do not
-    // block the family — the install round-trip moves them — but the version
-    // they land on has to be verified afterwards, not asserted here.
-    const floatingFor = (version: string): Set<string> =>
-      new Set(
-        clusterMembers.filter(
-          (member) =>
-            // a duplicated member is what the fix is about: it converges or it
-            // is excluded, never "the resolver will sort it out"
-            !duplicatedSet.has(member) &&
-            !isInstalled(member, version) &&
-            !canReResolve(member, version) &&
-            isReResolvable(member),
-        ),
-      );
-
-    const convergentSetFor = (
-      version: string,
-      floating: Set<string>,
-    ): Set<string> => {
+    //
+    // A requester its own requesters only ask for through an open range (`*`,
+    // `^21.0.2`) is no exception: a resolver keeps a locked version they still
+    // accept, so nothing moves it, and its pins block like any other.
+    const convergentSetFor = (version: string): Set<string> => {
       const converging = new Set(
         clusterMembers.filter(
           (member) =>
@@ -436,8 +392,7 @@ export const identifyLockstepClusterFixes = (
           const pinnedElsewhere = (internalByMember.get(member) ?? []).some(
             (internal) =>
               !accepts(version, internal.range) &&
-              !converging.has(internal.requesterName) &&
-              !floating.has(internal.requesterName),
+              !converging.has(internal.requesterName),
           );
           if (pinnedElsewhere) {
             converging.delete(member);
@@ -450,18 +405,14 @@ export const identifyLockstepClusterFixes = (
     };
 
     const candidates = candidateVersions.map((version): Candidate => {
-      const floating = floatingFor(version);
-      const converging = convergentSetFor(version, floating);
+      const converging = convergentSetFor(version);
 
       return {
         version,
         converging,
-        floatingMembers: [...floating].toSorted((a, b) => a.localeCompare(b)),
         // a pin the user would have to edit makes a candidate a last resort
         pinsToEdit: workspaceConstraints.filter(
-          (constraint) =>
-            !floating.has(constraint.packageName) &&
-            !accepts(version, constraint.range),
+          (constraint) => !accepts(version, constraint.range),
         ),
         convergentMembers: duplicatedMembers.filter((member) =>
           converging.has(member),
@@ -537,7 +488,6 @@ export const identifyLockstepClusterFixes = (
         excludedMembers: [],
         anchor,
         reuseFixes,
-        floatingMembers: [],
         workspaceChanges: [],
         reResolutionSet: [],
         externalConstraints,
@@ -558,13 +508,11 @@ export const identifyLockstepClusterFixes = (
     // impossible. Internal-only members cascade from these. A member that is
     // not duplicated also has to survive the converging fixed point: one an
     // excluded sibling pins elsewhere would only become a new duplicate.
-    const floatingSet = new Set(best.floatingMembers);
     const reResolutionSet = clusterMembers
       .filter(
         (member) =>
           membersWithExternalDependent.has(member) &&
           (duplicatedSet.has(member) || best.converging.has(member)) &&
-          !floatingSet.has(member) &&
           canMove(member, target) &&
           canReResolve(member, target) &&
           !isInstalled(member, target),
@@ -592,13 +540,9 @@ export const identifyLockstepClusterFixes = (
       })),
       anchor,
       reuseFixes,
-      floatingMembers: best.floatingMembers,
       workspaceChanges,
       reResolutionSet,
-      needsRoundTrip:
-        reResolutionSet.length > 0 ||
-        workspaceChanges.length > 0 ||
-        best.floatingMembers.length > 0,
+      needsRoundTrip: reResolutionSet.length > 0 || workspaceChanges.length > 0,
       externalConstraints,
       applicable: true,
     });

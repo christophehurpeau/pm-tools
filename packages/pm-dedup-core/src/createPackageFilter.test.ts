@@ -18,7 +18,6 @@ const clusterFix = (members: string[]): ClusterFix => ({
   excludedMembers: [],
   anchor: null,
   reuseFixes: [],
-  floatingMembers: [],
   workspaceChanges: [],
   reResolutionSet: [],
   externalConstraints: [],

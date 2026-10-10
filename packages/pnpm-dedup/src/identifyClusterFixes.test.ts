@@ -304,38 +304,31 @@ describe("identifyClusterFixes", () => {
     strictEqual(requesterNames.has("metro-config"), false);
   });
 
-  it("converges the family on the pinned version, without touching the pin", () => {
+  it("proposes the metro pin upgrade, since nothing moves react-native", () => {
     const fix = metroCluster();
 
-    // The root pins metro at 0.84.5 on purpose, so the pin is a constraint to
-    // resolve around, not something to upgrade: the family collapses onto
-    // 0.84.5 and `workspaceChanges` stays empty.
+    // react-native@0.87.0 and @react-native/metro-config@0.87.0 hold the 0.87.0
+    // metro subtree. Nothing pins them exactly — they arrive through `*` /
+    // `0.83 - 0.86` peer ranges — but a resolver keeps a locked version its
+    // requesters accept, so they stay, and their `^0.87.0` on metro keeps the
+    // family off 0.84.5. The root's pin is the only thing left to move: a last
+    // resort, proposed because nothing else deduplicates the family.
     strictEqual(fix.applicable, true);
-    strictEqual(fix.target, "0.84.5");
-    strictEqual(fix.direction, "down");
+    strictEqual(fix.target, "0.87.0");
+    strictEqual(fix.direction, "up");
     strictEqual(fix.convergentMembers.length, 15);
-    deepStrictEqual(fix.workspaceChanges, []);
+    deepStrictEqual(
+      fix.workspaceChanges.map(
+        (change) => `${change.packageName} ${change.range} -> ${change.to}`,
+      ),
+      ["metro 0.84.5 -> 0.87.0"],
+    );
+    strictEqual(fix.needsRoundTrip, true);
 
     // metro is the only member a real range applies to (the pin): the 14
     // metro-* packages are requested through `*` or through metro's own exact
     // pins, so they carry no decision and follow it.
     deepStrictEqual(fix.driverMembers, ["metro"]);
-  });
-
-  it("leaves react-native's version to the resolver", () => {
-    const fix = metroCluster();
-
-    // react-native@0.87.0 and @react-native/metro-config@0.87.0 are what hold
-    // the 0.87.0 metro subtree, and nothing pins either of them there — both
-    // arrive through `*` / `0.83 - 0.86` peer ranges (0.87.0 does not even
-    // satisfy the latter). They have to move, but which version they land on is
-    // the resolver's call, so no version is asserted for them.
-    deepStrictEqual(fix.floatingMembers, [
-      "@react-native/metro-config",
-      "react-native",
-    ]);
-    deepStrictEqual(fix.reResolutionSet, []);
-    strictEqual(fix.needsRoundTrip, true);
   });
 
   it("repoints the wildcards that ignored the pinned version", () => {

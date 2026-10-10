@@ -115,7 +115,6 @@ describe("identifyClusterFixes", () => {
     // `@pob/eslint-plugin`'s exact `8.59.1` on utils is the only external range
     // that is not open: everything else in the family follows it
     expect(fix.driverMembers).toEqual(["@typescript-eslint/utils"]);
-    expect(fix.floatingMembers).toEqual([]);
     expect(fix.reuseFixes).toEqual([]);
   });
 

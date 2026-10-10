@@ -346,10 +346,10 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix.workspaceChanges).toEqual([]);
   });
 
-  it("lets the resolver move a member nothing pins, without naming a version", () => {
-    // `holder` sits at 2.0.0 and pins leaf there, but its only requester asks
-    // through `*`: it has to move for leaf to collapse onto 1.0.0, and which
-    // version it lands on is the resolver's call.
+  it("never counts on the resolver moving a member nothing pins", () => {
+    // `holder` sits at 2.0.0 and pins leaf there. Its only requester asks
+    // through `*`, which 2.0.0 satisfies, so the resolver keeps it: leaf cannot
+    // collapse onto 1.0.0, and old's exact pin rules out 2.0.0.
     const fix = identifyLockstepClusterFixes(
       [["holder", "leaf"]],
       {
@@ -372,12 +372,9 @@ describe("identifyLockstepClusterFixes", () => {
       ]),
     )[0]!;
 
-    expect(fix.target).toBe("1.0.0");
-    expect(fix.convergentMembers).toEqual(["leaf"]);
-    expect(fix.floatingMembers).toEqual(["holder"]);
-    // no version is claimed for a floating member
-    expect(fix.reResolutionSet).toEqual([]);
-    expect(fix.needsRoundTrip).toBe(true);
+    expect(fix.applicable).toBe(false);
+    expect(fix.target).toBeNull();
+    expect(fix.convergentMembers).toEqual([]);
   });
 
   it("proposes the pin upgrade when the family is only pulled forward", () => {
@@ -447,7 +444,7 @@ describe("identifyLockstepClusterFixes", () => {
     ).toEqual(["family 1.0.0 -> 2.0.0"]);
   });
 
-  it("plans the commitlint downgrade the family's own ranges reject", () => {
+  it("plans no commitlint downgrade the family's own ranges reject", () => {
     // alouette: @pob/root pins @commitlint/types at 21.0.1 while
     // @commitlint/lint's `^21.0.2` ranges resolved is-ignored, parse and rules
     // at 21.1.0, which require `^21.1.0` of it
@@ -550,16 +547,11 @@ describe("identifyLockstepClusterFixes", () => {
       ]),
     );
 
-    // what the detector plans today: the three 21.1.0 members are left to the
-    // resolver, which keeps them where they are, so types never merges
-    expect(fix!.target).toBe("21.0.1");
-    expect(fix!.direction).toBe("down");
-    expect(fix!.convergentMembers).toEqual(["@commitlint/types"]);
-    expect(fix!.floatingMembers).toEqual([
-      "@commitlint/is-ignored",
-      "@commitlint/parse",
-      "@commitlint/rules",
-    ]);
+    // the resolver keeps the three 21.1.0 members, whose `^21.1.0` rules out
+    // 21.0.1, and @pob/root's exact pin rules out 21.1.0: nothing to plan
+    expect(fix!.applicable).toBe(false);
+    expect(fix!.target).toBeNull();
+    expect(fix!.convergentMembers).toEqual([]);
   });
 
   it("never re-resolves a member an excluded sibling still pins elsewhere", () => {

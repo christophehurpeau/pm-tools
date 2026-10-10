@@ -493,13 +493,6 @@ const renderCluster = (
         `    ${color("dim", "Driven by:")} ${nameList(color, fix.driverMembers)}${follow}`,
       );
     }
-    // nothing pins these, so the package manager picks their version: the
-    // fixable count above is not a guarantee for them
-    if (fix.floatingMembers.length > 0) {
-      log(
-        `    ${color("dim", "Resolver picks:")} ${nameList(color, fix.floatingMembers)}`,
-      );
-    }
   }
 
   if (fix.excludedMembers.length > 0) {

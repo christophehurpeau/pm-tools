@@ -48,7 +48,6 @@ describe("identifyClusterFixes", () => {
     // that is not open: everything else in the family follows it
     it("names the exact pin as the driver", () => {
       deepStrictEqual(fix().driverMembers, ["@typescript-eslint/utils"]);
-      deepStrictEqual(fix().floatingMembers, []);
       deepStrictEqual(fix().reuseFixes, []);
     });
 
