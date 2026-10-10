@@ -334,44 +334,17 @@ describe("identifyClusterFixes", () => {
     deepStrictEqual(fix.driverMembers, ["metro"]);
   });
 
-  it("repoints the wildcards that ignored the pinned version", () => {
+  it("leaves the wildcards alone once the pin they ignored moves to them", () => {
     const fix = metroCluster();
 
-    // What the fixture is actually about: `@tamagui/metro-plugin` declares
+    // What the fixture is about: `@tamagui/metro-plugin` declares
     // `metro-config: "*"` / `metro-transform-worker: "*"`, and pnpm resolved
-    // both to 0.87.0 although the pinned 0.84.5 was already in the tree and the
-    // range accepts it — so the plugin runs against a different metro than the
-    // app's.
+    // both to 0.87.0 beside the pinned 0.84.5 — the plugin runs against a
+    // different metro than the app's. The fix moves the pin to 0.87.0, which
+    // puts the app on the plugin's copy: sending the plugin back to 0.84.5
+    // would split the family again.
     strictEqual(fix.anchor, "0.84.5");
-    deepStrictEqual(
-      fix.reuseFixes.map(
-        (reuse) =>
-          `${reuse.requesterName}>${reuse.packageName} "${reuse.range}" ${reuse.from} -> ${reuse.to}`,
-      ),
-      [
-        '@tamagui/metro-plugin>metro-config "*" 0.87.0 -> 0.84.5',
-        '@tamagui/metro-plugin>metro-transform-worker "*" 0.87.0 -> 0.84.5',
-      ],
-    );
-  });
-
-  it("leaves alone the ranges that cannot accept the pinned version", () => {
-    const repointed = new Set(
-      metroCluster().reuseFixes.map((reuse) => reuse.packageName),
-    );
-
-    // `@react-native/metro-config` requires `metro-config: ^0.87.0`, and
-    // `react-native-web` requires `@react-native/normalize-colors: ^0.74.1`:
-    // neither accepts 0.84.5, so neither is repointed.
-    strictEqual(repointed.has("@react-native/normalize-colors"), false);
-    deepStrictEqual(
-      metroCluster()
-        .reuseFixes.filter(
-          (reuse) => reuse.requesterName === "@react-native/metro-config",
-        )
-        .map((reuse) => reuse.packageName),
-      [],
-    );
+    deepStrictEqual(fix.reuseFixes, []);
   });
 
   // `aliased-swapped-names`: the importer pins the real `typescript` at 7.0.2

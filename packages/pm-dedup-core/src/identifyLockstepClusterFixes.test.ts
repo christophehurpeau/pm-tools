@@ -377,7 +377,7 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix.convergentMembers).toEqual([]);
   });
 
-  it("repoints an open range at the pin the same fix moves", () => {
+  it("never repoints an open range at the pin the same fix moves", () => {
     // The metro shape: the workspace pins family at 1.0.0, a third party pulls
     // it to 2.0.0, and a plugin's `*` resolved family-config at 2.0.0 too.
     // Nothing collapses on 1.0.0, so the fix moves the pin to 2.0.0.
@@ -443,13 +443,9 @@ describe("identifyLockstepClusterFixes", () => {
         (change) => `${change.packageName} ${change.range} -> ${change.to}`,
       ),
     ).toEqual(["family 1.0.0 -> 2.0.0"]);
-    // what the detector says today: move plugin back to the 1.0.0 the fix is
-    // leaving
-    expect(
-      fix.reuseFixes.map(
-        (reuse) => `${reuse.requesterName}>${reuse.packageName} -> ${reuse.to}`,
-      ),
-    ).toEqual(["plugin>family-config -> 1.0.0"]);
+    // plugin already sits on the 2.0.0 the pin moves to: sending it back to
+    // 1.0.0 would split the family again
+    expect(fix.reuseFixes).toEqual([]);
   });
 
   it("proposes the pin upgrade when the family is only pulled forward", () => {

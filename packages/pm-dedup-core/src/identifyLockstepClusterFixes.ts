@@ -503,6 +503,12 @@ export const identifyLockstepClusterFixes = (
       .filter((constraint) => canMove(constraint.packageName, target))
       .map((constraint) => ({ ...constraint, to: target }));
 
+    // Editing the pin moves the anchor along with it: a range repointed at the
+    // version being left would split the family again.
+    const movesAnchor = workspaceChanges.some(
+      (change) => change.range === anchor,
+    );
+
     // re-resolution set: members free to move that are pulled from outside the
     // cluster and do not carry the target version, so a pure-lock copy is
     // impossible. Internal-only members cascade from these. A member that is
@@ -539,7 +545,7 @@ export const identifyLockstepClusterFixes = (
         blockedBy,
       })),
       anchor,
-      reuseFixes,
+      reuseFixes: movesAnchor ? [] : reuseFixes,
       workspaceChanges,
       reResolutionSet,
       needsRoundTrip: reResolutionSet.length > 0 || workspaceChanges.length > 0,
