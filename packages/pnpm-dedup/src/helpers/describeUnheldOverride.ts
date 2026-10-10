@@ -23,23 +23,17 @@ const describeDependent = (
 /**
  * Why an override did not hold, as one line per edge still resolving away from
  * its version, the ranges that reject it first: those are what blocks the merge.
- * A reuse override only names the requesters it was meant to repoint — the
- * other copies of the package were never its business.
  *
  * Several peer contexts of one requester share a key, so lines are counted once.
  */
 export const describeUnheldOverride = (
   override: PlannedOverride,
   dependents: DependentRange[],
-  reuseRequesters: string[],
 ): string[] => {
   const offVersion = dependents.filter(
     (dependent): dependent is DependentRange & { resolvedVersion: string } =>
       dependent.resolvedVersion !== undefined &&
-      dependent.resolvedVersion !== override.version &&
-      (override.reason !== "reuse" ||
-        (dependent.requesterName !== undefined &&
-          reuseRequesters.includes(dependent.requesterName))),
+      dependent.resolvedVersion !== override.version,
   );
 
   const blockersFirst = offVersion.toSorted(

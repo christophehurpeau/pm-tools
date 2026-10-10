@@ -58,8 +58,9 @@ export interface OverrideRoundStates {
   end: { duplicates: DuplicateSnapshot; versions: VersionsSnapshot };
   // whether every edge a reuse override repoints resolves to its version, read
   // from the lockfile: the detector stops reporting a reuse fix as soon as its
-  // anchor goes away, which says nothing about the edge
-  reuseHeld: (override: PlannedOverride) => boolean;
+  // anchor goes away, which says nothing about the edge. Without it, no reuse
+  // override holds.
+  reuseHeld?: (override: PlannedOverride) => boolean;
 }
 
 /**
@@ -74,7 +75,7 @@ export const heldOverrides = (
   { start, end, reuseHeld }: OverrideRoundStates,
 ): PlannedOverride[] =>
   overrides.filter((override) => {
-    if (override.reason === "reuse") return reuseHeld(override);
+    if (override.reason === "reuse") return reuseHeld?.(override) ?? false;
     if (isDuplicated(start.duplicates, override.packageName)) {
       return !isDuplicated(end.duplicates, override.packageName);
     }

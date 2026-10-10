@@ -3,10 +3,10 @@ import { describe, it } from "node:test";
 import { describeUnheldOverride } from "./describeUnheldOverride.ts";
 
 describe("describeUnheldOverride", () => {
-  it("names the reuse requester once, whatever its peer contexts", () => {
+  it("names a requester once, whatever its peer contexts", () => {
     deepStrictEqual(
       describeUnheldOverride(
-        { packageName: "lightningcss", version: "1.30.1", reason: "reuse" },
+        { packageName: "lightningcss", version: "1.30.1", reason: "converge" },
         [
           // two installations of one requester, one already repointed
           {
@@ -30,7 +30,6 @@ describe("describeUnheldOverride", () => {
             requesterName: "react-native-css",
             peer: true,
           },
-          // never a target of the reuse
           {
             key: "vite@8.3.0",
             range: "^1.33.0",
@@ -38,9 +37,9 @@ describe("describeUnheldOverride", () => {
             requesterName: "vite",
           },
         ],
-        ["react-native-css"],
       ),
       [
+        'vite@8.3.0 requires "^1.33.0"',
         'react-native-css@3.1.0-rc.0 requires ">=1.27.0" (peer), is provided 1.33.0',
       ],
     );
@@ -74,7 +73,6 @@ describe("describeUnheldOverride", () => {
             requesterName: "@pob/root",
           },
         ],
-        [],
       ),
       [
         '@commitlint/rules@21.1.0 requires "^21.1.0"',
@@ -95,7 +93,6 @@ describe("describeUnheldOverride", () => {
             workspace: { path: ".", depType: "devDependencies" },
           },
         ],
-        [],
       ),
       ['package.json in devDependencies requires "1.0.0"'],
     );

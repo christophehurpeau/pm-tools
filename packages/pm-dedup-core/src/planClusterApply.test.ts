@@ -105,25 +105,38 @@ describe("planClusterApply", () => {
     ]);
   });
 
-  it("lets the anchored reuse win over a computed target", () => {
-    const plan = planClusterApply([
-      fix({
-        applicable: true,
-        target: "0.87.0",
-        convergentMembers: ["mini-metro-config"],
-        anchor: "0.84.5",
-        reuseFixes: [
-          {
-            requester: "mini-plugin@1.0.0",
-            requesterName: "mini-plugin",
-            packageName: "mini-metro-config",
-            range: "*",
-            from: "0.87.0",
-            to: "0.84.5",
-          },
-        ],
-      }),
+  const anchoredFix = fix({
+    applicable: true,
+    target: "0.87.0",
+    convergentMembers: ["mini-metro-config"],
+    anchor: "0.84.5",
+    reuseFixes: [
+      {
+        requester: "mini-plugin@1.0.0",
+        requesterName: "mini-plugin",
+        packageName: "mini-metro-config",
+        range: "*",
+        from: "0.87.0",
+        to: "0.84.5",
+      },
+    ],
+  });
+
+  it("leaves the reuse out when asked, before it can outrank the target", () => {
+    const plan = planClusterApply([anchoredFix], { reuse: false });
+
+    deepStrictEqual(plan.overrides, [
+      {
+        packageName: "mini-metro-config",
+        version: "0.87.0",
+        reason: "converge",
+      },
     ]);
+    deepStrictEqual(plan.conflicts, []);
+  });
+
+  it("lets the anchored reuse win over a computed target", () => {
+    const plan = planClusterApply([anchoredFix]);
 
     deepStrictEqual(plan.overrides, [
       {

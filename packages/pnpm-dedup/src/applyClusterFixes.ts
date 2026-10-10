@@ -175,7 +175,10 @@ export const applyClusterFixes = ({
 
   const { selected: fixes, skipped: filteredOut } =
     readSelectedFixes(projectDir);
-  const plan = planClusterApply(fixes);
+  // pnpm resolves an open range to the highest copy still in the tree, so a
+  // reuse of the pinned version comes apart as soon as its override is removed.
+  // The report still names those ranges; the plan does not chase them.
+  const plan = planClusterApply(fixes, { reuse: false });
 
   const skipped = [
     ...filteredOut.map(describeSkippedClusterFix),
@@ -383,48 +386,10 @@ export const applyClusterFixes = ({
       : { ...unchanged("reverted", changeCount), stickyOverrides };
   };
 
-  const reuseRequesters = (override: PlannedOverride): string[] =>
-    fixes.flatMap((fix) =>
-      fix.reuseFixes
-        .filter(
-          (reuse) =>
-            reuse.packageName === override.packageName &&
-            reuse.to === override.version,
-        )
-        .map((reuse) => reuse.requesterName),
-    );
-
-  // Read from the edges rather than from the detector: a reuse fix also stops
-  // being reported when the pin anchoring it goes away, edge unmoved.
-  const readReuseHeld = (
-    overrides: PlannedOverride[],
-  ): ((override: PlannedOverride) => boolean) => {
-    const reused = overrides.filter((override) => override.reason === "reuse");
-    if (reused.length === 0) return () => false;
-    const ranges = readDependentRanges(
-      projectDir,
-      new Set(reused.map((override) => override.packageName)),
-    );
-    return (override) => {
-      const requesters = new Set(reuseRequesters(override));
-      return (ranges.get(override.packageName) ?? []).every(
-        (dependent) =>
-          dependent.requesterName === undefined ||
-          !requesters.has(dependent.requesterName) ||
-          dependent.resolvedVersion === override.version,
-      );
-    };
-  };
-
   const heldIn = (
     overrides: PlannedOverride[],
     end: ApplyState,
-  ): PlannedOverride[] =>
-    heldOverrides(overrides, {
-      start: remaining,
-      end,
-      reuseHeld: readReuseHeld(overrides),
-    });
+  ): PlannedOverride[] => heldOverrides(overrides, { start: remaining, end });
 
   // Overrides are scaffolding: they are written, pnpm resolves with them, and
   // what counts is what is still there once they are removed again.
@@ -469,12 +434,10 @@ export const applyClusterFixes = ({
   // A member nothing duplicates only moves for its family's sake, so the
   // family's duplicated members already say what did not merge.
   const reportDropped = (dropped: DroppedOverride[]): void => {
-    const reported = dropped.filter(
-      ({ override }) =>
-        override.reason === "reuse" ||
-        [...remaining.duplicates].some((resolution) =>
-          resolution.startsWith(`${override.packageName}@`),
-        ),
+    const reported = dropped.filter(({ override }) =>
+      [...remaining.duplicates].some((resolution) =>
+        resolution.startsWith(`${override.packageName}@`),
+      ),
     );
     if (reported.length === 0) return;
 
@@ -486,13 +449,10 @@ export const applyClusterFixes = ({
       if (entries.length === 0) return;
       log(title);
       for (const { override } of entries) {
-        log(
-          `  ${override.packageName} onto ${override.version}${override.reason === "reuse" ? " (reuse)" : ""}:`,
-        );
+        log(`  ${override.packageName} onto ${override.version}:`);
         for (const line of describeUnheldOverride(
           override,
           ranges.get(override.packageName) ?? [],
-          reuseRequesters(override),
         )) {
           log(`    ${line}`);
         }

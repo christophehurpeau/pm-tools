@@ -398,65 +398,6 @@ describe("applyClusterFixes", () => {
       );
       strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
     });
-
-    it("judges a reuse override by its edge, not by the detector", () => {
-      const dir = makeProject(projectFiles);
-      const logs: string[] = [];
-      const reuseFix = fix({
-        anchor: "2.0.0",
-        reuseFixes: [
-          {
-            requester: "plugin@1.0.0",
-            requesterName: "plugin",
-            packageName: "leaf",
-            range: "*",
-            from: "1.0.0",
-            to: "2.0.0",
-          },
-        ],
-      });
-      let resolved = false;
-
-      const outcome = applyClusterFixes({
-        projectDir: dir,
-        color: false,
-        log: (message = "") => logs.push(message),
-        pnpmVersion: () => "11.17.0",
-        // the anchor goes away once pnpm runs, and the detector with it
-        readFixes: () => (resolved ? [] : [reuseFix]),
-        readDuplicates: () => snapshot("leaf@1.0.0", "leaf@2.0.0"),
-        readDependentRanges: () =>
-          new Map([
-            [
-              "leaf",
-              [
-                {
-                  key: "plugin@1.0.0",
-                  range: "*",
-                  resolvedVersion: "1.0.0",
-                  requesterName: "plugin",
-                },
-              ],
-            ],
-          ]),
-        resolve: () => {
-          resolved = true;
-          return 0;
-        },
-      });
-
-      strictEqual(outcome.status, "reverted");
-      deepStrictEqual(
-        outcome.stickyOverrides.map((override) => override.packageName),
-        ["leaf"],
-      );
-      ok(logs.includes("  leaf onto 2.0.0 (reuse):"));
-      ok(
-        logs.includes(
-          '    plugin@1.0.0 requires "*", resolves 1.0.0 without an override',
-        ),
-      );
-    });
   });
 
   it("writes the override for a member nothing duplicates that holds its family apart", () => {
@@ -586,17 +527,9 @@ describe("applyClusterFixes", () => {
       pnpmVersion: () => "11.17.0",
       readFixes: () => [
         fix({
-          anchor: "0.84.5",
-          reuseFixes: [
-            {
-              requester: "@tamagui/metro-plugin@1.0.0",
-              requesterName: "@tamagui/metro-plugin",
-              packageName: "metro-config",
-              range: "*",
-              from: "0.87.0",
-              to: "0.84.5",
-            },
-          ],
+          applicable: true,
+          target: "0.84.5",
+          convergentMembers: ["metro-config"],
           externalConstraints: [
             {
               requester: "@react-native/community-cli-plugin@0.87.0",
@@ -760,33 +693,51 @@ describe("applyClusterFixes", () => {
       ),
     ];
 
-    it("plans a reuse override for each", () => {
+    const planFor = (fixes: ClusterFix[]) => {
       const dir = makeProject({
         "package.json": manifestContent,
         "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
       });
       const logs: string[] = [];
-
       const outcome = applyClusterFixes({
         projectDir: dir,
         color: false,
         dryRun: true,
         log: (message = "") => logs.push(message),
         pnpmVersion: () => "11.17.0",
-        readFixes: () => reuseFixes,
+        readFixes: () => fixes,
         readDuplicates: () => snapshot(),
         resolve: () => {
           throw new Error("a dry run must not resolve");
         },
       });
+      return { outcome, logs };
+    };
 
-      strictEqual(outcome.plannedChangeCount, 2);
+    it("plans nothing for them: pnpm resolves them back to the highest copy", () => {
+      const { outcome, logs } = planFor(reuseFixes);
+
+      // `--check` has nothing to fail on, run after run
+      strictEqual(outcome.plannedChangeCount, 0);
+      ok(!logs.some((line) => line.includes("(reuse)")));
+    });
+
+    it("lets the family's own target through instead", () => {
+      const { logs } = planFor([
+        fix({
+          ...reuseFixes[0]!,
+          applicable: true,
+          target: "0.87.0",
+          convergentMembers: ["metro-config"],
+        }),
+      ]);
+
       ok(
-        logs.some((line) => line.includes('"metro-config@": "0.84.5" (reuse)')),
+        logs.some((line) =>
+          line.includes('"metro-config@": "0.87.0" (converge)'),
+        ),
       );
-      ok(
-        logs.some((line) => line.includes('"lightningcss@": "1.30.1" (reuse)')),
-      );
+      ok(!logs.some((line) => line.includes("ignoring")));
     });
   });
 

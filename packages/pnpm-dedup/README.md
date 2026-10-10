@@ -161,6 +161,11 @@ for nothing. Each package left unmerged is reported with the edges that keep it
 apart, in two groups: _not merged even with an override_ (a declared range
 rejects the version) and _pnpm resolves these back without an override_.
 
+An open range that resolved past the version the workspace pins (`"*"` on 0.87.0
+beside a pinned 0.84.5) is reported by `pnpm-why-duplicate` but never planned:
+pnpm resolves an open range to the highest copy still in the tree, so pointing
+it at the pinned one only lasts as long as an override.
+
 pnpm-dedup 2.2 kept such overrides under an `# Added by pnpm-dedup.` comment.
 They still apply on every resolution, so a run that finds them says so: remove
 them and run again to see what holds on its own.

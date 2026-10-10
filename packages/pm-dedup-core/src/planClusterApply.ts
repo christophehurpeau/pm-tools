@@ -37,9 +37,14 @@ export interface ClusterApplyPlan {
  * `excludedMembers` lists.
  *
  * `reuseFixes` come first: they converge on `anchor`, the version the user
- * pinned, and a pin outranks a version the detector merely computed.
+ * pinned, and a pin outranks a version the detector merely computed. A package
+ * manager that cannot hold a reuse without an override passes `reuse: false`,
+ * so they are left out before they can outrank a convergence.
  */
-export const planClusterApply = (fixes: ClusterFix[]): ClusterApplyPlan => {
+export const planClusterApply = (
+  fixes: ClusterFix[],
+  { reuse = true }: { reuse?: boolean } = {},
+): ClusterApplyPlan => {
   const manifestEdits: PlannedManifestEdit[] = [];
   const unresolvableChanges: string[] = [];
   const conflicts: ClusterApplyPlan["conflicts"] = [];
@@ -64,9 +69,9 @@ export const planClusterApply = (fixes: ClusterFix[]): ClusterApplyPlan => {
     overrides.set(packageName, { packageName, version, reason });
   };
 
-  for (const fix of fixes) {
-    for (const reuse of fix.reuseFixes) {
-      addOverride(reuse.packageName, reuse.to, "reuse");
+  for (const fix of reuse ? fixes : []) {
+    for (const reuseFix of fix.reuseFixes) {
+      addOverride(reuseFix.packageName, reuseFix.to, "reuse");
     }
   }
 
