@@ -324,6 +324,9 @@ describe("identifyClusterFixes", () => {
       ["metro 0.84.5 -> 0.87.0"],
     );
     strictEqual(fix.needsRoundTrip, true);
+    // react-native is only asked for through open ranges: it is never planned
+    // onto a version number that only metro carries
+    deepStrictEqual(fix.reResolutionSet, []);
 
     // metro is the only member a real range applies to (the pin): the 14
     // metro-* packages are requested through `*` or through metro's own exact
