@@ -12,14 +12,6 @@ export const overrideKey = (
   convergence: boolean,
 ): string => (convergence ? `${packageName}@` : packageName);
 
-// `yaml` writes `commentBefore` straight after the `#`, so the leading space
-// that makes it read as prose has to be part of every line.
-const spaced = (comment: string): string =>
-  comment
-    .split("\n")
-    .map((line) => (line.startsWith(" ") ? line : ` ${line}`))
-    .join("\n");
-
 const quoted = (value: string): Scalar<string> => {
   const scalar = new Scalar(value);
   scalar.type = Scalar.QUOTE_DOUBLE;
@@ -29,32 +21,25 @@ const quoted = (value: string): Scalar<string> => {
 export interface AddOverridesOptions {
   // false writes plain keys, which pnpm applies to every requester
   convergence?: boolean;
-  comment?: string;
 }
 
 /**
  * Add overrides to a `pnpm-workspace.yaml`, editing the document rather than
  * reserializing it: the user's comments, key order and formatting have to
  * survive. Pass `undefined` for a file that does not exist yet.
- *
- * `comment` is attached above the first entry added, not above the `overrides`
- * key, so an existing block and whatever the user wrote about it stay untouched.
  */
 export const addOverrides = (
   content: string | undefined,
   overrides: Map<string, string>,
-  { convergence = true, comment }: AddOverridesOptions = {},
+  { convergence = true }: AddOverridesOptions = {},
 ): string => {
   const doc = parseDocument(content ?? "");
-  let isFirst = true;
 
   for (const [packageName, version] of overrides) {
-    const key = quoted(overrideKey(packageName, convergence));
-    if (isFirst && comment !== undefined) {
-      key.commentBefore = spaced(comment);
-    }
-    doc.setIn(["overrides", key], quoted(version));
-    isFirst = false;
+    doc.setIn(
+      ["overrides", quoted(overrideKey(packageName, convergence))],
+      quoted(version),
+    );
   }
 
   return doc.toString();

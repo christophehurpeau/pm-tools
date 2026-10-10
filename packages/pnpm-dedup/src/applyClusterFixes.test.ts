@@ -3,8 +3,13 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import type { ClusterFix, DuplicateSnapshot } from "pm-dedup-core";
+import type {
+  ClusterFix,
+  DuplicateSnapshot,
+  VersionsSnapshot,
+} from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
+import type { DependentRangesMap } from "./helpers/collectDependentRanges.ts";
 import { createTempProjects } from "./helpers/tempProjects.ts";
 
 const fix = (overrides: Partial<ClusterFix>): ClusterFix => ({
@@ -145,16 +150,368 @@ describe("applyClusterFixes", () => {
     ok(logs.some((line) => line.includes("Removing the overrides")));
   });
 
-  it("keeps the overrides, explaining why in the file and in the result", () => {
+  describe("when some overrides do not hold", () => {
+    const familyFix = (...convergentMembers: string[]): ClusterFix =>
+      fix({ applicable: true, target: "2.0.0", convergentMembers });
+
+    /**
+     * pnpm as far as the override step can tell, its state kept in the lockfile
+     * so that restoring files restores it too. A package with an override in
+     * `pnpm-workspace.yaml` merges onto 2.0.0; without one, a merged package
+     * stays merged only if `stays` says so, given what was merged before.
+     */
+    const simulatePnpm = (
+      dir: string,
+      packages: string[],
+      stays: Record<string, (merged: Set<string>) => boolean>,
+    ) => {
+      const mergedNow = (): Set<string> =>
+        new Set(
+          /# merged: (.*)/
+            .exec(read(dir, "pnpm-lock.yaml"))?.[1]
+            ?.split(",")
+            .filter(Boolean),
+        );
+      return {
+        resolve: (): number => {
+          const workspaceYaml = read(dir, "pnpm-workspace.yaml");
+          const previous = mergedNow();
+          const merged = packages.filter(
+            (name) =>
+              new RegExp(`"${name}@?":`).test(workspaceYaml) ||
+              (previous.has(name) && (stays[name]?.(previous) ?? false)),
+          );
+          writeFileSync(
+            join(dir, "pnpm-lock.yaml"),
+            `lockfileVersion: '9.0'\n# merged: ${merged.join(",")}\n`,
+          );
+          return 0;
+        },
+        readDuplicates: (): DuplicateSnapshot => {
+          const merged = mergedNow();
+          return new Set(
+            packages.flatMap((name) =>
+              merged.has(name) ? [] : [`${name}@1.0.0`, `${name}@2.0.0`],
+            ),
+          );
+        },
+        readVersions: (): VersionsSnapshot => {
+          const merged = mergedNow();
+          return new Map(
+            packages.map((name) => [
+              name,
+              merged.has(name) ? ["2.0.0"] : ["1.0.0", "2.0.0"],
+            ]),
+          );
+        },
+      };
+    };
+
+    const branchDependent = (name: string): DependentRangesMap =>
+      new Map([
+        [
+          name,
+          [
+            {
+              key: "branch@1.0.0",
+              range: "^1.0.0",
+              resolvedVersion: "1.0.0",
+              requesterName: "branch",
+            },
+          ],
+        ],
+      ]);
+
+    const sticky = (): boolean => true;
+    const stickyWith =
+      (companion: string) =>
+      (merged: Set<string>): boolean =>
+        merged.has(companion);
+
+    const run = (
+      dir: string,
+      fixes: ClusterFix[],
+      pnpm: ReturnType<typeof simulatePnpm>,
+      logs: string[],
+      dependentRanges: DependentRangesMap = new Map(),
+    ) =>
+      applyClusterFixes({
+        projectDir: dir,
+        color: false,
+        log: (message = "") => logs.push(message),
+        pnpmVersion: () => "11.17.0",
+        readFixes: () => fixes,
+        readDependentRanges: () => dependentRanges,
+        ...pnpm,
+      });
+
+    const projectFiles = {
+      "package.json": manifestContent,
+      "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+      "pnpm-workspace.yaml": workspaceYamlContent,
+    };
+
+    const addedIn = (logs: string[], from: number): string[] =>
+      logs.slice(from).filter((line) => /^ {2}"\w+@": "2\.0\.0"/.test(line));
+
+    it("keeps only the overrides that hold, and leaves none behind", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const pnpm = simulatePnpm(dir, ["leaf", "twig"], { leaf: sticky });
+
+      const outcome = run(
+        dir,
+        [familyFix("leaf", "twig")],
+        pnpm,
+        logs,
+        branchDependent("twig"),
+      );
+
+      strictEqual(outcome.status, "applied");
+      deepStrictEqual([...outcome.after], ["twig@1.0.0", "twig@2.0.0"]);
+      deepStrictEqual(
+        outcome.stickyOverrides.map((override) => override.packageName),
+        ["twig"],
+      );
+      strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+
+      const retry = logs.indexOf("Retrying with only the overrides that held:");
+      ok(retry > 0);
+      deepStrictEqual(addedIn(logs, retry), ['  "leaf@": "2.0.0" (converge)']);
+      ok(
+        logs.includes(
+          "pnpm resolves these back without an override, so they are not merged:",
+        ),
+      );
+      ok(logs.includes("  twig onto 2.0.0:"));
+      ok(logs.includes('    branch@1.0.0 requires "^1.0.0"'));
+    });
+
+    it("reverts and says so when an override does not merge even while present", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const pnpm = simulatePnpm(dir, ["leaf"], {});
+      // pnpm ignores the override: the declared range rejects the version
+      const inert = { ...pnpm, resolve: () => 0 };
+
+      const outcome = run(
+        dir,
+        [familyFix("leaf")],
+        inert,
+        logs,
+        branchDependent("leaf"),
+      );
+
+      strictEqual(outcome.status, "reverted");
+      deepStrictEqual(
+        outcome.stickyOverrides.map((override) => override.packageName),
+        ["leaf"],
+      );
+      strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+      ok(logs.includes("Not merged even with an override:"));
+      ok(logs.includes("  No override holds on its own — reverting them"));
+    });
+
+    it("keeps the range edits when no override holds", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const pnpm = simulatePnpm(dir, ["metro-config"], {});
+
+      const outcome = run(dir, [metroFix], pnpm, logs);
+
+      strictEqual(outcome.status, "applied");
+      ok(read(dir, "package.json").includes('"metro": "0.87.0"'));
+      strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+    });
+
+    it("drops an override that only held alongside one a round lost", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const pnpm = simulatePnpm(dir, ["leaf", "twig", "bud"], {
+        leaf: sticky,
+        twig: stickyWith("bud"),
+      });
+
+      const outcome = run(dir, [familyFix("leaf", "twig", "bud")], pnpm, logs);
+
+      strictEqual(outcome.status, "applied");
+      deepStrictEqual(
+        outcome.stickyOverrides.map((override) => override.packageName),
+        ["bud", "twig"],
+      );
+      deepStrictEqual(
+        addedIn(
+          logs,
+          logs.lastIndexOf("Retrying with only the overrides that held:"),
+        ),
+        ['  "leaf@": "2.0.0" (converge)'],
+      );
+      strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+    });
+
+    it("gives up after three rounds", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const pnpm = simulatePnpm(dir, ["leaf", "twig", "bud", "seed"], {
+        leaf: sticky,
+        twig: stickyWith("bud"),
+        bud: stickyWith("seed"),
+      });
+
+      const outcome = run(
+        dir,
+        [familyFix("leaf", "twig", "bud", "seed")],
+        pnpm,
+        logs,
+      );
+
+      strictEqual(outcome.status, "reverted");
+      strictEqual(outcome.stickyOverrides.length, 4);
+      strictEqual(logs.filter((line) => line.startsWith("Retrying")).length, 2);
+      ok(
+        logs.includes(
+          "  Overrides still came apart after 3 rounds — reverting them",
+        ),
+      );
+      strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+      deepStrictEqual(outcome.after, outcome.before);
+    });
+
+    it("keeps the same rule with plain overrides", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const pnpm = simulatePnpm(dir, ["leaf", "twig"], { leaf: sticky });
+
+      const outcome = applyClusterFixes({
+        projectDir: dir,
+        color: false,
+        log: (message = "") => logs.push(message),
+        convergenceOverrides: false,
+        readFixes: () => [familyFix("leaf", "twig")],
+        readDependentRanges: () => new Map(),
+        ...pnpm,
+      });
+
+      strictEqual(outcome.status, "applied");
+      deepStrictEqual(
+        outcome.stickyOverrides.map((override) => override.packageName),
+        ["twig"],
+      );
+      strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+    });
+
+    it("judges a reuse override by its edge, not by the detector", () => {
+      const dir = makeProject(projectFiles);
+      const logs: string[] = [];
+      const reuseFix = fix({
+        anchor: "2.0.0",
+        reuseFixes: [
+          {
+            requester: "plugin@1.0.0",
+            requesterName: "plugin",
+            packageName: "leaf",
+            range: "*",
+            from: "1.0.0",
+            to: "2.0.0",
+          },
+        ],
+      });
+      let resolved = false;
+
+      const outcome = applyClusterFixes({
+        projectDir: dir,
+        color: false,
+        log: (message = "") => logs.push(message),
+        pnpmVersion: () => "11.17.0",
+        // the anchor goes away once pnpm runs, and the detector with it
+        readFixes: () => (resolved ? [] : [reuseFix]),
+        readDuplicates: () => snapshot("leaf@1.0.0", "leaf@2.0.0"),
+        readDependentRanges: () =>
+          new Map([
+            [
+              "leaf",
+              [
+                {
+                  key: "plugin@1.0.0",
+                  range: "*",
+                  resolvedVersion: "1.0.0",
+                  requesterName: "plugin",
+                },
+              ],
+            ],
+          ]),
+        resolve: () => {
+          resolved = true;
+          return 0;
+        },
+      });
+
+      strictEqual(outcome.status, "reverted");
+      deepStrictEqual(
+        outcome.stickyOverrides.map((override) => override.packageName),
+        ["leaf"],
+      );
+      ok(logs.includes("  leaf onto 2.0.0 (reuse):"));
+      ok(
+        logs.includes(
+          '    plugin@1.0.0 requires "*", resolves 1.0.0 without an override',
+        ),
+      );
+    });
+  });
+
+  it("writes the override for a member nothing duplicates that holds its family apart", () => {
     const dir = makeProject({
       "package.json": manifestContent,
       "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
       "pnpm-workspace.yaml": workspaceYamlContent,
     });
-
-    const duplicated = snapshot("leaf@1.0.0", "leaf@2.0.0");
-    let duplicates = duplicated;
     const logs: string[] = [];
+    let parentMoved = false;
+
+    const outcome = applyClusterFixes({
+      projectDir: dir,
+      color: false,
+      log: (message = "") => logs.push(message),
+      pnpmVersion: () => "11.17.0",
+      readFixes: () => [
+        fix({
+          applicable: true,
+          target: "2.0.0",
+          convergentMembers: ["leaf"],
+          reResolutionSet: ["parent"],
+        }),
+      ],
+      readDuplicates: () =>
+        parentMoved ? snapshot() : snapshot("leaf@1.0.0", "leaf@2.0.0"),
+      readVersions: () =>
+        new Map([
+          ["leaf", parentMoved ? ["2.0.0"] : ["1.0.0", "2.0.0"]],
+          ["parent", [parentMoved ? "2.0.0" : "1.0.0"]],
+        ]),
+      resolve: () => {
+        // parent pins leaf exactly: the family only merges once parent moves
+        if (read(dir, "pnpm-workspace.yaml").includes('"parent@"')) {
+          parentMoved = true;
+        }
+        return 0;
+      },
+    });
+
+    strictEqual(outcome.status, "applied");
+    deepStrictEqual(outcome.stickyOverrides, []);
+    ok(logs.includes('  "parent@": "2.0.0" (converge)'));
+    strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+  });
+
+  it("reverts when the result without overrides adds a duplicate", () => {
+    const dir = makeProject({
+      "package.json": manifestContent,
+      "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+      "pnpm-workspace.yaml": workspaceYamlContent,
+    });
+    const logs: string[] = [];
+    let duplicates = snapshot("leaf@1.0.0", "leaf@2.0.0");
 
     const outcome = applyClusterFixes({
       projectDir: dir,
@@ -164,34 +521,20 @@ describe("applyClusterFixes", () => {
       readFixes: () => [leafFix],
       readDuplicates: () => duplicates,
       resolve: () => {
-        // the duplicate only stays away while the override is there
         duplicates = read(dir, "pnpm-workspace.yaml").includes('"leaf@"')
           ? snapshot()
-          : duplicated;
+          : snapshot("leaf@1.0.0", "leaf@2.0.0", "other@1.0.0", "other@2.0.0");
         return 0;
       },
     });
 
-    strictEqual(outcome.status, "kept-overrides");
-    deepStrictEqual(
-      outcome.stickyOverrides.map((override) => override.packageName),
-      ["leaf"],
-    );
-
-    const workspaceYaml = read(dir, "pnpm-workspace.yaml");
-    ok(workspaceYaml.includes('"leaf@": "2.0.0"'));
-    ok(workspaceYaml.includes("# Added by pnpm-dedup."));
+    strictEqual(outcome.status, "reverted");
     ok(
-      workspaceYaml.includes(
-        "# handled without a standing override: https://github.com",
+      logs.includes(
+        "  removing the overrides introduced 2 new duplicate(s) — reverting",
       ),
     );
-    // the user's own content survives the write
-    ok(workspaceYaml.includes("# keep me"));
-    ok(workspaceYaml.includes("resolutionMode: time-based"));
-
-    ok(logs.some((line) => line.includes("github.com/christophehurpeau")));
-    ok(logs.some((line) => line.includes("Kept in")));
+    strictEqual(read(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
   });
 
   it("writes plain overrides and skips the version gate when convergence is disabled", () => {

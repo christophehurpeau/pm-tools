@@ -94,7 +94,7 @@ describe("pnpmWorkspaceYaml", () => {
     );
   });
 
-  it("puts the comment above the first entry it adds, not above the block", () => {
+  it("appends to an existing block, leaving the user's comment in place", () => {
     strictEqual(
       addOverrides(
         'overrides:\n  # a decision taken elsewhere\n  "foo@": "1.0.0"\n',
@@ -102,14 +102,11 @@ describe("pnpmWorkspaceYaml", () => {
           ["leaf", "2.0.0"],
           ["other", "1.0.0"],
         ]),
-        { comment: "Added by pnpm-dedup.\nsee https://example.test/issues" },
       ),
       [
         "overrides:",
         "  # a decision taken elsewhere",
         '  "foo@": "1.0.0"',
-        "  # Added by pnpm-dedup.",
-        "  # see https://example.test/issues",
         '  "leaf@": "2.0.0"',
         '  "other@": "1.0.0"',
         "",

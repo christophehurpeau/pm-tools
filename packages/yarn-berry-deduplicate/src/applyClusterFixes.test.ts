@@ -146,6 +146,45 @@ describe("applyClusterFixes", () => {
     );
   });
 
+  it("writes the resolution for a member nothing duplicates that holds its family apart", () => {
+    const dir = makeProject();
+    const logs: string[] = [];
+    let parentMoved = false;
+
+    const outcome = applyClusterFixes({
+      projectDir: dir,
+      color: false,
+      log: (message = "") => logs.push(message),
+      readFixes: () => [
+        fix({
+          applicable: true,
+          target: "2.0.0",
+          convergentMembers: ["leaf"],
+          reResolutionSet: ["parent"],
+        }),
+      ],
+      readDuplicates: () =>
+        parentMoved ? snapshot() : snapshot("leaf@npm:1.0.0", "leaf@npm:2.0.0"),
+      readVersions: () =>
+        new Map([
+          ["leaf", parentMoved ? ["2.0.0"] : ["1.0.0", "2.0.0"]],
+          ["parent", [parentMoved ? "2.0.0" : "1.0.0"]],
+        ]),
+      verifyFrozen: () => 0,
+      resolve: () => {
+        // parent pins leaf exactly: the family only merges once parent moves
+        if (read(dir, "package.json").includes('"parent": "2.0.0"')) {
+          parentMoved = true;
+        }
+        return 0;
+      },
+    });
+
+    strictEqual(outcome.status, "applied");
+    ok(logs.includes('  "parent": "2.0.0" (converge)'));
+    strictEqual(read(dir, "package.json"), manifestContent);
+  });
+
   it("reverts and points at the issue tracker when a standing resolution is needed", () => {
     const dir = makeProject();
 

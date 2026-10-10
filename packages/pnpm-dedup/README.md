@@ -154,11 +154,16 @@ The cluster pass edits workspace `package.json` ranges and adds overrides to
 `pnpm-workspace.yaml`, then re-resolves without them: overrides are scaffolding,
 and a fix that holds on its own has them removed again.
 
-When a fix does _not_ hold — `pnpm dedupe` resolves the duplicate straight back
-once the override is gone — the override stays, with a comment above it saying
-so and pointing at the issue tracker, and the run reports how many were left.
-That is the one case where this tool leaves something standing in your
-configuration; it is a workaround, and the cluster is worth reporting.
+Nothing is ever left standing in your configuration. When some overrides do not
+hold, the run starts over from before the overrides with only those that did,
+so a merge that holds is kept without dragging along the edges the others moved
+for nothing. Each package left unmerged is reported with the edges that keep it
+apart, in two groups: _not merged even with an override_ (a declared range
+rejects the version) and _pnpm resolves these back without an override_.
+
+pnpm-dedup 2.2 kept such overrides under an `# Added by pnpm-dedup.` comment.
+They still apply on every resolution, so a run that finds them says so: remove
+them and run again to see what holds on its own.
 
 Convergence overrides (`"pkg@": "1.2.3"`, an empty range selector) are what make
 this safe: they rewrite an edge only when the declared range accepts that exact

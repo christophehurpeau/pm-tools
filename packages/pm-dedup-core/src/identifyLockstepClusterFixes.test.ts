@@ -447,6 +447,62 @@ describe("identifyLockstepClusterFixes", () => {
     ).toEqual(["family 1.0.0 -> 2.0.0"]);
   });
 
+  it("never re-resolves a member an excluded sibling still pins elsewhere", () => {
+    const familyMembers: ClusterMembersMap = {
+      a: { npmVersions: ["8.63.0", "8.65.0"], resolutionCount: 2 },
+      b: { npmVersions: ["8.63.0", "8.65.0"], resolutionCount: 2 },
+      e: { npmVersions: ["8.63.0", "8.65.0"], resolutionCount: 2 },
+      x: { npmVersions: ["8.65.0"], resolutionCount: 1 },
+    };
+    const [fix] = identifyLockstepClusterFixes(
+      [["a", "b", "e", "x"]],
+      familyMembers,
+      dependents([
+        [
+          "a",
+          [
+            { requester: "old@1", requesterName: "old", range: "^8.63.0" },
+            { requester: "x@8.65.0", requesterName: "x", range: "^8.63.0" },
+          ],
+        ],
+        [
+          "b",
+          [
+            { requester: "bpin@1", requesterName: "bpin", range: "8.63.0" },
+            { requester: "bnew@1", requesterName: "bnew", range: "^8.63.0" },
+          ],
+        ],
+        [
+          "e",
+          [
+            {
+              requester: "pinner@1",
+              requesterName: "pinner",
+              range: "^8.65.0",
+            },
+            { requester: "old2@1", requesterName: "old2", range: "8.63.0" },
+          ],
+        ],
+        [
+          "x",
+          [
+            { requester: "e@8.65.0", requesterName: "e", range: "8.65.0" },
+            { requester: "app@1", requesterName: "app", range: "^8.63.0" },
+          ],
+        ],
+      ]),
+    );
+
+    expect(fix!.target).toBe("8.63.0");
+    expect(fix!.convergentMembers).toEqual(["a", "b"]);
+    expect(
+      fix!.excludedMembers.map((excluded) => excluded.packageName),
+    ).toEqual(["e"]);
+    // e stays on 8.65.0 and keeps pinning x there: moving x's other edges to
+    // 8.63.0 would only add a second x
+    expect(fix!.reResolutionSet).toEqual([]);
+  });
+
   it("skips a cluster with no duplicated member", () => {
     expect(
       identifyLockstepClusterFixes(

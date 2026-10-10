@@ -31,7 +31,8 @@ const accepts = (version: string, range: string): boolean =>
  * dependent onto a version it never allowed.
  *
  * The `converge` overrides are safe by construction: the detector only converges
- * a member no third-party range holds elsewhere. A `reuse` override is derived
+ * a member no third-party range holds elsewhere, and only re-resolves one no
+ * in-cluster requester pins elsewhere either. A `reuse` override is derived
  * from a single requester's range, and another requester can still reject it.
  */
 export const partitionUnconditionalOverrides = (

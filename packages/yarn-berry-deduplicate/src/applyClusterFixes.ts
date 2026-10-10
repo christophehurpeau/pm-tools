@@ -6,10 +6,12 @@ import {
   createPackageFilter,
   describeSkippedClusterFix,
   diffDuplicates,
+  outstandingOverrides,
   partitionUnconditionalOverrides,
   planClusterApply,
   renderApplyPlan,
   restoreFiles,
+  reuseKeys,
   selectClusterFixes,
   shouldColorize,
 } from "pm-dedup-core";
@@ -18,10 +20,12 @@ import type {
   ClusterFix,
   DuplicateSnapshot,
   FileSnapshot,
+  OverrideTargetState,
   PackageFilterOptions,
   PlannedManifestEdit,
   PlannedOverride,
   SelectedClusterFixes,
+  VersionsSnapshot,
 } from "pm-dedup-core";
 import { buildYarnPackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import {
@@ -33,6 +37,7 @@ import { addResolutions } from "./helpers/packageJsonResolutions.ts";
 import { parseYarnLockPackages } from "./helpers/parseYarnLockPackages.ts";
 import { lockPathOf } from "./helpers/projectDir.ts";
 import { runYarn } from "./helpers/runYarn.ts";
+import { readVersionsSnapshot } from "./helpers/versionsSnapshot.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import { readAndParseYarnLock } from "./readYarnLock.ts";
 
@@ -63,6 +68,7 @@ export interface ApplyClusterFixesOptions {
   verifyFrozen?: () => number | null;
   readFixes?: (projectDir: string) => ClusterFix[];
   readDuplicates?: (lockPath: string) => DuplicateSnapshot;
+  readVersions?: (lockPath: string) => VersionsSnapshot;
   // restricts which packages may be touched, for deduplicating a large lockfile
   // a family at a time
   filter?: PackageFilterOptions;
@@ -113,21 +119,7 @@ const aliasOnlyRequesters = (
     : [];
 };
 
-interface ApplyState {
-  duplicates: DuplicateSnapshot;
-  // one key per open range still resolving away from the version the workspace
-  // anchors its family at
-  reuses: Set<string>;
-}
-
-const reuseKeys = (fixes: ClusterFix[]): Set<string> =>
-  new Set(
-    fixes.flatMap((fix) =>
-      fix.reuseFixes.map(
-        (reuse) => `${reuse.requesterName}>${reuse.packageName}@${reuse.to}`,
-      ),
-    ),
-  );
+type ApplyState = OverrideTargetState;
 
 export const applyClusterFixes = ({
   projectDir,
@@ -142,6 +134,7 @@ export const applyClusterFixes = ({
     runYarn(["install", "--immutable"], { cwd: projectDir }).status,
   readFixes = defaultReadFixes,
   readDuplicates = readDuplicateSnapshot,
+  readVersions = readVersionsSnapshot,
   filter,
   packageManagerResiduals,
   color = shouldColorize(),
@@ -289,6 +282,7 @@ export const applyClusterFixes = ({
   // gone from its output once the edge points at the anchored version.
   const readState = (): ApplyState => ({
     duplicates: readDuplicates(lockPath),
+    versions: readVersions(lockPath),
     reuses: reuseKeys(readSelectedFixes(projectDir).selected),
   });
 
@@ -326,17 +320,7 @@ export const applyClusterFixes = ({
   )!;
 
   const remaining = readState();
-  // A resolution is still worth writing while its package is duplicated, or
-  // while the edge it repoints is still resolving elsewhere.
-  const outstanding = plannedOverrides.filter(
-    (override) =>
-      [...remaining.duplicates].some((resolution) =>
-        resolution.startsWith(`${override.packageName}@`),
-      ) ||
-      [...remaining.reuses].some((key) =>
-        key.endsWith(`>${override.packageName}@${override.version}`),
-      ),
-  );
+  const outstanding = outstandingOverrides(plannedOverrides, remaining);
 
   // The result is only a fix if CI can install it from the manifests as they
   // stand, resolutions removed and all.

@@ -126,6 +126,8 @@ const accepts = (version: string, range: string): boolean =>
 
 interface Candidate {
   version: string;
+  // every member that lands on this version, duplicated or not
+  converging: Set<string>;
   // duplicated members that collapse onto this version
   convergentMembers: string[];
   // duplicated members that do not, with the third-party ranges to blame
@@ -453,6 +455,7 @@ export const identifyLockstepClusterFixes = (
 
       return {
         version,
+        converging,
         floatingMembers: [...floating].toSorted((a, b) => a.localeCompare(b)),
         // a pin the user would have to edit makes a candidate a last resort
         pinsToEdit: workspaceConstraints.filter(
@@ -552,12 +555,15 @@ export const identifyLockstepClusterFixes = (
 
     // re-resolution set: members free to move that are pulled from outside the
     // cluster and do not carry the target version, so a pure-lock copy is
-    // impossible. Internal-only members cascade from these.
+    // impossible. Internal-only members cascade from these. A member that is
+    // not duplicated also has to survive the converging fixed point: one an
+    // excluded sibling pins elsewhere would only become a new duplicate.
     const floatingSet = new Set(best.floatingMembers);
     const reResolutionSet = clusterMembers
       .filter(
         (member) =>
           membersWithExternalDependent.has(member) &&
+          (duplicatedSet.has(member) || best.converging.has(member)) &&
           !floatingSet.has(member) &&
           canMove(member, target) &&
           canReResolve(member, target) &&

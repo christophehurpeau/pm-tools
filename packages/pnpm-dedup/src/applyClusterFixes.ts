@@ -6,10 +6,13 @@ import {
   createPackageFilter,
   describeSkippedClusterFix,
   diffDuplicates,
+  heldOverrides,
+  outstandingOverrides,
   partitionUnconditionalOverrides,
   planClusterApply,
   renderApplyPlan,
   restoreFiles,
+  reuseKeys,
   selectClusterFixes,
   shouldColorize,
 } from "pm-dedup-core";
@@ -18,12 +21,17 @@ import type {
   ClusterFix,
   DuplicateSnapshot,
   FileSnapshot,
+  OverrideTargetState,
   PackageFilterOptions,
   PlannedManifestEdit,
   PlannedOverride,
   SelectedClusterFixes,
+  VersionsSnapshot,
 } from "pm-dedup-core";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
+import { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
+import type { DependentRangesMap } from "./helpers/collectDependentRanges.ts";
+import { describeUnheldOverride } from "./helpers/describeUnheldOverride.ts";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.ts";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.ts";
 import {
@@ -35,6 +43,7 @@ import { addOverrides, overrideKey } from "./helpers/pnpmWorkspaceYaml.ts";
 import { lockPathOf } from "./helpers/projectDir.ts";
 import { createManifestReader } from "./helpers/readInstalledManifest.ts";
 import { runPnpm } from "./helpers/runPnpm.ts";
+import { readVersionsSnapshot } from "./helpers/versionsSnapshot.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import { readPnpmLock } from "./readPnpmLock.ts";
 
@@ -43,7 +52,6 @@ const issuesUrl = "https://github.com/christophehurpeau/pm-tools/issues";
 export type ClusterApplyStatus =
   | "applied"
   | "dry-run"
-  | "kept-overrides"
   | "not-supported"
   | "nothing-to-do"
   | "reverted";
@@ -52,7 +60,7 @@ export interface ClusterApplyOutcome {
   status: ClusterApplyStatus;
   before: DuplicateSnapshot;
   after: DuplicateSnapshot;
-  // overrides the duplicates came back without: reported, never left behind
+  // overrides the result did not hold without: reported, never left behind
   stickyOverrides: PlannedOverride[];
   // how many edits the plan holds, so `--check` gates without re-planning
   plannedChangeCount: number;
@@ -66,6 +74,11 @@ export interface ApplyClusterFixesOptions {
   resolve?: () => number | null;
   readFixes?: (projectDir: string) => ClusterFix[];
   readDuplicates?: (lockPath: string) => DuplicateSnapshot;
+  readVersions?: (lockPath: string) => VersionsSnapshot;
+  readDependentRanges?: (
+    projectDir: string,
+    packageNames: Set<string>,
+  ) => DependentRangesMap;
   pnpmVersion?: () => string | null;
   // false writes plain overrides instead, which pnpm applies to every requester
   // whatever range it declares
@@ -99,35 +112,28 @@ const describeOverride = (
 ): string =>
   `"${overrideKey(override.packageName, convergence)}": "${override.version}"`;
 
-/**
- * Why the overrides below them had to stay. Used verbatim as the comment left in
- * `pnpm-workspace.yaml` and as the console explanation, so the file and the run
- * say the same thing. The packages are the entries that follow, so they are not
- * repeated here.
- */
-const stickyOverrideReason: string[] = [
-  "Added by pnpm-dedup.",
-  "Removing these makes `pnpm dedupe` resolve them back to a duplicate, so they",
-  "are what holds the deduplicated result. Keeping them is a workaround: no fix",
-  "was found that survives on its own. Please report this cluster so it can be",
-  `handled without a standing override: ${issuesUrl}`,
-];
-
-interface ApplyState {
-  duplicates: DuplicateSnapshot;
-  // one key per open range still resolving away from the version the workspace
-  // anchors its family at
-  reuses: Set<string>;
-}
-
-const reuseKeys = (fixes: ClusterFix[]): Set<string> =>
-  new Set(
-    fixes.flatMap((fix) =>
-      fix.reuseFixes.map(
-        (reuse) => `${reuse.requesterName}>${reuse.packageName}@${reuse.to}`,
-      ),
-    ),
+const defaultReadDependentRanges = (
+  projectDir: string,
+  packageNames: Set<string>,
+): DependentRangesMap =>
+  collectDependentRanges(
+    readPnpmLock(lockPathOf(projectDir)),
+    packageNames,
+    createManifestReader(projectDir),
   );
+
+// Each round only drops overrides, so this bounds a run that keeps losing one to
+// a companion it held alongside.
+const maxOverrideRounds = 3;
+
+type ApplyState = OverrideTargetState;
+
+interface DroppedOverride {
+  override: PlannedOverride;
+  // whether it held while the overrides were there, and only came apart once
+  // pnpm resolved without them
+  heldWithOverrides: boolean;
+}
 
 export const applyClusterFixes = ({
   projectDir,
@@ -141,6 +147,8 @@ export const applyClusterFixes = ({
   resolve = () => runPnpm(["dedupe"], { cwd: projectDir }).status,
   readFixes = defaultReadFixes,
   readDuplicates = readDuplicateSnapshot,
+  readVersions = readVersionsSnapshot,
+  readDependentRanges = defaultReadDependentRanges,
   pnpmVersion = () => readPnpmVersion(),
   convergenceOverrides = true,
   filter,
@@ -309,6 +317,7 @@ export const applyClusterFixes = ({
   // gone from its output once the edge points at the anchored version.
   const readState = (): ApplyState => ({
     duplicates: readDuplicates(lockPath),
+    versions: readVersions(lockPath),
     reuses: reuseKeys(readSelectedFixes(projectDir).selected),
   });
 
@@ -346,121 +355,205 @@ export const applyClusterFixes = ({
   )!;
 
   const remaining = readState();
-  // An override is still worth writing while its package is duplicated, or
-  // while the edge it repoints is still resolving elsewhere.
-  const outstanding = plannedOverrides.filter(
-    (override) =>
-      [...remaining.duplicates].some((resolution) =>
-        resolution.startsWith(`${override.packageName}@`),
-      ) ||
-      [...remaining.reuses].some((key) =>
-        key.endsWith(`>${override.packageName}@${override.version}`),
-      ),
-  );
+  const outstanding = outstandingOverrides(plannedOverrides, remaining);
+
+  const keptOutcome = (
+    after: DuplicateSnapshot,
+    stickyOverrides: PlannedOverride[],
+  ): ClusterApplyOutcome => ({
+    status: "applied",
+    before,
+    after,
+    stickyOverrides,
+    plannedChangeCount: changeCount,
+  });
 
   if (outstanding.length === 0) {
-    return {
-      status: "applied",
-      before,
-      after: remaining.duplicates,
-      stickyOverrides: [],
-      plannedChangeCount: changeCount,
-    };
+    return keptOutcome(remaining.duplicates, []);
   }
 
-  log(
-    `Adding ${convergenceOverrides ? "convergence" : "plain"} overrides to pnpm-workspace.yaml:`,
-  );
-  for (const override of outstanding) {
-    log(
-      `  ${describeOverride(override, convergenceOverrides)} (${override.reason})`,
+  // The range edits already held on their own, so dropping the overrides keeps
+  // them: only a run that made none of those has nothing left to show.
+  const withoutOverrides = (
+    stickyOverrides: PlannedOverride[],
+  ): ClusterApplyOutcome => {
+    revertTo(withoutOverridesSnapshot);
+    return plan.manifestEdits.length > 0
+      ? keptOutcome(readDuplicates(lockPath), stickyOverrides)
+      : { ...unchanged("reverted", changeCount), stickyOverrides };
+  };
+
+  const reuseRequesters = (override: PlannedOverride): string[] =>
+    fixes.flatMap((fix) =>
+      fix.reuseFixes
+        .filter(
+          (reuse) =>
+            reuse.packageName === override.packageName &&
+            reuse.to === override.version,
+        )
+        .map((reuse) => reuse.requesterName),
     );
-  }
-  writeFileSync(
-    workspaceYamlPath,
-    addOverrides(
-      workspaceYamlBefore.content,
-      new Map(
-        outstanding.map((override) => [override.packageName, override.version]),
-      ),
-      { convergence: convergenceOverrides },
-    ),
-  );
 
-  const withOverrides = resolveAndCheck("the overrides");
-  if (withOverrides === null) {
-    revertTo(withoutOverridesSnapshot);
-    return unchanged("reverted", changeCount);
-  }
+  // Read from the edges rather than from the detector: a reuse fix also stops
+  // being reported when the pin anchoring it goes away, edge unmoved.
+  const readReuseHeld = (
+    overrides: PlannedOverride[],
+  ): ((override: PlannedOverride) => boolean) => {
+    const reused = overrides.filter((override) => override.reason === "reuse");
+    if (reused.length === 0) return () => false;
+    const ranges = readDependentRanges(
+      projectDir,
+      new Set(reused.map((override) => override.packageName)),
+    );
+    return (override) => {
+      const requesters = new Set(reuseRequesters(override));
+      return (ranges.get(override.packageName) ?? []).every(
+        (dependent) =>
+          dependent.requesterName === undefined ||
+          !requesters.has(dependent.requesterName) ||
+          dependent.resolvedVersion === override.version,
+      );
+    };
+  };
 
-  // Overrides are scaffolding first: if pnpm holds the result without them they
-  // are removed, and if it does not they go back with the reason recorded.
-  log("Removing the overrides and re-resolving to check the result holds:");
-  restoreFiles([workspaceYamlBefore]);
+  const heldIn = (
+    overrides: PlannedOverride[],
+    end: ApplyState,
+  ): PlannedOverride[] =>
+    heldOverrides(overrides, {
+      start: remaining,
+      end,
+      reuseHeld: readReuseHeld(overrides),
+    });
 
-  if (resolve() !== 0) {
-    log("  `pnpm dedupe` failed without the overrides — reverting");
-    revertTo(withoutOverridesSnapshot);
-    return unchanged("reverted", changeCount);
-  }
-
-  const after = readState();
-  const returnedDuplicates = diffDuplicates(
-    withOverrides.duplicates,
-    after.duplicates,
-  ).added;
-  const returnedReuses = [...after.reuses].filter(
-    (key) => !withOverrides.reuses.has(key),
-  );
-
-  if (returnedDuplicates.length > 0 || returnedReuses.length > 0) {
+  // Overrides are scaffolding: they are written, pnpm resolves with them, and
+  // what counts is what is still there once they are removed again.
+  const overrideRound = (
+    overrides: PlannedOverride[],
+  ): {
+    heldWith: PlannedOverride[];
+    heldAfter: PlannedOverride[];
+    after: ApplyState;
+  } | null => {
+    log(
+      `Adding ${convergenceOverrides ? "convergence" : "plain"} overrides to pnpm-workspace.yaml:`,
+    );
+    for (const override of overrides) {
+      log(
+        `  ${describeOverride(override, convergenceOverrides)} (${override.reason})`,
+      );
+    }
     writeFileSync(
       workspaceYamlPath,
       addOverrides(
         workspaceYamlBefore.content,
         new Map(
-          outstanding.map((override) => [
-            override.packageName,
-            override.version,
-          ]),
+          overrides.map((override) => [override.packageName, override.version]),
         ),
-        {
-          convergence: convergenceOverrides,
-          comment: stickyOverrideReason.join("\n"),
-        },
+        { convergence: convergenceOverrides },
       ),
     );
 
-    if (resolve() !== 0) {
-      log("  `pnpm dedupe` failed with the overrides back — reverting");
-      revertTo(withoutOverridesSnapshot);
-      return unchanged("reverted", changeCount);
-    }
+    const withOverrides = resolveAndCheck("the overrides");
+    if (withOverrides === null) return null;
+    const heldWith = heldIn(overrides, withOverrides);
 
-    log(
-      `  Kept in ${workspaceYamlPath}, with the same explanation as a comment:`,
+    log("Removing the overrides and re-resolving to check the result holds:");
+    restoreFiles([workspaceYamlBefore]);
+    const after = resolveAndCheck("removing the overrides");
+    if (after === null) return null;
+
+    return { heldWith, heldAfter: heldIn(overrides, after), after };
+  };
+
+  // A member nothing duplicates only moves for its family's sake, so the
+  // family's duplicated members already say what did not merge.
+  const reportDropped = (dropped: DroppedOverride[]): void => {
+    const reported = dropped.filter(
+      ({ override }) =>
+        override.reason === "reuse" ||
+        [...remaining.duplicates].some((resolution) =>
+          resolution.startsWith(`${override.packageName}@`),
+        ),
     );
-    for (const override of outstanding) {
-      log(`    ${describeOverride(override, convergenceOverrides)}`);
-    }
-    for (const line of stickyOverrideReason) {
-      log(`  ${line}`);
+    if (reported.length === 0) return;
+
+    const ranges = readDependentRanges(
+      projectDir,
+      new Set(reported.map(({ override }) => override.packageName)),
+    );
+    const logGroup = (title: string, entries: DroppedOverride[]): void => {
+      if (entries.length === 0) return;
+      log(title);
+      for (const { override } of entries) {
+        log(
+          `  ${override.packageName} onto ${override.version}${override.reason === "reuse" ? " (reuse)" : ""}:`,
+        );
+        for (const line of describeUnheldOverride(
+          override,
+          ranges.get(override.packageName) ?? [],
+          reuseRequesters(override),
+        )) {
+          log(`    ${line}`);
+        }
+      }
+    };
+
+    logGroup(
+      "Not merged even with an override:",
+      reported.filter((entry) => !entry.heldWithOverrides),
+    );
+    logGroup(
+      "pnpm resolves these back without an override, so they are not merged:",
+      reported.filter((entry) => entry.heldWithOverrides),
+    );
+    log(
+      `No override is left behind. If one of these should merge, please report it at ${issuesUrl}`,
+    );
+  };
+
+  const dropped: DroppedOverride[] = [];
+  let candidates = outstanding;
+  for (let round = 1; round <= maxOverrideRounds; round++) {
+    if (round > 1) {
+      log("Retrying with only the overrides that held:");
+      restoreFiles(withoutOverridesSnapshot);
     }
 
-    return {
-      status: "kept-overrides",
-      before,
-      after: readDuplicates(lockPath),
-      stickyOverrides: outstanding,
-      plannedChangeCount: changeCount,
-    };
+    const result = overrideRound(candidates);
+    if (result === null) return withoutOverrides([]);
+
+    const { heldWith, heldAfter, after } = result;
+    for (const override of candidates) {
+      if (!heldAfter.includes(override)) {
+        dropped.push({
+          override,
+          heldWithOverrides: heldWith.includes(override),
+        });
+      }
+    }
+
+    if (heldAfter.length === candidates.length) {
+      reportDropped(dropped);
+      return keptOutcome(
+        after.duplicates,
+        dropped.map(({ override }) => override),
+      );
+    }
+    candidates = heldAfter;
+    if (candidates.length === 0) break;
   }
 
-  return {
-    status: "applied",
-    before,
-    after: after.duplicates,
-    stickyOverrides: [],
-    plannedChangeCount: changeCount,
-  };
+  log(
+    candidates.length === 0
+      ? "  No override holds on its own — reverting them"
+      : `  Overrides still came apart after ${maxOverrideRounds} rounds — reverting them`,
+  );
+  // what is left only held alongside overrides the last round dropped
+  dropped.push(
+    ...candidates.map((override) => ({ override, heldWithOverrides: true })),
+  );
+  const outcome = withoutOverrides(dropped.map(({ override }) => override));
+  reportDropped(dropped);
+  return outcome;
 };

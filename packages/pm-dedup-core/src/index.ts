@@ -116,6 +116,15 @@ export type {
 } from "./planClusterApply.ts";
 export { diffDuplicates } from "./duplicateSnapshot.ts";
 export type { DuplicateDiff, DuplicateSnapshot } from "./duplicateSnapshot.ts";
+export {
+  heldOverrides,
+  outstandingOverrides,
+  reuseKeys,
+} from "./clusterOverrides.ts";
+export type {
+  OverrideRoundStates,
+  OverrideTargetState,
+} from "./clusterOverrides.ts";
 export { partitionUnconditionalOverrides } from "./unconditionalOverrides.ts";
 export type {
   PartitionedOverrides,

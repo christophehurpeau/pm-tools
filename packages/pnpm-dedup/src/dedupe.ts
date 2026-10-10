@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   countDuplicatedPackages,
   createPackageFilter,
@@ -31,6 +33,23 @@ const residualsMessage = "`pnpm dedupe` would also change the lockfile.";
 // running it would undo the point of a filtered run.
 const filteredResidualsMessage =
   "`pnpm dedupe` was not run: it ignores the package filter. Run `pnpm dedupe` yourself, or this command without a filter, to finish the rest.";
+
+// The comment pnpm-dedup 2.2 wrote above the overrides it kept. Those still
+// apply on every resolution, so a run cannot tell what holds without them.
+const leftoverOverridesMarker = "# Added by pnpm-dedup.";
+
+const warnOnLeftoverOverrides = (projectDir: string): void => {
+  const workspaceYamlPath = join(projectDir, "pnpm-workspace.yaml");
+  if (
+    !existsSync(workspaceYamlPath) ||
+    !readFileSync(workspaceYamlPath, "utf8").includes(leftoverOverridesMarker)
+  ) {
+    return;
+  }
+  console.log(
+    `pnpm-workspace.yaml still has overrides an earlier pnpm-dedup kept (under "${leftoverOverridesMarker.slice(2)}"). This version never keeps any: remove them and run again to see what holds on its own.`,
+  );
+};
 
 /**
  * `pnpm dedupe` only merges what it can resolve to a single version on its own:
@@ -79,6 +98,8 @@ export function dedupe({
     return undefined;
   })();
 
+  warnOnLeftoverOverrides(projectDir);
+
   const outcome = applyClusterFixes({
     projectDir,
     dryRun,
@@ -86,12 +107,6 @@ export function dedupe({
     filter,
     packageManagerResiduals: residuals,
   });
-
-  if (outcome.status === "kept-overrides") {
-    console.log(
-      `${outcome.stickyOverrides.length} override(s) left in pnpm-workspace.yaml — see the comment above them`,
-    );
-  }
 
   if (mode === "check") {
     process.exitCode =
@@ -106,7 +121,7 @@ export function dedupe({
     // Applying an override needs a real resolution, and `pnpm dedupe` is the
     // only one that performs it — so a filtered run that changed something has
     // already merged whatever else pnpm could reach on its own.
-    if (outcome.status === "applied" || outcome.status === "kept-overrides") {
+    if (outcome.status === "applied") {
       console.log(
         "`pnpm dedupe` ran to apply the fixes above and merged what it could on its own: the filter bounds the edits made here, not pnpm's resolution.",
       );
