@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.2](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core@2.2.1...pm-dedup-core@2.2.2) (2026-10-10)
+
+### Bug Fixes
+
+* drop reuse fixes aimed at a pin the same fix moves
+* never leave overrides behind in pnpm-dedupe, closes [#180](https://github.com/christophehurpeau/pm-tools/issues/180)
+* **pnpm-dedup:** stop planning reuse overrides pnpm cannot hold
+* stop counting on the resolver to move unpinned cluster members
+
 ## [2.2.1](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core@2.2.0...pm-dedup-core@2.2.1) (2026-10-05)
 
 Note: no notable changes

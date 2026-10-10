@@ -1,6 +1,6 @@
 {
   "name": "pm-dedup-core",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "package manager utils",
   "keywords": [],
   "homepage": "https://github.com/christophehurpeau/pm-tools",

@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.0.2](https://github.com/christophehurpeau/pm-tools/compare/yarn-berry-deduplicate@7.0.1...yarn-berry-deduplicate@7.0.2) (2026-10-10)
+
+### Bug Fixes
+
+* never leave overrides behind in pnpm-dedupe, closes [#180](https://github.com/christophehurpeau/pm-tools/issues/180)
+* stop counting on the resolver to move unpinned cluster members
+
+Version bump for dependency: pm-dedup-core
+
+
 ## [7.0.1](https://github.com/christophehurpeau/pm-tools/compare/yarn-berry-deduplicate@7.0.0...yarn-berry-deduplicate@7.0.1) (2026-10-05)
 
 Version bump for dependency: pm-dedup-core

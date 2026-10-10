@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.2](https://github.com/christophehurpeau/pm-tools/compare/yarn-why-duplicate@2.2.1...yarn-why-duplicate@2.2.2) (2026-10-10)
+
+Note: no notable changes
+
+
 ## [2.2.1](https://github.com/christophehurpeau/pm-tools/compare/yarn-why-duplicate@2.2.0...yarn-why-duplicate@2.2.1) (2026-10-05)
 
 Note: no notable changes

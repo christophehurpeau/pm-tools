@@ -1,6 +1,6 @@
 {
   "name": "bun-dedup",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "List duplicates and dedupe bun lock file",
   "keywords": [
     "bun",
