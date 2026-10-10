@@ -447,6 +447,121 @@ describe("identifyLockstepClusterFixes", () => {
     ).toEqual(["family 1.0.0 -> 2.0.0"]);
   });
 
+  it("plans the commitlint downgrade the family's own ranges reject", () => {
+    // alouette: @pob/root pins @commitlint/types at 21.0.1 while
+    // @commitlint/lint's `^21.0.2` ranges resolved is-ignored, parse and rules
+    // at 21.1.0, which require `^21.1.0` of it
+    const [fix] = identifyLockstepClusterFixes(
+      [
+        [
+          "@commitlint/ensure",
+          "@commitlint/is-ignored",
+          "@commitlint/parse",
+          "@commitlint/rules",
+          "@commitlint/types",
+        ],
+      ],
+      {
+        "@commitlint/ensure": { npmVersions: ["21.1.0"], resolutionCount: 1 },
+        "@commitlint/is-ignored": {
+          npmVersions: ["21.1.0"],
+          resolutionCount: 1,
+        },
+        "@commitlint/parse": { npmVersions: ["21.1.0"], resolutionCount: 1 },
+        "@commitlint/rules": { npmVersions: ["21.1.0"], resolutionCount: 1 },
+        "@commitlint/types": {
+          npmVersions: ["21.0.1", "21.1.0"],
+          resolutionCount: 2,
+        },
+      },
+      dependents([
+        [
+          "@commitlint/types",
+          [
+            {
+              requester: "@commitlint/ensure@21.1.0",
+              requesterName: "@commitlint/ensure",
+              range: "^21.1.0",
+            },
+            {
+              requester: "@commitlint/is-ignored@21.1.0",
+              requesterName: "@commitlint/is-ignored",
+              range: "^21.1.0",
+            },
+            {
+              requester: "@commitlint/parse@21.1.0",
+              requesterName: "@commitlint/parse",
+              range: "^21.1.0",
+            },
+            {
+              requester: "@commitlint/rules@21.1.0",
+              requesterName: "@commitlint/rules",
+              range: "^21.1.0",
+            },
+            {
+              requester: "@commitlint/format@21.0.1",
+              requesterName: "@commitlint/format",
+              range: "^21.0.1",
+            },
+            {
+              requester: "@commitlint/lint@21.0.2",
+              requesterName: "@commitlint/lint",
+              range: "^21.0.1",
+            },
+            {
+              requester: "@pob/root@27.11.0",
+              requesterName: "@pob/root",
+              range: "21.0.1",
+            },
+          ],
+        ],
+        [
+          "@commitlint/ensure",
+          [
+            {
+              requester: "@commitlint/rules@21.1.0",
+              requesterName: "@commitlint/rules",
+              range: "^21.1.0",
+            },
+          ],
+        ],
+        ...(
+          [
+            "@commitlint/is-ignored",
+            "@commitlint/parse",
+            "@commitlint/rules",
+          ] as const
+        ).map(
+          (member) =>
+            [
+              member,
+              [
+                {
+                  requester: "@commitlint/lint@21.0.2",
+                  requesterName: "@commitlint/lint",
+                  range: "^21.0.2",
+                },
+              ],
+            ] as [
+              string,
+              { requester: string; requesterName: string; range: string }[],
+            ],
+        ),
+      ]),
+    );
+
+    // what the detector plans today: the three 21.1.0 members are left to the
+    // resolver, which keeps them where they are, so types never merges
+    expect(fix!.target).toBe("21.0.1");
+    expect(fix!.direction).toBe("down");
+    expect(fix!.convergentMembers).toEqual(["@commitlint/types"]);
+    expect(fix!.floatingMembers).toEqual([
+      "@commitlint/is-ignored",
+      "@commitlint/parse",
+      "@commitlint/rules",
+    ]);
+  });
+
   it("never re-resolves a member an excluded sibling still pins elsewhere", () => {
     const familyMembers: ClusterMembersMap = {
       a: { npmVersions: ["8.63.0", "8.65.0"], resolutionCount: 2 },
