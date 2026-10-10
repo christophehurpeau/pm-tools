@@ -721,6 +721,75 @@ describe("applyClusterFixes", () => {
     ok(outcome.plannedChangeCount > 0);
   });
 
+  describe("an open range that ignored the pinned version", () => {
+    const reuseFix = (
+      requesterName: string,
+      packageName: string,
+      range: string,
+      from: string,
+      to: string,
+    ): ClusterFix =>
+      fix({
+        anchor: to,
+        reuseFixes: [
+          {
+            requester: `${requesterName}@1.0.0`,
+            requesterName,
+            packageName,
+            range,
+            from,
+            to,
+          },
+        ],
+      });
+    // the metro fixture's wildcard, and alouette's peer
+    const reuseFixes = [
+      reuseFix(
+        "@tamagui/metro-plugin",
+        "metro-config",
+        "*",
+        "0.87.0",
+        "0.84.5",
+      ),
+      reuseFix(
+        "react-native-css",
+        "lightningcss",
+        ">=1.27.0",
+        "1.33.0",
+        "1.30.1",
+      ),
+    ];
+
+    it("plans a reuse override for each", () => {
+      const dir = makeProject({
+        "package.json": manifestContent,
+        "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
+      });
+      const logs: string[] = [];
+
+      const outcome = applyClusterFixes({
+        projectDir: dir,
+        color: false,
+        dryRun: true,
+        log: (message = "") => logs.push(message),
+        pnpmVersion: () => "11.17.0",
+        readFixes: () => reuseFixes,
+        readDuplicates: () => snapshot(),
+        resolve: () => {
+          throw new Error("a dry run must not resolve");
+        },
+      });
+
+      strictEqual(outcome.plannedChangeCount, 2);
+      ok(
+        logs.some((line) => line.includes('"metro-config@": "0.84.5" (reuse)')),
+      );
+      ok(
+        logs.some((line) => line.includes('"lightningcss@": "1.30.1" (reuse)')),
+      );
+    });
+  });
+
   it("renders repo-relative paths and the transient override file", () => {
     const dir = makeProject({
       "package.json": manifestContent,
