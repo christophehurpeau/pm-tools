@@ -1,4 +1,9 @@
-import { describe, expect, it } from "bun:test";
+import {
+  deepStrictEqual,
+  partialDeepStrictEqual,
+  strictEqual,
+} from "node:assert/strict";
+import { describe, it } from "node:test";
 import { loadFixture } from "./fixtures.ts";
 import { parseYarnLockPackages } from "./parseYarnLockPackages.ts";
 import { parseYarnLock } from "./syml.ts";
@@ -7,13 +12,13 @@ describe("parseYarnLockPackages", () => {
   it("keys every descriptor a lockfile entry covers", () => {
     const { packages } = loadFixture("duplicated-printable-shell-command");
 
-    expect(packages.get("printable-shell-command@npm:^5.0.7")).toMatchObject({
+    partialDeepStrictEqual(packages.get("printable-shell-command@npm:^5.0.7"), {
       type: "npm",
       name: "printable-shell-command",
       resolution: "printable-shell-command@npm:5.0.7",
       version: "5.0.7",
     });
-    expect(packages.get("printable-shell-command@npm:^5.0.8")).toMatchObject({
+    partialDeepStrictEqual(packages.get("printable-shell-command@npm:^5.0.8"), {
       type: "npm",
       version: "5.0.8",
     });
@@ -30,7 +35,8 @@ describe("parseYarnLockPackages", () => {
 `),
     );
 
-    expect(packages.get("lodash@npm:^4.0.0")).toBe(
+    strictEqual(
+      packages.get("lodash@npm:^4.0.0"),
       packages.get("lodash@npm:^4.17.0"),
     );
   });
@@ -40,27 +46,32 @@ describe("parseYarnLockPackages", () => {
   it("names an aliased descriptor after the package it resolves to", () => {
     const { packages } = loadFixture("mergeable-alias");
 
-    expect(
+    partialDeepStrictEqual(
       packages.get("psc@npm:printable-shell-command@^5.0.0"),
-    ).toMatchObject({
-      type: "npm",
-      name: "printable-shell-command",
-      version: "5.0.7",
-    });
+      {
+        type: "npm",
+        name: "printable-shell-command",
+        version: "5.0.7",
+      },
+    );
   });
 
   it("keeps non-npm protocols out of the npm pool", () => {
     const { packages } = loadFixture("non-npm");
 
-    expect(
+    partialDeepStrictEqual(
       packages.get("local-lib@workspace:packages/local-lib"),
-    ).toMatchObject({ type: "other", protocol: "workspace" });
-    expect(
+      { type: "other", protocol: "workspace" },
+    );
+    partialDeepStrictEqual(
       packages.get(
         "resolve@patch:resolve@npm%3A^1.22.8#optional!builtin<compat/resolve>",
       ),
-    ).toMatchObject({ type: "other", protocol: "patch" });
-    expect(packages.get("resolve@npm:^1.22.8")).toMatchObject({ type: "npm" });
+      { type: "other", protocol: "patch" },
+    );
+    partialDeepStrictEqual(packages.get("resolve@npm:^1.22.8"), {
+      type: "npm",
+    });
   });
 
   // yarn 2 wrote a virtual entry per peer context; one release installed under
@@ -83,6 +94,6 @@ describe("parseYarnLockPackages", () => {
     const resolutions = new Set(
       [...packages.values()].map((pkg) => pkg.resolution),
     );
-    expect([...resolutions]).toEqual(["react-dom@npm:18.3.1"]);
+    deepStrictEqual([...resolutions], ["react-dom@npm:18.3.1"]);
   });
 });

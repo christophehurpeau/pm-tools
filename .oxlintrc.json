@@ -28,5 +28,36 @@
         ]
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "node-js/no-unsupported-features/node-builtins": [
+          "error",
+          {
+            "ignores": [
+              "localStorage",
+              "sessionStorage",
+              "Storage",
+              "util.styleText",
+              "assert/strict.partialDeepStrictEqual"
+            ]
+          }
+        ],
+        "typescript/no-floating-promises": [
+          "error",
+          {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "package",
+                "name": ["it", "describe", "test", "skip"],
+                "package": "node:test"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

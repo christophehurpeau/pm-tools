@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildYarnPackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import { fixtureDir } from "./helpers/fixtures.ts";
@@ -145,57 +146,61 @@ const linkedVersions = (
 };
 
 suite("yarn-berry-deduplicate end to end", () => {
-  it.each(["node-modules", "pnp"] as const)(
-    "merges the stale range onto the pinned version and leaves yarn installing it (nodeLinker: %s)",
-    (nodeLinker) => {
-      const dir = projects.create();
-      cpSync(fixtureDir("e2e-stale-range"), dir, { recursive: true });
-      setNodeLinker(dir, nodeLinker);
-      const manifestsBefore = ["package.json", "packages/a/package.json"].map(
-        (path) => readFileSync(join(dir, path), "utf8"),
-      );
+  for (const nodeLinker of ["node-modules", "pnp"] as const) {
+    it(
+      `merges the stale range onto the pinned version and leaves yarn installing it (nodeLinker: ${nodeLinker})`,
+      { timeout: 300_000 },
+      () => {
+        const dir = projects.create();
+        cpSync(fixtureDir("e2e-stale-range"), dir, { recursive: true });
+        setNodeLinker(dir, nodeLinker);
+        const manifestsBefore = ["package.json", "packages/a/package.json"].map(
+          (path) => readFileSync(join(dir, path), "utf8"),
+        );
 
-      const installed = install(dir);
-      expect(installed.status).toBe(0);
+        const installed = install(dir);
+        strictEqual(installed.status, 0);
 
-      // `a` asks for `^5.0.7` and the lockfile still answers 5.0.7, while `b`
-      // pins the 5.3.1 that would satisfy them both
-      expect(resolutionsOf(dir, "printable-shell-command")).toEqual([
-        "printable-shell-command@npm:5.3.1",
-        "printable-shell-command@npm:5.0.7",
-      ]);
+        // `a` asks for `^5.0.7` and the lockfile still answers 5.0.7, while `b`
+        // pins the 5.3.1 that would satisfy them both
+        deepStrictEqual(resolutionsOf(dir, "printable-shell-command"), [
+          "printable-shell-command@npm:5.3.1",
+          "printable-shell-command@npm:5.0.7",
+        ]);
 
-      const check = dedupe(dir, "--check");
-      expect(check.status).toBe(1);
+        const check = dedupe(dir, "--check");
+        strictEqual(check.status, 1);
 
-      const applied = dedupe(dir);
-      expect(applied.status).toBe(0);
-      expect(applied.output).toContain("yarn.lock updated");
+        const applied = dedupe(dir);
+        strictEqual(applied.status, 0);
+        ok(applied.output.includes("yarn.lock updated"));
 
-      // the rewrite only asks; yarn is what applies it
-      const reinstalled = install(dir);
-      expect(reinstalled.status).toBe(0);
+        // the rewrite only asks; yarn is what applies it
+        const reinstalled = install(dir);
+        strictEqual(reinstalled.status, 0);
 
-      expect(resolutionsOf(dir, "printable-shell-command")).toEqual([
-        "printable-shell-command@npm:5.3.1",
-      ]);
-      // the same thing again, read from what yarn actually put on disk
-      expect(
-        linkedVersions(dir, "printable-shell-command", nodeLinker),
-      ).toEqual(["5.3.1"]);
+        deepStrictEqual(resolutionsOf(dir, "printable-shell-command"), [
+          "printable-shell-command@npm:5.3.1",
+        ]);
+        // the same thing again, read from what yarn actually put on disk
+        deepStrictEqual(
+          linkedVersions(dir, "printable-shell-command", nodeLinker),
+          ["5.3.1"],
+        );
 
-      // nothing was pinned into a manifest to hold it there
-      expect(
-        ["package.json", "packages/a/package.json"].map((path) =>
-          readFileSync(join(dir, path), "utf8"),
-        ),
-      ).toEqual(manifestsBefore);
+        // nothing was pinned into a manifest to hold it there
+        deepStrictEqual(
+          ["package.json", "packages/a/package.json"].map((path) =>
+            readFileSync(join(dir, path), "utf8"),
+          ),
+          manifestsBefore,
+        );
 
-      // and yarn agrees the lockfile is one CI could install from as it stands
-      expect(install(dir, "--immutable").status).toBe(0);
+        // and yarn agrees the lockfile is one CI could install from as it stands
+        strictEqual(install(dir, "--immutable").status, 0);
 
-      expect(dedupe(dir, "--check").status).toBe(0);
-    },
-    300_000,
-  );
+        strictEqual(dedupe(dir, "--check").status, 0);
+      },
+    );
+  }
 });

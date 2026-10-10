@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { deepStrictEqual, ok, strictEqual, throws } from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
   buildIdentifiedFixesMap,
   createPackageFilter,
@@ -72,14 +73,14 @@ describe("applyIdentifiedFixesToYarnLock", () => {
       "duplicated-printable-shell-command",
     );
 
-    expect(changed).toBe(true);
-    expect(changedKeys).toEqual(["printable-shell-command@npm:^5.0.7"]);
-    expect(after).toContain(
-      '"printable-shell-command@npm:^5.0.7, printable-shell-command@npm:^5.0.8":',
+    strictEqual(changed, true);
+    deepStrictEqual(changedKeys, ["printable-shell-command@npm:^5.0.7"]);
+    ok(
+      after.includes(
+        '"printable-shell-command@npm:^5.0.7, printable-shell-command@npm:^5.0.8":',
+      ),
     );
-    expect(after).not.toContain(
-      'resolution: "printable-shell-command@npm:5.0.7"',
-    );
+    ok(!after.includes('resolution: "printable-shell-command@npm:5.0.7"'));
   });
 
   // a descriptor dropped here is a dependency yarn would stop resolving
@@ -92,7 +93,8 @@ describe("applyIdentifiedFixesToYarnLock", () => {
     ]) {
       const { entries } = dedupeFixture(name);
       const { packagesMap } = loadFixture(name);
-      expect(descriptorsOf(entries)).toHaveLength(
+      strictEqual(
+        descriptorsOf(entries).length,
         Object.values(packagesMap).flatMap((r) =>
           r.flatMap((x) => x.installations),
         ).length,
@@ -105,36 +107,40 @@ describe("applyIdentifiedFixesToYarnLock", () => {
   it("moves a descriptor onto the target entry without rewriting it", () => {
     const { entries } = dedupeFixture("duplicated-printable-shell-command");
 
-    expect(
+    strictEqual(
       entryForDescriptor(entries, "printable-shell-command@npm:^5.0.7")
         .resolution,
-    ).toBe("printable-shell-command@npm:5.0.8");
+      "printable-shell-command@npm:5.0.8",
+    );
   });
 
   it("keeps an alias's own key when it moves", () => {
     const { entries, after } = dedupeFixture("mergeable-alias");
 
-    expect(after).toContain(
-      '"printable-shell-command@npm:^5.0.8, psc@npm:printable-shell-command@^5.0.0":',
+    ok(
+      after.includes(
+        '"printable-shell-command@npm:^5.0.8, psc@npm:printable-shell-command@^5.0.0":',
+      ),
     );
-    expect(
+    strictEqual(
       entryForDescriptor(entries, "psc@npm:printable-shell-command@^5.0.0")
         .resolution,
-    ).toBe("printable-shell-command@npm:5.0.8");
+      "printable-shell-command@npm:5.0.8",
+    );
   });
 
   it("leaves a clean lockfile byte-identical", () => {
     const { before, after, changed } = dedupeFixture("simple");
 
-    expect(changed).toBe(false);
-    expect(after).toBe(before);
+    strictEqual(changed, false);
+    strictEqual(after, before);
   });
 
   it("does not merge ranges that do not overlap", () => {
     const { before, after, changed } = dedupeFixture("duplicated-babel-frame");
 
-    expect(changed).toBe(false);
-    expect(after).toBe(before);
+    strictEqual(changed, false);
+    strictEqual(after, before);
   });
 
   it("leaves an alias whose range covers nothing else alone", () => {
@@ -142,8 +148,8 @@ describe("applyIdentifiedFixesToYarnLock", () => {
       "aliased-range-constrains-merge",
     );
 
-    expect(changed).toBe(false);
-    expect(after).toBe(before);
+    strictEqual(changed, false);
+    strictEqual(after, before);
   });
 
   it("leaves a pair a peer range forbids merging alone", () => {
@@ -151,27 +157,29 @@ describe("applyIdentifiedFixesToYarnLock", () => {
       "peer-range-constrains-merge",
     );
 
-    expect(changed).toBe(false);
-    expect(after).toBe(before);
+    strictEqual(changed, false);
+    strictEqual(after, before);
   });
 
   it("leaves workspace, patch and git resolutions untouched", () => {
     const { before, after, changed } = dedupeFixture("non-npm");
 
-    expect(changed).toBe(false);
-    expect(after).toBe(before);
+    strictEqual(changed, false);
+    strictEqual(after, before);
   });
 
   it("merges onto a lower version when an exact pin is the only common one", () => {
     const { after, changed } = dedupeFixture("exact-pin-forces-downgrade");
 
-    expect(changed).toBe(true);
-    expect(after).toContain(
-      '"barcode-detector@npm:3.0.3, barcode-detector@npm:^3.0.0":',
+    strictEqual(changed, true);
+    ok(
+      after.includes(
+        '"barcode-detector@npm:3.0.3, barcode-detector@npm:^3.0.0":',
+      ),
     );
-    expect(after).not.toContain('resolution: "barcode-detector@npm:3.2.2"');
+    ok(!after.includes('resolution: "barcode-detector@npm:3.2.2"'));
     // the entry the merged descriptors now share is the pinned one
-    expect(after).toContain('resolution: "barcode-detector@npm:3.0.3"');
+    ok(after.includes('resolution: "barcode-detector@npm:3.0.3"'));
   });
 
   describe("package filters", () => {
@@ -180,8 +188,8 @@ describe("applyIdentifiedFixesToYarnLock", () => {
         include: ["lodash"],
       });
 
-      expect(changed).toBe(false);
-      expect(after).toBe(before);
+      strictEqual(changed, false);
+      strictEqual(after, before);
     });
 
     it("moves the selected package", () => {
@@ -189,8 +197,8 @@ describe("applyIdentifiedFixesToYarnLock", () => {
         include: ["semver"],
       });
 
-      expect(changed).toBe(true);
-      expect(changedKeys).toEqual(["semver@npm:^7.6.0"]);
+      strictEqual(changed, true);
+      deepStrictEqual(changedKeys, ["semver@npm:^7.6.0"]);
     });
 
     it("honours an exclusion", () => {
@@ -198,7 +206,7 @@ describe("applyIdentifiedFixesToYarnLock", () => {
         exclude: ["semver"],
       });
 
-      expect(changed).toBe(false);
+      strictEqual(changed, false);
     });
   });
 
@@ -233,8 +241,8 @@ describe("applyIdentifiedFixesToYarnLock", () => {
 
     const { entries: after } = applyIdentifiedFixesToYarnLock(entries, fixes);
 
-    expect(packageEntries(after)).toHaveLength(1);
-    expect(entryForDescriptor(after, "lib@npm:^1.0.0")).toEqual({
+    strictEqual(packageEntries(after).length, 1);
+    deepStrictEqual(entryForDescriptor(after, "lib@npm:^1.0.0"), {
       key: "lib@npm:1.5.0, lib@npm:^1.0.0",
       resolution: "lib@npm:1.5.0",
     });
@@ -250,22 +258,24 @@ describe("applyIdentifiedFixesToYarnLock", () => {
   resolution: "lib@npm:1.0.0"
 `);
 
-    expect(() =>
-      applyIdentifiedFixesToYarnLock(
-        entries,
-        new Map<string, ResolutionFix[]>([
-          [
-            "lib",
+    throws(
+      () =>
+        applyIdentifiedFixesToYarnLock(
+          entries,
+          new Map<string, ResolutionFix[]>([
             [
-              {
-                mergeableResolutions: ["lib@npm:1.0.0", "lib@npm:9.9.9"],
-                to: "lib@npm:9.9.9",
-              },
+              "lib",
+              [
+                {
+                  mergeableResolutions: ["lib@npm:1.0.0", "lib@npm:9.9.9"],
+                  to: "lib@npm:9.9.9",
+                },
+              ],
             ],
-          ],
-        ]),
-      ),
-    ).toThrow('No lockfile entry found for "lib@npm:9.9.9"');
+          ]),
+        ),
+      /No lockfile entry found for "lib@npm:9\.9\.9"/u,
+    );
   });
 
   // two fixes for one package can chain: stopping at the first hop would leave
@@ -306,8 +316,9 @@ describe("applyIdentifiedFixesToYarnLock", () => {
       ]),
     );
 
-    expect(packageEntries(after)).toHaveLength(1);
-    expect(entryForDescriptor(after, "lib@npm:^1.0.0").resolution).toBe(
+    strictEqual(packageEntries(after).length, 1);
+    strictEqual(
+      entryForDescriptor(after, "lib@npm:^1.0.0").resolution,
       "lib@npm:1.5.0",
     );
   });
@@ -340,13 +351,13 @@ describe("applyIdentifiedFixesToYarnLock", () => {
       ]),
     );
 
-    expect(result.changed).toBe(false);
-    expect(stringifyYarnLock(after)).toBe(stringifyYarnLock(entries));
+    strictEqual(result.changed, false);
+    strictEqual(stringifyYarnLock(after), stringifyYarnLock(entries));
   });
 
   it("keeps __metadata", () => {
     const { entries } = dedupeFixture("duplicated-printable-shell-command");
 
-    expect(entries.__metadata).toEqual({ version: "8", cacheKey: "10c0" });
+    deepStrictEqual(entries.__metadata, { version: "8", cacheKey: "10c0" });
   });
 });

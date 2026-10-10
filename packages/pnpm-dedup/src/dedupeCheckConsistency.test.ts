@@ -1,8 +1,8 @@
-import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildIdentifiedFixesMap } from "pm-dedup-core";
 import {
@@ -122,31 +122,35 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
   ];
 
   for (const { scenario, expectedFlagged } of mergeable) {
-    it(`flags the mergeable subset of ${scenario}, all of which listDuplicates reports`, () => {
-      const dir = fixturePath(scenario);
-      const lockBefore = lockContent(dir);
+    it(
+      `flags the mergeable subset of ${scenario}, all of which listDuplicates reports`,
+      { timeout: 180_000 },
+      () => {
+        const dir = fixturePath(scenario);
+        const lockBefore = lockContent(dir);
 
-      const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
-      strictEqual(install.status, 0, install.output);
-      assertPristine(dir, lockBefore);
+        const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
+        strictEqual(install.status, 0, install.output);
+        assertPristine(dir, lockBefore);
 
-      const check = runPnpm(dir, ["dedupe", "--check"]);
-      ok(
-        check.status !== 0,
-        `dedupe --check should flag issues\n${check.output}`,
-      );
-      assertPristine(dir, lockBefore);
-
-      deepStrictEqual(parseDedupedPackages(check.output), expectedFlagged);
-
-      const duplicates = duplicateNames(scenario);
-      for (const name of expectedFlagged) {
+        const check = runPnpm(dir, ["dedupe", "--check"]);
         ok(
-          duplicates.includes(name),
-          `listDuplicates should report ${name} that pnpm dedupe flags`,
+          check.status !== 0,
+          `dedupe --check should flag issues\n${check.output}`,
         );
-      }
-    }, 180_000);
+        assertPristine(dir, lockBefore);
+
+        deepStrictEqual(parseDedupedPackages(check.output), expectedFlagged);
+
+        const duplicates = duplicateNames(scenario);
+        for (const name of expectedFlagged) {
+          ok(
+            duplicates.includes(name),
+            `listDuplicates should report ${name} that pnpm dedupe flags`,
+          );
+        }
+      },
+    );
   }
 
   // Duplicates pnpm does not merge: `dedupe --check` exits 0 and flags nothing,
@@ -191,28 +195,32 @@ suite("pnpm dedupe --check vs listDuplicates", () => {
     expectedDuplicate,
     expectedFixTargets,
   } of unmergeableByPnpm) {
-    it(`flags nothing for ${scenario} but still lists ${expectedDuplicate}`, () => {
-      const dir = fixturePath(scenario);
-      const lockBefore = lockContent(dir);
+    it(
+      `flags nothing for ${scenario} but still lists ${expectedDuplicate}`,
+      { timeout: 180_000 },
+      () => {
+        const dir = fixturePath(scenario);
+        const lockBefore = lockContent(dir);
 
-      const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
-      strictEqual(install.status, 0, install.output);
-      assertPristine(dir, lockBefore);
+        const install = runPnpm(dir, ["install", "--frozen-lockfile"]);
+        strictEqual(install.status, 0, install.output);
+        assertPristine(dir, lockBefore);
 
-      const check = runPnpm(dir, ["dedupe", "--check"]);
-      strictEqual(
-        check.status,
-        0,
-        `dedupe --check should find nothing to merge\n${check.output}`,
-      );
-      assertPristine(dir, lockBefore);
+        const check = runPnpm(dir, ["dedupe", "--check"]);
+        strictEqual(
+          check.status,
+          0,
+          `dedupe --check should find nothing to merge\n${check.output}`,
+        );
+        assertPristine(dir, lockBefore);
 
-      deepStrictEqual(parseDedupedPackages(check.output), []);
-      ok(duplicateNames(scenario).includes(expectedDuplicate));
-      deepStrictEqual(
-        fixTargets(scenario, expectedDuplicate),
-        expectedFixTargets ?? [],
-      );
-    }, 180_000);
+        deepStrictEqual(parseDedupedPackages(check.output), []);
+        ok(duplicateNames(scenario).includes(expectedDuplicate));
+        deepStrictEqual(
+          fixTargets(scenario, expectedDuplicate),
+          expectedFixTargets ?? [],
+        );
+      },
+    );
   }
 });

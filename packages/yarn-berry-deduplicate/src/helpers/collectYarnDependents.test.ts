@@ -1,4 +1,9 @@
-import { describe, expect, it } from "bun:test";
+import {
+  deepStrictEqual,
+  partialDeepStrictEqual,
+  strictEqual,
+} from "node:assert/strict";
+import { describe, it } from "node:test";
 import { collectYarnDependents } from "./collectYarnDependents.ts";
 import { loadFixture } from "./fixtures.ts";
 
@@ -20,28 +25,29 @@ describe("collectYarnDependents", () => {
       "printable-shell-command",
     );
 
-    expect(
+    deepStrictEqual(
       dependents.map(({ key, version, workspace, resolvedVersion }) => ({
         key,
         version,
         workspace,
         resolvedVersion,
       })),
-    ).toEqual([
-      {
-        key: "package.json in dependencies",
-        version: "^5.0.7",
-        workspace: { path: "", depType: "dependencies" },
-        resolvedVersion: "5.0.7",
-      },
-      {
-        key: "uses-psc@npm:1.0.0",
-        version: "^5.0.8",
-        workspace: undefined,
-        resolvedVersion: "5.0.8",
-      },
-    ]);
-    expect(dependents[1]?.yarnPackage).toMatchObject({ name: "uses-psc" });
+      [
+        {
+          key: "package.json in dependencies",
+          version: "^5.0.7",
+          workspace: { path: "", depType: "dependencies" },
+          resolvedVersion: "5.0.7",
+        },
+        {
+          key: "uses-psc@npm:1.0.0",
+          version: "^5.0.8",
+          workspace: undefined,
+          resolvedVersion: "5.0.8",
+        },
+      ],
+    );
+    partialDeepStrictEqual(dependents[1]?.yarnPackage, { name: "uses-psc" });
   });
 
   it("names the declaration an aliased range comes from", () => {
@@ -50,30 +56,32 @@ describe("collectYarnDependents", () => {
       "printable-shell-command",
     );
 
-    expect(
+    deepStrictEqual(
       dependents.map(({ aliasKey, version }) => ({ aliasKey, version })),
-    ).toEqual([
-      { aliasKey: undefined, version: "^5.0.8" },
-      { aliasKey: "psc", version: "^5.0.0" },
-    ]);
+      [
+        { aliasKey: undefined, version: "^5.0.8" },
+        { aliasKey: "psc", version: "^5.0.0" },
+      ],
+    );
   });
 
   it("tells a workspace's dependency block from its devDependency block", () => {
-    expect(
+    deepStrictEqual(
       dependentsOf("workspaces", "semver").map(({ key, workspace }) => ({
         key,
         workspace,
       })),
-    ).toEqual([
-      {
-        key: "packages/app in devDependencies",
-        workspace: { path: "packages/app", depType: "devDependencies" },
-      },
-      {
-        key: "package.json in dependencies",
-        workspace: { path: "", depType: "dependencies" },
-      },
-    ]);
+      [
+        {
+          key: "packages/app in devDependencies",
+          workspace: { path: "packages/app", depType: "devDependencies" },
+        },
+        {
+          key: "package.json in dependencies",
+          workspace: { path: "", depType: "dependencies" },
+        },
+      ],
+    );
   });
 
   // a git or workspace declaration names a different package that happens to
@@ -83,26 +91,32 @@ describe("collectYarnDependents", () => {
     const { packages, workspaces } = loadFixture("non-npm");
     const dependents = collectYarnDependents({ packages, workspaces });
 
-    expect(
+    deepStrictEqual(
       dependents.get("from-git")?.map(({ version, nonSemver }) => ({
         version,
         nonSemver,
       })),
-    ).toEqual([
-      {
-        version: "https://github.com/example/from-git.git#commit=abc123",
-        nonSemver: true,
-      },
-    ]);
-    expect(
+      [
+        {
+          version: "https://github.com/example/from-git.git#commit=abc123",
+          nonSemver: true,
+        },
+      ],
+    );
+    deepStrictEqual(
       dependents.get("local-lib")?.map(({ version, nonSemver }) => ({
         version,
         nonSemver,
       })),
-    ).toEqual([{ version: "workspace:*", nonSemver: true }]);
-    expect(dependents.get("lodash")).toEqual([
-      expect.objectContaining({ version: "^4.17.0", nonSemver: undefined }),
-    ]);
+      [{ version: "workspace:*", nonSemver: true }],
+    );
+    deepStrictEqual(
+      dependents.get("lodash")?.map(({ version, nonSemver }) => ({
+        version,
+        nonSemver,
+      })),
+      [{ version: "^4.17.0", nonSemver: undefined }],
+    );
   });
 
   // the patched copy is a resolution of its own, and this declaration is the
@@ -110,7 +124,7 @@ describe("collectYarnDependents", () => {
   it("files a patch declaration under the resolution it names", () => {
     const dependents = dependentsOf("declared-patch", "lodash");
 
-    expect(
+    deepStrictEqual(
       dependents.map(
         ({ key, version, resolvedVersion, resolvedResolution }) => ({
           key,
@@ -119,21 +133,22 @@ describe("collectYarnDependents", () => {
           resolvedResolution,
         }),
       ),
-    ).toEqual([
-      {
-        key: "package.json in dependencies",
-        version: "^4.17.0",
-        resolvedVersion: "4.17.21",
-        resolvedResolution: undefined,
-      },
-      {
-        key: "uses-patched-lodash@npm:1.0.0",
-        version: "patch:lodash@npm%3A4.17.21#./patches/lodash.patch",
-        resolvedVersion: undefined,
-        resolvedResolution:
-          "lodash@patch:lodash@npm%3A4.17.21#./patches/lodash.patch::version=4.17.21&hash=1a2b3c",
-      },
-    ]);
+      [
+        {
+          key: "package.json in dependencies",
+          version: "^4.17.0",
+          resolvedVersion: "4.17.21",
+          resolvedResolution: undefined,
+        },
+        {
+          key: "uses-patched-lodash@npm:1.0.0",
+          version: "patch:lodash@npm%3A4.17.21#./patches/lodash.patch",
+          resolvedVersion: undefined,
+          resolvedResolution:
+            "lodash@patch:lodash@npm%3A4.17.21#./patches/lodash.patch::version=4.17.21&hash=1a2b3c",
+        },
+      ],
+    );
   });
 
   // yarn writes a `patch:` entry repeating the base release's dependencies, and
@@ -143,8 +158,8 @@ describe("collectYarnDependents", () => {
     const resolveDependents =
       collectYarnDependents({ packages, workspaces }).get("resolve") ?? [];
 
-    expect(resolveDependents).toHaveLength(1);
-    expect(resolveDependents[0]?.version).toBe("^1.22.8");
+    strictEqual(resolveDependents.length, 1);
+    strictEqual(resolveDependents[0]?.version, "^1.22.8");
   });
 
   // yarn folds a peer provision into the virtual package's own dependencies, so
@@ -153,35 +168,36 @@ describe("collectYarnDependents", () => {
   it("counts a peerDependencies range as a constraint", () => {
     const dependents = dependentsOf("peer-range-constrains-merge", "peer-pkg");
 
-    expect(
+    deepStrictEqual(
       dependents.map(({ key, version, peer, resolvedVersion }) => ({
         key,
         version,
         peer,
         resolvedVersion,
       })),
-    ).toEqual([
-      {
-        key: "package.json in dependencies",
-        version: "^2.0.0",
-        peer: undefined,
-        resolvedVersion: "2.1.0",
-      },
-      {
-        key: "holder@npm:2.0.0",
-        version: "*",
-        peer: undefined,
-        resolvedVersion: "1.5.0",
-      },
-      // a peer range is not a descriptor yarn resolves, so which copy the
-      // requester was handed is its parent's business, not the lockfile's
-      {
-        key: "uses-peer@npm:1.0.0",
-        version: "^1.0.0",
-        peer: true,
-        resolvedVersion: undefined,
-      },
-    ]);
+      [
+        {
+          key: "package.json in dependencies",
+          version: "^2.0.0",
+          peer: undefined,
+          resolvedVersion: "2.1.0",
+        },
+        {
+          key: "holder@npm:2.0.0",
+          version: "*",
+          peer: undefined,
+          resolvedVersion: "1.5.0",
+        },
+        // a peer range is not a descriptor yarn resolves, so which copy the
+        // requester was handed is its parent's business, not the lockfile's
+        {
+          key: "uses-peer@npm:1.0.0",
+          version: "^1.0.0",
+          peer: true,
+          resolvedVersion: undefined,
+        },
+      ],
+    );
   });
 
   it("restricts collection to the named packages", () => {
@@ -192,6 +208,6 @@ describe("collectYarnDependents", () => {
       onlyPackageNames: ["semver"],
     });
 
-    expect([...dependents.keys()]).toEqual(["semver"]);
+    deepStrictEqual([...dependents.keys()], ["semver"]);
   });
 });

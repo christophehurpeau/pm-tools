@@ -34,6 +34,18 @@ export default [
     },
   },
   {
+    // tests run under bun, never under the node versions `engines` admits
+    files: ["**/*.test.ts"],
+    rules: {
+      "n/no-unsupported-features/node-builtins": [
+        "error",
+        {
+          ignores: ["util.styleText", "assert/strict.partialDeepStrictEqual"],
+        },
+      ],
+    },
+  },
+  {
     // `bin` points at the compiled `dist/bin/*.js`; tsc carries the shebang
     // over from `src/bin/*.ts`, so that is where the rule has to check it.
     files: ["packages/{pnpm-dedup,yarn-berry-deduplicate}/src/bin/*.ts"],

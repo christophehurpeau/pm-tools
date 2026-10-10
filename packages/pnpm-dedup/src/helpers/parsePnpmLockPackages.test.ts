@@ -1,5 +1,5 @@
-import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { readPnpmLock } from "../readPnpmLock.ts";
 import {

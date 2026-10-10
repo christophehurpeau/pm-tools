@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import { loadFixture } from "./helpers/fixtures.ts";
 import { identifyClusterFixes } from "./identifyClusterFixes.ts";
 import type { ClusterFix } from "./identifyClusterFixes.ts";
@@ -14,51 +15,51 @@ describe("identifyClusterFixes", () => {
   describe("a lockstep family held apart by an exact pin", () => {
     const fix = (): ClusterFix => {
       const fixes = fixesFor("duplicated-typescript-eslint");
-      expect(fixes).toHaveLength(1);
+      strictEqual(fixes.length, 1);
       return fixes[0]!;
     };
 
     it("finds the whole @typescript-eslint family", () => {
-      expect(fix().members).toEqual([
+      deepStrictEqual(fix().members, [
         "@typescript-eslint/eslint-plugin",
         "@typescript-eslint/parser",
         "@typescript-eslint/type-utils",
         "@typescript-eslint/types",
         "@typescript-eslint/utils",
       ]);
-      expect(fix().duplicatedMembers).toEqual([
+      deepStrictEqual(fix().duplicatedMembers, [
         "@typescript-eslint/types",
         "@typescript-eslint/utils",
       ]);
     });
 
     it("converges it onto the pinned version, downwards", () => {
-      expect(fix().applicable).toBe(true);
-      expect(fix().target).toBe("8.43.0");
-      expect(fix().direction).toBe("down");
-      expect(fix().convergentMembers).toEqual([
+      strictEqual(fix().applicable, true);
+      strictEqual(fix().target, "8.43.0");
+      strictEqual(fix().direction, "down");
+      deepStrictEqual(fix().convergentMembers, [
         "@typescript-eslint/types",
         "@typescript-eslint/utils",
       ]);
-      expect(fix().excludedMembers).toEqual([]);
+      deepStrictEqual(fix().excludedMembers, []);
     });
 
     // `@pob/eslint-plugin`'s exact `8.43.0` on utils is the only external range
     // that is not open: everything else in the family follows it
     it("names the exact pin as the driver", () => {
-      expect(fix().driverMembers).toEqual(["@typescript-eslint/utils"]);
-      expect(fix().floatingMembers).toEqual([]);
-      expect(fix().reuseFixes).toEqual([]);
+      deepStrictEqual(fix().driverMembers, ["@typescript-eslint/utils"]);
+      deepStrictEqual(fix().floatingMembers, []);
+      deepStrictEqual(fix().reuseFixes, []);
     });
 
     // the members pulled in from outside carry no 8.43.0 copy, so reaching it
     // needs a real install
     it("asks for an install round trip for the externally-pulled members", () => {
-      expect(fix().reResolutionSet).toEqual([
+      deepStrictEqual(fix().reResolutionSet, [
         "@typescript-eslint/eslint-plugin",
         "@typescript-eslint/parser",
       ]);
-      expect(fix().needsRoundTrip).toBe(true);
+      strictEqual(fix().needsRoundTrip, true);
     });
 
     it("keeps the real external ranges and drops derived internal pins", () => {
@@ -67,17 +68,21 @@ describe("identifyClusterFixes", () => {
           `${constraint.requesterName ?? "workspace"} -> ${constraint.packageName} @ ${constraint.range}`,
       );
 
-      expect(constraints).toContain(
-        "@pob/eslint-config -> @typescript-eslint/eslint-plugin @ ^8.43.0",
+      ok(
+        constraints.includes(
+          "@pob/eslint-config -> @typescript-eslint/eslint-plugin @ ^8.43.0",
+        ),
       );
-      expect(constraints).toContain(
-        "@pob/eslint-plugin -> @typescript-eslint/utils @ 8.43.0",
+      ok(
+        constraints.includes(
+          "@pob/eslint-plugin -> @typescript-eslint/utils @ 8.43.0",
+        ),
       );
 
       const requesters = new Set(
         fix().externalConstraints.map((c) => c.requesterName),
       );
-      expect(requesters.has("@typescript-eslint/type-utils")).toBe(false);
+      strictEqual(requesters.has("@typescript-eslint/type-utils"), false);
     });
   });
 
@@ -85,16 +90,16 @@ describe("identifyClusterFixes", () => {
   // fixture, in yarn's lockfile shape
   it("repoints an open range that ignored the pinned version", () => {
     const fixes = fixesFor("wildcard-not-reused");
-    expect(fixes).toHaveLength(1);
+    strictEqual(fixes.length, 1);
     const fix = fixes[0]!;
 
-    expect(fix.target).toBe("0.84.5");
-    expect(fix.direction).toBe("down");
-    expect(fix.anchor).toBe("0.84.5");
-    expect(fix.convergentMembers).toEqual(["mini-metro", "mini-metro-config"]);
-    expect(fix.driverMembers).toEqual(["mini-metro"]);
-    expect(fix.workspaceChanges).toEqual([]);
-    expect(fix.reuseFixes).toEqual([
+    strictEqual(fix.target, "0.84.5");
+    strictEqual(fix.direction, "down");
+    strictEqual(fix.anchor, "0.84.5");
+    deepStrictEqual(fix.convergentMembers, ["mini-metro", "mini-metro-config"]);
+    deepStrictEqual(fix.driverMembers, ["mini-metro"]);
+    deepStrictEqual(fix.workspaceChanges, []);
+    deepStrictEqual(fix.reuseFixes, [
       {
         requester: "mini-plugin@npm:1.0.0",
         requesterName: "mini-plugin",
@@ -107,16 +112,16 @@ describe("identifyClusterFixes", () => {
   });
 
   it("returns no cluster fix when there is no lockstep family", () => {
-    expect(fixesFor("duplicated-printable-shell-command")).toEqual([]);
+    deepStrictEqual(fixesFor("duplicated-printable-shell-command"), []);
   });
 
   // barcode-detector pins zxing-wasm at a version of its own, which is not a
   // co-version edge: they are not a family, and the lockfile pass handles them
   it("does not cluster a package that merely pins another", () => {
-    expect(fixesFor("exact-pin-forces-downgrade")).toEqual([]);
+    deepStrictEqual(fixesFor("exact-pin-forces-downgrade"), []);
   });
 
   it("returns nothing for a lockfile with no duplicate", () => {
-    expect(fixesFor("simple")).toEqual([]);
+    deepStrictEqual(fixesFor("simple"), []);
   });
 });

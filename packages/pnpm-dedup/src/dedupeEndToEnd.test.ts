@@ -1,8 +1,8 @@
-import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { readDuplicateSnapshot } from "./helpers/duplicateSnapshot.ts";
@@ -89,80 +89,87 @@ const resolutionsOf = (dir: string, packageName: string): string[] => {
 const suite = pnpmAvailable ? describe : describe.skip;
 
 suite("pnpm-dedupe end to end", () => {
-  it("converges the cluster and leaves pnpm holding it without an override", () => {
-    const dir = projects.create();
-    // only the manifest: the lockfile has to be the real resolution pnpm writes
-    // here, not the trimmed one the unit-test fixture commits
-    cpSync(join(fixtureDir, "package.json"), join(dir, "package.json"));
-    writeFileSync(join(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
+  it(
+    "converges the cluster and leaves pnpm holding it without an override",
+    { timeout: 180_000 },
+    () => {
+      const dir = projects.create();
+      // only the manifest: the lockfile has to be the real resolution pnpm writes
+      // here, not the trimmed one the unit-test fixture commits
+      cpSync(join(fixtureDir, "package.json"), join(dir, "package.json"));
+      writeFileSync(join(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
 
-    const installed = install(dir);
-    strictEqual(installed.status, 0, installed.output);
+      const installed = install(dir);
+      strictEqual(installed.status, 0, installed.output);
 
-    // `@yudiel/react-qr-scanner` pins barcode-detector at exactly 3.0.3 while
-    // expo-camera's `^3.0.0` resolved to 3.2.2, and the pair drags zxing-wasm
-    // along: four resolutions for two packages.
-    const before = readDuplicateSnapshot(lockPath(dir));
-    strictEqual(before.size, 4, [...before].join(", "));
-    ok(before.has("barcode-detector@3.0.3"));
-    ok(before.has("barcode-detector@3.2.2"));
+      // `@yudiel/react-qr-scanner` pins barcode-detector at exactly 3.0.3 while
+      // expo-camera's `^3.0.0` resolved to 3.2.2, and the pair drags zxing-wasm
+      // along: four resolutions for two packages.
+      const before = readDuplicateSnapshot(lockPath(dir));
+      strictEqual(before.size, 4, [...before].join(", "));
+      ok(before.has("barcode-detector@3.0.3"));
+      ok(before.has("barcode-detector@3.2.2"));
 
-    const applied = dedupe(dir);
-    strictEqual(applied.status, 0, applied.output);
+      const applied = dedupe(dir);
+      strictEqual(applied.status, 0, applied.output);
 
-    // the tool's own verdict: the convergence override went in, came back out,
-    // and the result survived the re-resolution without it
-    ok(applied.output.includes('"barcode-detector@": "3.0.3"'), applied.output);
-    ok(
-      applied.output.includes(
-        "Removing the overrides and re-resolving to check the result holds",
-      ),
-      applied.output,
-    );
-    // what it deduped, named: two packages, one copy of each merged away
-    ok(
-      applied.output.includes("Deduped 2 packages, 2 copies merged:"),
-      applied.output,
-    );
-    ok(
-      applied.output.includes(
-        "barcode-detector: 2 versions (3.0.3, 3.2.2) -> 1 version (3.0.3)",
-      ),
-      applied.output,
-    );
-    ok(applied.output.includes("No duplicate left."), applied.output);
+      // the tool's own verdict: the convergence override went in, came back out,
+      // and the result survived the re-resolution without it
+      ok(
+        applied.output.includes('"barcode-detector@": "3.0.3"'),
+        applied.output,
+      );
+      ok(
+        applied.output.includes(
+          "Removing the overrides and re-resolving to check the result holds",
+        ),
+        applied.output,
+      );
+      // what it deduped, named: two packages, one copy of each merged away
+      ok(
+        applied.output.includes("Deduped 2 packages, 2 copies merged:"),
+        applied.output,
+      );
+      ok(
+        applied.output.includes(
+          "barcode-detector: 2 versions (3.0.3, 3.2.2) -> 1 version (3.0.3)",
+        ),
+        applied.output,
+      );
+      ok(applied.output.includes("No duplicate left."), applied.output);
 
-    // what matters is the lockfile pnpm was left with
-    strictEqual(readDuplicateSnapshot(lockPath(dir)).size, 0);
-    deepStrictEqual(resolutionsOf(dir, "barcode-detector"), [
-      "barcode-detector@3.0.3",
-    ]);
-    // barcode-detector 3.2.2 pinned zxing-wasm at exactly 3.1.3; 3.0.3 asks for
-    // `^2.1.2`, so converging onto it has to bring the 2.x line back — a 3.1.3
-    // left standing would be a range the installed tree contradicts.
-    const zxing = resolutionsOf(dir, "zxing-wasm");
-    strictEqual(zxing.length, 1, zxing.join(", "));
-    ok(zxing[0]?.startsWith("zxing-wasm@2."), zxing.join(", "));
+      // what matters is the lockfile pnpm was left with
+      strictEqual(readDuplicateSnapshot(lockPath(dir)).size, 0);
+      deepStrictEqual(resolutionsOf(dir, "barcode-detector"), [
+        "barcode-detector@3.0.3",
+      ]);
+      // barcode-detector 3.2.2 pinned zxing-wasm at exactly 3.1.3; 3.0.3 asks for
+      // `^2.1.2`, so converging onto it has to bring the 2.x line back — a 3.1.3
+      // left standing would be a range the installed tree contradicts.
+      const zxing = resolutionsOf(dir, "zxing-wasm");
+      strictEqual(zxing.length, 1, zxing.join(", "));
+      ok(zxing[0]?.startsWith("zxing-wasm@2."), zxing.join(", "));
 
-    // no standing override is left behind, in a file otherwise untouched
-    strictEqual(
-      readFileSync(join(dir, "pnpm-workspace.yaml"), "utf8"),
-      workspaceYamlContent,
-    );
+      // no standing override is left behind, in a file otherwise untouched
+      strictEqual(
+        readFileSync(join(dir, "pnpm-workspace.yaml"), "utf8"),
+        workspaceYamlContent,
+      );
 
-    // and pnpm itself agrees, from the manifests alone
-    const frozen = install(dir, "--frozen-lockfile");
-    strictEqual(frozen.status, 0, frozen.output);
+      // and pnpm itself agrees, from the manifests alone
+      const frozen = install(dir, "--frozen-lockfile");
+      strictEqual(frozen.status, 0, frozen.output);
 
-    // pnpm's own account of the installed tree, not ours: one copy, reached
-    // from both dependents
-    const list = run(dir, "pnpm", ["list", "--depth", "Infinity"]);
-    strictEqual(list.status, 0, list.output);
-    ok(list.output.includes("barcode-detector@3.0.3 [deduped]"), list.output);
-    strictEqual(list.output.includes("barcode-detector@3.2.2"), false);
+      // pnpm's own account of the installed tree, not ours: one copy, reached
+      // from both dependents
+      const list = run(dir, "pnpm", ["list", "--depth", "Infinity"]);
+      strictEqual(list.status, 0, list.output);
+      ok(list.output.includes("barcode-detector@3.0.3 [deduped]"), list.output);
+      strictEqual(list.output.includes("barcode-detector@3.2.2"), false);
 
-    const check = dedupe(dir, "--check");
-    strictEqual(check.status, 0, check.output);
-    ok(check.output.includes("Nothing to dedupe."), check.output);
-  }, 180_000);
+      const check = dedupe(dir, "--check");
+      strictEqual(check.status, 0, check.output);
+      ok(check.output.includes("Nothing to dedupe."), check.output);
+    },
+  );
 });

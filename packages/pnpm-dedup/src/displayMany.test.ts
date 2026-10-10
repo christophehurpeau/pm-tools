@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
-import { ok } from "node:assert/strict";
+import { ok, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { ClusterFix } from "pm-dedup-core";
 import { displayMany } from "./displayMany.ts";
@@ -128,7 +128,8 @@ describe("displayMany", () => {
   });
 
   it("reports no duplicates for a clean lockfile", () => {
-    expect(renderDuplicates("simple")).toBe(
+    strictEqual(
+      renderDuplicates("simple"),
       "No duplicates found\n\nFound 1 dependency, 0 duplicates, 0 dedupable.\n",
     );
   });

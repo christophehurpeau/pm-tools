@@ -1,6 +1,6 @@
-import { describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { join } from "node:path";
+import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { ClusterFix } from "pm-dedup-core";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.ts";

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { deepStrictEqual, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import { loadFixture } from "./fixtures.ts";
 import { toLockstepGraph } from "./toLockstepGraph.ts";
 
@@ -6,7 +7,7 @@ describe("toLockstepGraph", () => {
   it("carries each resolution's version and requested ranges", () => {
     const { packagesMap } = loadFixture("wildcard-not-reused");
 
-    expect(toLockstepGraph(packagesMap)["mini-metro"]).toEqual([
+    deepStrictEqual(toLockstepGraph(packagesMap)["mini-metro"], [
       {
         version: "0.84.5",
         isNpm: true,
@@ -23,7 +24,7 @@ describe("toLockstepGraph", () => {
   it("marks a non-npm resolution so cluster detection skips it", () => {
     const { packagesMap } = loadFixture("non-npm");
 
-    expect(toLockstepGraph(packagesMap).resolve).toEqual([
+    deepStrictEqual(toLockstepGraph(packagesMap).resolve, [
       { version: "1.22.10", isNpm: true, dependencies: {} },
       { version: "", isNpm: false, dependencies: {} },
     ]);
@@ -35,14 +36,14 @@ describe("toLockstepGraph", () => {
     const { packagesMap } = loadFixture("mergeable-alias");
     const graph = toLockstepGraph(packagesMap);
 
-    expect(graph["printable-shell-command"]).toHaveLength(2);
-    expect(graph.psc).toBeUndefined();
+    strictEqual(graph["printable-shell-command"]?.length, 2);
+    strictEqual(graph.psc, undefined);
   });
 
   it("resolves an aliased dependency edge onto the target's name", () => {
     const { packagesMap } = loadFixture("wildcard-not-reused");
     const plugin = toLockstepGraph(packagesMap)["mini-plugin"]?.[0];
 
-    expect(plugin?.dependencies).toEqual({ "mini-metro-config": "*" });
+    deepStrictEqual(plugin?.dependencies, { "mini-metro-config": "*" });
   });
 });

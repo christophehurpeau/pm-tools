@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { deepStrictEqual, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import { collectWorkspaces } from "./collectWorkspaces.ts";
 import { loadFixture } from "./fixtures.ts";
 import { parseYarnLockPackages } from "./parseYarnLockPackages.ts";
@@ -8,7 +9,7 @@ describe("collectWorkspaces", () => {
   it("reads the root workspace as the project directory itself", () => {
     const { workspaces } = loadFixture("simple");
 
-    expect(workspaces).toEqual([
+    deepStrictEqual(workspaces, [
       {
         path: "",
         name: "root-workspace",
@@ -27,7 +28,7 @@ describe("collectWorkspaces", () => {
       (workspace) => workspace.path === "packages/app",
     );
 
-    expect(app?.dependencies).toEqual([
+    deepStrictEqual(app?.dependencies, [
       { key: "lodash", value: "^4.17.0", depType: "dependencies" },
       { key: "semver", value: "^7.6.0", depType: "devDependencies" },
     ]);
@@ -46,15 +47,18 @@ describe("collectWorkspaces", () => {
 `),
     );
 
-    expect(collectWorkspaces(packages, () => undefined)).toEqual([
-      {
-        path: "packages/app",
-        name: "app",
-        dependencies: [
-          { key: "lodash", value: "npm:^4.17.0", depType: "dependencies" },
-        ],
-      },
-    ]);
+    deepStrictEqual(
+      collectWorkspaces(packages, () => undefined),
+      [
+        {
+          path: "packages/app",
+          name: "app",
+          dependencies: [
+            { key: "lodash", value: "npm:^4.17.0", depType: "dependencies" },
+          ],
+        },
+      ],
+    );
   });
 
   it("lists a workspace once however many descriptors reach it", () => {
@@ -68,6 +72,6 @@ describe("collectWorkspaces", () => {
 `),
     );
 
-    expect(collectWorkspaces(packages, () => undefined)).toHaveLength(1);
+    strictEqual(collectWorkspaces(packages, () => undefined).length, 1);
   });
 });

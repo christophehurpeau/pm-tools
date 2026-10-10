@@ -1,7 +1,7 @@
-import { afterEach, describe, it } from "bun:test";
 import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { ClusterFix, DuplicateSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";

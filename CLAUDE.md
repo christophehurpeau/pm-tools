@@ -50,4 +50,4 @@ Bun is the dev toolchain (install, test) for the whole repo, but only `bun-dedup
 
 - `bun-dedup`: bins are `#!/usr/bin/env bun`, and `Bun.*` / `import ... from "bun"` (e.g. `Glob`, `BunLockFile` types) are fine — it shells out to `bun` anyway.
 - `pnpm-dedup`, `yarn-berry-deduplicate`, `yarn-why-duplicate`, `pm-dedup-core`: **node only**. Bins are `#!/usr/bin/env node`, no bun imports, no `Bun.*`. Use Node APIs plus deps (`yaml`, `@yarnpkg/parsers`, `picomatch`) instead of `Bun.YAML` / `Bun.Glob`.
-- Tests are the exception: every package uses `bun:test` and runs under `bun test`, including the node-only ones.
+- Tests are the exception: every package runs under `bun test`, including the node-only ones. `pnpm-dedup` and `yarn-berry-deduplicate` import `node:test` + `node:assert/strict`, since their `node-22` tsconfig target carries no bun types; `bun-dedup` and `pm-dedup-core` use `bun:test`. Bun's `node:test` ignores the `skip` option of `describe` / `it`, so a conditional suite is `const suite = ok ? describe : describe.skip` — `.oxlintrc.json` allows `skip` in `no-floating-promises` for that.

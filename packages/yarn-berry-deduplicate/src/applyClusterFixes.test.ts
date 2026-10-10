@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
 import type { ClusterFix, DuplicateSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { createTempProjects } from "./helpers/tempProjects.ts";
@@ -106,10 +107,10 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.status).toBe("applied");
-    expect(outcome.after.size).toBe(0);
-    expect(read(dir, "package.json")).toContain('"metro": "0.87.0"');
-    expect(read(dir, "package.json")).not.toContain("resolutions");
+    strictEqual(outcome.status, "applied");
+    strictEqual(outcome.after.size, 0);
+    ok(read(dir, "package.json").includes('"metro": "0.87.0"'));
+    ok(!read(dir, "package.json").includes("resolutions"));
   });
 
   it("removes the resolutions again once yarn holds the result on its own", () => {
@@ -136,10 +137,11 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.status).toBe("applied");
-    expect(outcome.stickyOverrides).toEqual([]);
-    expect(read(dir, "package.json")).toBe(manifestContent);
-    expect(logs.some((line) => line.includes("Removing the resolutions"))).toBe(
+    strictEqual(outcome.status, "applied");
+    deepStrictEqual(outcome.stickyOverrides, []);
+    strictEqual(read(dir, "package.json"), manifestContent);
+    strictEqual(
+      logs.some((line) => line.includes("Removing the resolutions")),
       true,
     );
   });
@@ -167,12 +169,16 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.status).toBe("reverted");
-    expect(outcome.stickyOverrides.map((o) => o.packageName)).toEqual(["leaf"]);
-    expect(read(dir, "package.json")).toBe(manifestContent);
-    expect(
+    strictEqual(outcome.status, "reverted");
+    deepStrictEqual(
+      outcome.stickyOverrides.map((o) => o.packageName),
+      ["leaf"],
+    );
+    strictEqual(read(dir, "package.json"), manifestContent);
+    strictEqual(
       logs.some((line) => line.includes("github.com/christophehurpeau")),
-    ).toBe(true);
+      true,
+    );
   });
 
   it("reverts when the result is not one `--immutable` accepts", () => {
@@ -194,9 +200,12 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.status).toBe("reverted");
-    expect(read(dir, "package.json")).toBe(manifestContent);
-    expect(logs.some((line) => line.includes("--immutable"))).toBe(true);
+    strictEqual(outcome.status, "reverted");
+    strictEqual(read(dir, "package.json"), manifestContent);
+    strictEqual(
+      logs.some((line) => line.includes("--immutable")),
+      true,
+    );
   });
 
   it("reverts everything when the re-resolution fails", () => {
@@ -213,8 +222,8 @@ describe("applyClusterFixes", () => {
       resolve: () => 1,
     });
 
-    expect(outcome.status).toBe("reverted");
-    expect(read(dir, "package.json")).toBe(manifestContent);
+    strictEqual(outcome.status, "reverted");
+    strictEqual(read(dir, "package.json"), manifestContent);
   });
 
   // yarn resolutions are unconditional, so one the detector proposed from a
@@ -257,9 +266,12 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.status).toBe("nothing-to-do");
-    expect(read(dir, "package.json")).toBe(manifestContent);
-    expect(logs.some((line) => line.includes("Skipped resolution"))).toBe(true);
+    strictEqual(outcome.status, "nothing-to-do");
+    strictEqual(read(dir, "package.json"), manifestContent);
+    strictEqual(
+      logs.some((line) => line.includes("Skipped resolution")),
+      true,
+    );
   });
 
   const metroFamilyFix = fix({
@@ -288,11 +300,12 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.plannedChangeCount).toBe(0);
-    expect(read(dir, "package.json")).toBe(manifestContent);
-    expect(
+    strictEqual(outcome.plannedChangeCount, 0);
+    strictEqual(read(dir, "package.json"), manifestContent);
+    strictEqual(
       logs.some((line) => line.includes("metro not selected by the filter")),
-    ).toBe(true);
+      true,
+    );
   });
 
   it("keeps a cluster the filter selects whole", () => {
@@ -314,7 +327,7 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.plannedChangeCount).toBeGreaterThan(0);
+    ok(outcome.plannedChangeCount > 0);
   });
 
   it("writes nothing on a dry run", () => {
@@ -336,19 +349,23 @@ describe("applyClusterFixes", () => {
       },
     });
 
-    expect(outcome.status).toBe("dry-run");
-    expect(read(dir, "package.json")).toBe(manifestContent);
-    expect(logs.some((line) => line.includes('"0.84.5" -> "0.87.0"'))).toBe(
+    strictEqual(outcome.status, "dry-run");
+    strictEqual(read(dir, "package.json"), manifestContent);
+    strictEqual(
+      logs.some((line) => line.includes('"0.84.5" -> "0.87.0"')),
       true,
     );
-    expect(logs.some((line) => line.startsWith("Would apply:"))).toBe(true);
-    expect(outcome.plannedChangeCount).toBeGreaterThan(0);
+    strictEqual(
+      logs.some((line) => line.startsWith("Would apply:")),
+      true,
+    );
+    ok(outcome.plannedChangeCount > 0);
   });
 
   it("reports having nothing to do when no fix is applicable", () => {
     const dir = makeProject();
 
-    expect(
+    strictEqual(
       applyClusterFixes({
         projectDir: dir,
         color: false,
@@ -360,6 +377,7 @@ describe("applyClusterFixes", () => {
           throw new Error("nothing to apply must not resolve");
         },
       }).status,
-    ).toBe("nothing-to-do");
+      "nothing-to-do",
+    );
   });
 });

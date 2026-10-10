@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { createTempProjects } from "../helpers/tempProjects.ts";
 
@@ -58,11 +59,11 @@ describe("pnpm-why-duplicate", () => {
       const fromRoot = runBin("pnpm-why-duplicate", dir, ["--details"]);
       const fromNested = runBin("pnpm-why-duplicate", nested, ["--details"]);
 
-      expect(fromNested.status).toBe(0);
-      expect(fromNested.stdout).toBe(fromRoot.stdout);
-      expect(fromNested.stdout).toContain("printable-shell-command");
-      expect(fromNested.stderr.trim()).toBe(lockNotice(dir));
-      expect(fromRoot.stderr).toBe("");
+      strictEqual(fromNested.status, 0);
+      strictEqual(fromNested.stdout, fromRoot.stdout);
+      ok(fromNested.stdout.includes("printable-shell-command"));
+      strictEqual(fromNested.stderr.trim(), lockNotice(dir));
+      strictEqual(fromRoot.stderr, "");
     });
 
     it("names the lockfile it could not find and exits 1", () => {
@@ -70,8 +71,9 @@ describe("pnpm-why-duplicate", () => {
 
       const result = runBin("pnpm-why-duplicate", dir, []);
 
-      expect(result.status).toBe(1);
-      expect(result.stderr.trim()).toBe(
+      strictEqual(result.status, 1);
+      strictEqual(
+        result.stderr.trim(),
         `No pnpm-lock.yaml found in ${realpathSync(dir)} or any parent directory`,
       );
     });

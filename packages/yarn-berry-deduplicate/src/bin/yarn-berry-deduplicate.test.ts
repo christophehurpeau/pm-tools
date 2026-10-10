@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
+import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { fixtureDir } from "../helpers/fixtures.ts";
 import { createTempProjects } from "../helpers/tempProjects.ts";
@@ -57,14 +58,18 @@ describe("yarn-berry-deduplicate", () => {
 
     const result = runBin("yarn-berry-deduplicate", dir, ["--no-clusters"]);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain("Deduped 1 package, 1 copy merged:");
-    expect(result.output).toContain(
-      "printable-shell-command: 2 versions (5.0.7, 5.0.8) -> 1 version (5.0.8)",
+    strictEqual(result.status, 0);
+    ok(result.output.includes("Deduped 1 package, 1 copy merged:"));
+    ok(
+      result.output.includes(
+        "printable-shell-command: 2 versions (5.0.7, 5.0.8) -> 1 version (5.0.8)",
+      ),
     );
-    expect(result.output).toContain("yarn.lock updated");
-    expect(lockOf(dir)).toContain(
-      '"printable-shell-command@npm:^5.0.7, printable-shell-command@npm:^5.0.8":',
+    ok(result.output.includes("yarn.lock updated"));
+    ok(
+      lockOf(dir).includes(
+        '"printable-shell-command@npm:^5.0.7, printable-shell-command@npm:^5.0.8":',
+      ),
     );
   });
 
@@ -73,8 +78,8 @@ describe("yarn-berry-deduplicate", () => {
 
     const result = runBin("yarn-berry-deduplicate", dir, ["--no-clusters"]);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain("Nothing safe to dedupe identified");
+    strictEqual(result.status, 0);
+    ok(result.output.includes("Nothing safe to dedupe identified"));
   });
 
   describe("--dry-run", () => {
@@ -87,9 +92,9 @@ describe("yarn-berry-deduplicate", () => {
         "--no-clusters",
       ]);
 
-      expect(result.status).toBe(0);
-      expect(result.output).toContain("yarn.lock would be rewritten");
-      expect(lockOf(dir)).toBe(before);
+      strictEqual(result.status, 0);
+      ok(result.output.includes("yarn.lock would be rewritten"));
+      strictEqual(lockOf(dir), before);
     });
   });
 
@@ -103,17 +108,18 @@ describe("yarn-berry-deduplicate", () => {
         "--no-clusters",
       ]);
 
-      expect(result.status).toBe(1);
-      expect(lockOf(dir)).toBe(before);
+      strictEqual(result.status, 1);
+      strictEqual(lockOf(dir), before);
     });
 
     it("exits 0 when nothing would change", () => {
       const dir = project("simple");
 
-      expect(
+      strictEqual(
         runBin("yarn-berry-deduplicate", dir, ["--check", "--no-clusters"])
           .status,
-      ).toBe(0);
+        0,
+      );
     });
   });
 
@@ -128,8 +134,8 @@ describe("yarn-berry-deduplicate", () => {
         "lodash",
       ]);
 
-      expect(result.status).toBe(0);
-      expect(lockOf(dir)).toBe(before);
+      strictEqual(result.status, 0);
+      strictEqual(lockOf(dir), before);
     });
 
     it("moves a package the filter selects", () => {
@@ -141,8 +147,8 @@ describe("yarn-berry-deduplicate", () => {
         "semver",
       ]);
 
-      expect(result.status).toBe(0);
-      expect(result.output).toContain("yarn.lock updated");
+      strictEqual(result.status, 0);
+      ok(result.output.includes("yarn.lock updated"));
     });
   });
 
@@ -156,10 +162,12 @@ describe("yarn-berry-deduplicate", () => {
         "--no-clusters",
       ]);
 
-      expect(result.status).toBe(0);
-      expect(result.stderr.trim()).toBe(lockNotice(dir));
-      expect(lockOf(dir)).toContain(
-        '"printable-shell-command@npm:^5.0.7, printable-shell-command@npm:^5.0.8":',
+      strictEqual(result.status, 0);
+      strictEqual(result.stderr.trim(), lockNotice(dir));
+      ok(
+        lockOf(dir).includes(
+          '"printable-shell-command@npm:^5.0.7, printable-shell-command@npm:^5.0.8":',
+        ),
       );
     });
 
@@ -168,8 +176,9 @@ describe("yarn-berry-deduplicate", () => {
 
       const result = runBin("yarn-berry-deduplicate", dir, ["--no-clusters"]);
 
-      expect(result.status).toBe(1);
-      expect(result.stderr.trim()).toBe(
+      strictEqual(result.status, 1);
+      strictEqual(
+        result.stderr.trim(),
         `No yarn.lock found in ${realpathSync(dir)} or any parent directory`,
       );
     });
@@ -179,16 +188,16 @@ describe("yarn-berry-deduplicate", () => {
     const dir = project("simple");
     const result = runBin("yarn-berry-deduplicate", dir, ["--help"]);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain("Usage: yarn-berry-deduplicate");
-    expect(result.output).toContain("--check");
+    strictEqual(result.status, 0);
+    ok(result.output.includes("Usage: yarn-berry-deduplicate"));
+    ok(result.output.includes("--check"));
   });
 
   it("rejects an unknown flag", () => {
     const dir = project("simple");
     const result = runBin("yarn-berry-deduplicate", dir, ["--strategy=fewer"]);
 
-    expect(result.status).toBe(1);
+    strictEqual(result.status, 1);
   });
 });
 
@@ -197,29 +206,31 @@ describe("yarn-berry-why-duplicate", () => {
     const dir = project("duplicated-printable-shell-command");
     const result = runBin("yarn-berry-why-duplicate", dir, []);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain(
-      "- printable-shell-command  resolved to 2 versions (5.0.8, 5.0.7)",
+    strictEqual(result.status, 0);
+    ok(
+      result.output.includes(
+        "- printable-shell-command  resolved to 2 versions (5.0.8, 5.0.7)",
+      ),
     );
-    expect(result.output).not.toContain("uses-psc@npm:1.0.0");
+    ok(!result.output.includes("uses-psc@npm:1.0.0"));
   });
 
   it("names every dependent with --details", () => {
     const dir = project("duplicated-printable-shell-command");
     const result = runBin("yarn-berry-why-duplicate", dir, ["--details"]);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain("printable-shell-command — 2 versions");
-    expect(result.output).toContain("uses-psc@npm:1.0.0");
+    strictEqual(result.status, 0);
+    ok(result.output.includes("printable-shell-command — 2 versions"));
+    ok(result.output.includes("uses-psc@npm:1.0.0"));
   });
 
   it("explains one package given as a positional", () => {
     const dir = project("workspaces");
     const result = runBin("yarn-berry-why-duplicate", dir, ["semver"]);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain("semver");
-    expect(result.output).not.toContain("lodash");
+    strictEqual(result.status, 0);
+    ok(result.output.includes("semver"));
+    ok(!result.output.includes("lodash"));
   });
 
   it("reports from a workspace, on the project the lockfile is in", () => {
@@ -232,18 +243,18 @@ describe("yarn-berry-why-duplicate", () => {
       ["--details"],
     );
 
-    expect(fromWorkspace.status).toBe(0);
-    expect(fromWorkspace.stdout).toBe(fromRoot.stdout);
-    expect(fromWorkspace.stderr.trim()).toBe(lockNotice(dir));
-    expect(fromRoot.stderr).toBe("");
+    strictEqual(fromWorkspace.status, 0);
+    strictEqual(fromWorkspace.stdout, fromRoot.stdout);
+    strictEqual(fromWorkspace.stderr.trim(), lockNotice(dir));
+    strictEqual(fromRoot.stderr, "");
   });
 
   it("shows a lockstep family whole", () => {
     const dir = project("duplicated-typescript-eslint");
     const result = runBin("yarn-berry-why-duplicate", dir, ["--details"]);
 
-    expect(result.status).toBe(0);
-    expect(result.output).toContain("Lockstep clusters:");
-    expect(result.output).toContain("@typescript-eslint/eslint-plugin");
+    strictEqual(result.status, 0);
+    ok(result.output.includes("Lockstep clusters:"));
+    ok(result.output.includes("@typescript-eslint/eslint-plugin"));
   });
 });

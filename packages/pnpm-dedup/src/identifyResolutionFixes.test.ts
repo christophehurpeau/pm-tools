@@ -1,5 +1,6 @@
-import { describe, expect, it } from "bun:test";
+import { deepStrictEqual } from "node:assert/strict";
 import fs from "node:fs";
+import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { identifyResolutionFixes } from "pm-dedup-core";
 import type { PackageResolution } from "./helpers/buildPnpmPackagesMap.ts";
@@ -11,7 +12,7 @@ const loadResolutionsFixture = (fileName: string): PackageResolution[] => {
       fileURLToPath(
         new URL(`../test/fixtures/resolutions/${fileName}`, import.meta.url),
       ),
-      // eslint-disable-next-line unicorn/prefer-json-parse-buffer
+      // oxlint-disable-next-line unicorn-js/prefer-json-parse-buffer
       "utf8",
     ),
   );
@@ -25,7 +26,7 @@ const loadDependentsFixture = (
       fileURLToPath(
         new URL(`../test/fixtures/dependents/${fileName}`, import.meta.url),
       ),
-      // eslint-disable-next-line unicorn/prefer-json-parse-buffer
+      // oxlint-disable-next-line unicorn-js/prefer-json-parse-buffer
       "utf8",
     ),
   );
@@ -39,14 +40,14 @@ describe("identifyResolutionFixes", () => {
     const resolutions: PackageResolution[] = [];
 
     const fixes = identifyResolutionFixes(resolutions, objetToMap({}));
-    expect(fixes).toEqual([]);
+    deepStrictEqual(fixes, []);
   });
 
   it("should return an empty array when there is only one resolution", () => {
     const resolutions = loadResolutionsFixture("semver-7.7.3.json");
     const dependents = loadDependentsFixture("semver-7.7.3.json");
     const fixes = identifyResolutionFixes(resolutions, objetToMap(dependents));
-    expect(fixes).toEqual([]);
+    deepStrictEqual(fixes, []);
   });
 
   it("should not identify fixes when dependencies are not compatible", () => {
@@ -57,7 +58,7 @@ describe("identifyResolutionFixes", () => {
       "babel-code-frame-7.26.2-7.27.1.json",
     );
     const fixes = identifyResolutionFixes(resolutions, objetToMap(dependents));
-    expect(fixes).toEqual([]);
+    deepStrictEqual(fixes, []);
   });
 
   it("should identify resolution fixes when dependencies are compatible", () => {
@@ -69,7 +70,7 @@ describe("identifyResolutionFixes", () => {
     );
 
     const fixes = identifyResolutionFixes(resolutions, objetToMap(dependents));
-    expect(fixes).toEqual([
+    deepStrictEqual(fixes, [
       {
         mergeableResolutions: [
           "printable-shell-command@5.0.7",
