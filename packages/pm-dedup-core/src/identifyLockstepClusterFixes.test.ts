@@ -377,6 +377,81 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix.convergentMembers).toEqual([]);
   });
 
+  it("repoints an open range at the pin the same fix moves", () => {
+    // The metro shape: the workspace pins family at 1.0.0, a third party pulls
+    // it to 2.0.0, and a plugin's `*` resolved family-config at 2.0.0 too.
+    // Nothing collapses on 1.0.0, so the fix moves the pin to 2.0.0.
+    const fix = identifyLockstepClusterFixes(
+      [["family", "family-config"]],
+      {
+        family: { npmVersions: ["1.0.0", "2.0.0"], resolutionCount: 2 },
+        "family-config": {
+          npmVersions: ["1.0.0", "2.0.0"],
+          resolutionCount: 2,
+        },
+      },
+      dependents([
+        [
+          "family",
+          [
+            {
+              requester: "package.json",
+              range: "1.0.0",
+              resolvedVersion: "1.0.0",
+              workspace: { path: ".", depType: "devDependencies" },
+            },
+            { requester: "cli@2.0.0", requesterName: "cli", range: "^2.0.0" },
+            {
+              requester: "family-config@1.0.0",
+              requesterName: "family-config",
+              range: "1.0.0",
+            },
+            {
+              requester: "family-config@2.0.0",
+              requesterName: "family-config",
+              range: "2.0.0",
+            },
+          ],
+        ],
+        [
+          "family-config",
+          [
+            {
+              requester: "plugin@1",
+              requesterName: "plugin",
+              range: "*",
+              resolvedVersion: "2.0.0",
+            },
+            {
+              requester: "family@1.0.0",
+              requesterName: "family",
+              range: "1.0.0",
+            },
+            {
+              requester: "family@2.0.0",
+              requesterName: "family",
+              range: "2.0.0",
+            },
+          ],
+        ],
+      ]),
+    )[0]!;
+
+    expect(fix.target).toBe("2.0.0");
+    expect(
+      fix.workspaceChanges.map(
+        (change) => `${change.packageName} ${change.range} -> ${change.to}`,
+      ),
+    ).toEqual(["family 1.0.0 -> 2.0.0"]);
+    // what the detector says today: move plugin back to the 1.0.0 the fix is
+    // leaving
+    expect(
+      fix.reuseFixes.map(
+        (reuse) => `${reuse.requesterName}>${reuse.packageName} -> ${reuse.to}`,
+      ),
+    ).toEqual(["plugin>family-config -> 1.0.0"]);
+  });
+
   it("proposes the pin upgrade when the family is only pulled forward", () => {
     // The shape of a metro family under a pinned metro: a third party outside
     // the cluster requires `^2.0.0`, the workspace pins 1.0.0, and every member
