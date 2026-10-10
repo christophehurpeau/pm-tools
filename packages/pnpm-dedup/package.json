@@ -25,7 +25,8 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "bin"
   ],
   "type": "module",
   "sideEffects": false,

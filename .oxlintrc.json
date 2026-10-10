@@ -15,5 +15,18 @@
     "**/.expo/",
     "**/*.d.ts",
     "/rollup.config.mjs"
-  ]
+  ],
+  "rules": {
+    "node-js/no-unsupported-features/node-builtins": [
+      "error",
+      {
+        "ignores": [
+          "localStorage",
+          "sessionStorage",
+          "Storage",
+          "util.styleText"
+        ]
+      }
+    ]
+  }
 }

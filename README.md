@@ -1,14 +1,10 @@
 <h1 align="center">
-  pm-tools
-</h1>
-
-<p align="center">
   Find out why a dependency is duplicated in a lockfile, and dedupe it.
-</p>
+</h1>
 
 <h3>📦 Packages</h3>
 
-This repository is a monorepo managed with [bun workspaces](https://bun.com/docs/install/workspaces).
+This repository is a monorepo using workspaces.
 
 | Package                                                   | Version                                                                                                                                              | Description                                     |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |

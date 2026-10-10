@@ -15,7 +15,7 @@ const loadDependentsFixture = (
       fileURLToPath(
         new URL(`../../test/fixtures/dependents/${fileName}`, import.meta.url),
       ),
-      // eslint-disable-next-line unicorn/prefer-json-parse-buffer
+      // oxlint-disable-next-line unicorn-js/prefer-json-parse-buffer
       "utf8",
     ),
   );

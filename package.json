@@ -1,6 +1,7 @@
 {
   "name": "pm-tools-monorepo",
   "private": true,
+  "description": "Find out why a dependency is duplicated in a lockfile, and dedupe it.",
   "homepage": "https://github.com/christophehurpeau/pm-tools",
   "bugs": {
     "url": "https://github.com/christophehurpeau/pm-tools/issues"
@@ -13,7 +14,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "bun run clean && bun run build:definitions",
+    "build": "bun run build:definitions",
     "build:definitions": "tsc -b",
     "clean": "rm -rf packages/*/dist packages/*/node_modules/.cache/tsc",
     "format": "oxfmt",
@@ -29,8 +30,8 @@
     "tsc": "tsc -b"
   },
   "devDependencies": {
-    "@pob/eslint-config": "67.10.0",
-    "@pob/root": "27.11.0",
+    "@pob/eslint-config": "67.11.0",
+    "@pob/root": "27.13.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "eslint": "10.8.1",
     "typescript": "npm:@typescript/typescript6@6.0.2"
