@@ -90,7 +90,7 @@ Two passes run: the cluster pass edits `package.json` and runs `bun install`,
 reaching versions the lockfile does not carry; the pure-lock pass then collapses
 the leaves bun did not merge on its own. `--no-clusters` runs only the second.
 
-The cluster pass never moves a range you declare to another major — a `0.x` minor counts as one, as in a caret range. A downgrade is never applied; an upgrade only with `--allow-major-upgrade`. Either is listed in the plan instead.
+The cluster pass never moves a range you declare to another major — a `0.x` minor counts as one, as in a caret range. A downgrade is never applied; an upgrade only with `--dedupe-by-direct-major-bump`. Either is listed in the plan instead.
 
 A run that changes something ends with what it merged, one line per package:
 

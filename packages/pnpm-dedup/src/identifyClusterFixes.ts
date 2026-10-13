@@ -111,7 +111,7 @@ export const identifyClusterFixes = (
     // declares is an upgrade of a direct dependency, not a dedupe: that pin is
     // the whole decision here, where in a family it is one constraint among
     // many. Left to the user — held back across a major or not, or
-    // `--allow-major-upgrade` would be offered for an edit this drops.
+    // `--dedupe-by-direct-major-bump` would be offered for an edit this drops.
   ).filter(
     (fix) =>
       fix.members.length > 1 ||

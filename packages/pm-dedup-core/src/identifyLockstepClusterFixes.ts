@@ -35,7 +35,7 @@ export interface ClusterMajorChange extends ClusterWorkspaceChange {
 
 export interface IdentifyLockstepClusterFixesOptions {
   // lets an upgrade of the user's major through; a downgrade never is
-  allowMajorUpgrade?: boolean;
+  dedupeByDirectMajorBump?: boolean;
 }
 
 // A member kept out of the convergence by one of its own third-party
@@ -214,7 +214,7 @@ const directionOf = (
  *   `workspaceChanges` edit rather than a blocker — unless reaching the target
  *   crosses its major (caret semantics, so `0.84` -> `0.87` does too): then it
  *   blocks like a third-party range and the edit is reported in
- *   `majorChanges`. `allowMajorUpgrade` lets an upward crossing through.
+ *   `majorChanges`. `dedupeByDirectMajorBump` lets an upward crossing through.
  *
  * Ranges in `dependents` must be the ranges the requesters declare. A package
  * manager that only stores resolved versions in its lockfile has to recover
@@ -225,7 +225,7 @@ export const identifyLockstepClusterFixes = (
   clusters: string[][],
   members: ClusterMembersMap,
   dependents: ClusterDependentsMap,
-  { allowMajorUpgrade = false }: IdentifyLockstepClusterFixesOptions = {},
+  { dedupeByDirectMajorBump = false }: IdentifyLockstepClusterFixesOptions = {},
 ): ClusterFix[] => {
   const fixes: ClusterFix[] = [];
 
@@ -362,7 +362,7 @@ export const identifyLockstepClusterFixes = (
     const holdsBackAnyCrossing: HoldsBack = (constraint, version) =>
       majorCrossing(constraint, version) !== null;
     const nothingHeldBack: HoldsBack = () => false;
-    const heldBack = allowMajorUpgrade
+    const heldBack = dedupeByDirectMajorBump
       ? holdsBackDowngrade
       : holdsBackAnyCrossing;
 
@@ -540,7 +540,7 @@ export const identifyLockstepClusterFixes = (
       );
     };
 
-    // An upgrade is reported from the run `allowMajorUpgrade` would make, so
+    // An upgrade is reported from the run `dedupeByDirectMajorBump` would make, so
     // the flag applies exactly what is listed; a downgrade, which nothing
     // applies, from the run with no policy at all.
     const majorChanges: ClusterMajorChange[] =
@@ -548,7 +548,7 @@ export const identifyLockstepClusterFixes = (
         ? []
         : [
             ...crossingsUnder(nothingHeldBack, "down"),
-            ...(allowMajorUpgrade
+            ...(dedupeByDirectMajorBump
               ? []
               : crossingsUnder(holdsBackDowngrade, "up")),
           ];

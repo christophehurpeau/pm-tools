@@ -199,7 +199,7 @@ export interface FixDuplicatesOptions {
   // restricts which packages may be touched, for deduplicating a large lockfile
   // a family at a time
   filter?: PackageFilterOptions;
-  allowMajorUpgrade?: boolean;
+  dedupeByDirectMajorBump?: boolean;
 }
 
 interface PlannedLockRewrite {
@@ -259,7 +259,7 @@ export function fixDuplicates({
   mode = "apply",
   clusters = true,
   filter,
-  allowMajorUpgrade = false,
+  dedupeByDirectMajorBump = false,
 }: FixDuplicatesOptions = {}): void {
   const projectDir = resolveYarnProjectDir();
   if (projectDir === null) return;
@@ -279,7 +279,7 @@ export function fixDuplicates({
         projectDir,
         dryRun,
         filter,
-        allowMajorUpgrade,
+        dedupeByDirectMajorBump,
         packageManagerResiduals: probe?.residuals,
       })
     : null;

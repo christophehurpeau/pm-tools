@@ -271,7 +271,7 @@ describe("identifyLockstepClusterFixes", () => {
     )[0]!;
 
   it("proposes the pin change only when nothing else deduplicates", () => {
-    const fix = pinChangeFix({ allowMajorUpgrade: true });
+    const fix = pinChangeFix({ dedupeByDirectMajorBump: true });
 
     expect(fix.target).toBe("2.0.0");
     expect(fix.convergentMembers).toEqual(["leaf"]);
@@ -295,7 +295,7 @@ describe("identifyLockstepClusterFixes", () => {
 
   // `b` converges on 0.9.0 untouched. With no policy, 1.1.0 would win (`a`'s
   // pin needs an edit either way, and it is the higher), but `a`'s pin is held
-  // back from 0.9.0 as a downgrade, which `--allow-major-upgrade` does not lift:
+  // back from 0.9.0 as a downgrade, which `--dedupe-by-direct-major-bump` does not lift:
   // the flag keeps 0.9.0, so no upgrade is offered.
   it("reports only the upgrades the flag would apply", () => {
     const fixFor = (options?: IdentifyLockstepClusterFixesOptions) =>
@@ -332,7 +332,7 @@ describe("identifyLockstepClusterFixes", () => {
         options,
       )[0]!;
 
-    for (const fix of [fixFor(), fixFor({ allowMajorUpgrade: true })]) {
+    for (const fix of [fixFor(), fixFor({ dedupeByDirectMajorBump: true })]) {
       expect(fix.target).toBe("0.9.0");
       expect(fix.workspaceChanges).toEqual([]);
       expect(fix.majorChanges).toEqual([]);
@@ -499,7 +499,7 @@ describe("identifyLockstepClusterFixes", () => {
           ],
         ],
       ]),
-      { allowMajorUpgrade: true },
+      { dedupeByDirectMajorBump: true },
     )[0]!;
 
     expect(fix.target).toBe("2.0.0");
@@ -567,7 +567,7 @@ describe("identifyLockstepClusterFixes", () => {
           ],
         ],
       ]),
-      { allowMajorUpgrade: true },
+      { dedupeByDirectMajorBump: true },
     )[0]!;
 
     expect(fix.target).toBe("2.0.0");
@@ -866,7 +866,7 @@ describe("identifyLockstepClusterFixes", () => {
         userRange: "^2.0.0",
         pluginRange: "^1.0.0",
       },
-      { allowMajorUpgrade: true },
+      { dedupeByDirectMajorBump: true },
     );
 
     expect(fix.applicable).toBe(false);

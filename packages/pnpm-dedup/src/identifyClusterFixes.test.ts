@@ -194,7 +194,9 @@ describe("identifyClusterFixes", () => {
     // `mini-plugin`'s `*` reads as an exact `0.87.0`, so keeping the pin
     // collapses nothing and the fix becomes "upgrade the pin" — the opposite of
     // the answer above. Hence the warning when nothing is readable.
-    const fix = hoistedClusterFix(() => undefined, { allowMajorUpgrade: true });
+    const fix = hoistedClusterFix(() => undefined, {
+      dedupeByDirectMajorBump: true,
+    });
 
     strictEqual(fix.target, "0.87.0");
     strictEqual(fix.direction, "up");
@@ -285,7 +287,7 @@ describe("identifyClusterFixes", () => {
     );
     deepStrictEqual(
       clusterFixesFor("duplicated-across-majors", readManifest, {
-        allowMajorUpgrade: true,
+        dedupeByDirectMajorBump: true,
       }),
       [],
     );
@@ -338,7 +340,7 @@ describe("identifyClusterFixes", () => {
   });
 
   it("proposes the metro pin upgrade, since nothing moves react-native", () => {
-    const fix = metroCluster({ allowMajorUpgrade: true });
+    const fix = metroCluster({ dedupeByDirectMajorBump: true });
 
     // react-native@0.87.0 and @react-native/metro-config@0.87.0 hold the 0.87.0
     // metro subtree. Nothing pins them exactly — they arrive through `*` /
@@ -381,7 +383,7 @@ describe("identifyClusterFixes", () => {
   });
 
   it("leaves the wildcards alone once the pin they ignored moves to them", () => {
-    const fix = metroCluster({ allowMajorUpgrade: true });
+    const fix = metroCluster({ dedupeByDirectMajorBump: true });
 
     // What the fixture is about: `@tamagui/metro-plugin` declares
     // `metro-config: "*"` / `metro-transform-worker: "*"`, and pnpm resolved

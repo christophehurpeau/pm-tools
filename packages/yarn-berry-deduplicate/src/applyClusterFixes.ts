@@ -75,7 +75,7 @@ export interface ApplyClusterFixesOptions {
   // a family at a time
   filter?: PackageFilterOptions;
   // lets a cluster fix upgrade a range the user declares to another major
-  allowMajorUpgrade?: boolean;
+  dedupeByDirectMajorBump?: boolean;
   // what `yarn install` itself would still change, for the dry-run report. Only
   // the caller runs that probe, so only it can say.
   packageManagerResiduals?: string;
@@ -140,8 +140,9 @@ export const applyClusterFixes = ({
   // the result has to be what CI would install from the manifests alone
   verifyFrozen = () =>
     runYarn(["install", "--immutable"], { cwd: projectDir }).status,
-  allowMajorUpgrade = false,
-  readFixes = (dir: string) => defaultReadFixes(dir, { allowMajorUpgrade }),
+  dedupeByDirectMajorBump = false,
+  readFixes = (dir: string) =>
+    defaultReadFixes(dir, { dedupeByDirectMajorBump }),
   readDuplicates = readDuplicateSnapshot,
   readVersions = readVersionsSnapshot,
   filter,

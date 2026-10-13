@@ -31,7 +31,10 @@ export const majorChangeWording = (
 ): { verb: string; outcome: string } =>
   direction === "down"
     ? { verb: "downgrade", outcome: "left as is" }
-    : { verb: "upgrade", outcome: "pass --allow-major-upgrade to apply it" };
+    : {
+        verb: "upgrade",
+        outcome: "pass --dedupe-by-direct-major-bump to apply it",
+      };
 
 export const describeMajorChange = (change: ClusterMajorChange): string => {
   const { verb, outcome } = majorChangeWording(change.direction);

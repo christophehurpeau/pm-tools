@@ -518,7 +518,7 @@ describe("renderDuplicatesReport", () => {
     ok(output.includes("  Held back, crosses a major:"));
     ok(
       output.includes(
-        '    - package.json in devDependencies requires metro "0.84.5" -> would upgrade to 0.87.0 (pass --allow-major-upgrade to apply it)',
+        '    - package.json in devDependencies requires metro "0.84.5" -> would upgrade to 0.87.0 (pass --dedupe-by-direct-major-bump to apply it)',
       ),
     );
     ok(
