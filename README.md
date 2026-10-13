@@ -72,7 +72,9 @@ lockfile does not already carry requires a real resolution, so this pass edits
 `package.json` (or `pnpm-workspace.yaml`), runs the package manager, and uses
 overrides (`resolutions` for yarn) as transient scaffolding: they are removed and
 the project re-resolved, and a fix that only holds while an override stands is
-reverted rather than applied.
+reverted rather than applied. It never moves a range you declare to another
+major: a downgrade is never applied, an upgrade only with
+`--dedupe-by-direct-major-bump`, and either is listed in the plan instead.
 
 The **lockfile pass** then merges what the resolver left behind — entries whose
 ranges already overlap a version present in the lockfile — by rewriting the
