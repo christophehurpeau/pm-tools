@@ -136,10 +136,13 @@ describe("collectDependentRanges", () => {
   it("prefers a manifest declaration over the lockfile peer block", () => {
     strictEqual(
       rangeOf(
-        rangesFor("duplicated-typescript-eslint", ["eslint"], (name, version) =>
-          name === "@eslint-community/eslint-utils" && version === "4.9.1"
-            ? { dependencies: { eslint: "^10.1.0" } }
-            : undefined,
+        rangesFor(
+          "duplicated-typescript-eslint",
+          ["eslint"],
+          (name, version) =>
+            name === "@eslint-community/eslint-utils" && version === "4.9.1"
+              ? { dependencies: { eslint: "^10.1.0" } }
+              : undefined,
         ),
         "eslint",
         "@eslint-community/eslint-utils@4.9.1",
