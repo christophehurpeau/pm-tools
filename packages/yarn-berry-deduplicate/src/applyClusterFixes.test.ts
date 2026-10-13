@@ -264,6 +264,31 @@ describe("applyClusterFixes", () => {
     strictEqual(read(dir, "package.json"), manifestContent);
   });
 
+  // #182: the revert is a successful `yarn install`, which a prepare-lifecycle
+  // plugin follows with `prepare` — re-running the tool, which plans the same
+  // failing fix again
+  it("runs a second install to revert a failed range edit", () => {
+    const dir = makeProject();
+    const resolvedManifests: string[] = [];
+
+    applyClusterFixes({
+      projectDir: dir,
+      color: false,
+      log: () => undefined,
+      readFixes: () => [metroFix],
+      readDuplicates: () =>
+        snapshot("metro-config@npm:0.84.5", "metro-config@npm:0.87.0"),
+      verifyFrozen: () => 0,
+      resolve: () => {
+        resolvedManifests.push(read(dir, "package.json"));
+        return resolvedManifests.length === 1 ? 1 : 0;
+      },
+    });
+
+    strictEqual(resolvedManifests.length, 2);
+    strictEqual(resolvedManifests[1], manifestContent);
+  });
+
   // yarn resolutions are unconditional, so one the detector proposed from a
   // single requester's range cannot be written when another requester rejects it
   it("drops a resolution a third-party range rejects", () => {
