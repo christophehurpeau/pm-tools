@@ -3,6 +3,7 @@ import type {
   ClusterDependentsMap,
   ClusterMembersMap,
   ClusterWorkspaceRef,
+  IdentifyLockstepClusterFixesOptions,
 } from "./identifyLockstepClusterFixes.ts";
 import { identifyLockstepClusterFixes } from "./identifyLockstepClusterFixes.ts";
 
@@ -234,11 +235,11 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix.direction).toBe("up");
   });
 
-  it("proposes the pin change only when nothing else deduplicates", () => {
-    // `other` is exactly pinned at 2.0.0 by a third party and requests leaf at
-    // 2.0.0, so 1.0.0 collapses nothing; the workspace's own `~1.0.0` on leaf is
-    // the only thing standing between the family and 2.0.0, so it is proposed.
-    const fix = identifyLockstepClusterFixes(
+  // `other` is exactly pinned at 2.0.0 by a third party and requests leaf at
+  // 2.0.0, so 1.0.0 collapses nothing; the workspace's own `~1.0.0` on leaf is
+  // the only thing standing between the family and 2.0.0.
+  const pinChangeFix = (options?: IdentifyLockstepClusterFixesOptions) =>
+    identifyLockstepClusterFixes(
       [["leaf", "other"]],
       {
         leaf: { npmVersions: ["1.0.0", "2.0.0"], resolutionCount: 2 },
@@ -266,13 +267,30 @@ describe("identifyLockstepClusterFixes", () => {
           [{ requester: "app@1", requesterName: "app", range: "2.0.0" }],
         ],
       ]),
+      options,
     )[0]!;
+
+  it("proposes the pin change only when nothing else deduplicates", () => {
+    const fix = pinChangeFix({ allowMajorUpgrade: true });
 
     expect(fix.target).toBe("2.0.0");
     expect(fix.convergentMembers).toEqual(["leaf"]);
     expect(
       fix.workspaceChanges.map((change) => `${change.range} -> ${change.to}`),
     ).toEqual(["~1.0.0 -> 2.0.0"]);
+    expect(fix.majorChanges).toEqual([]);
+  });
+
+  it("holds back a pin change that upgrades the user's major", () => {
+    const fix = pinChangeFix();
+
+    expect(fix.applicable).toBe(false);
+    expect(fix.workspaceChanges).toEqual([]);
+    expect(
+      fix.majorChanges.map(
+        (change) => `${change.range} -> ${change.to} ${change.direction}`,
+      ),
+    ).toEqual(["~1.0.0 -> 2.0.0 up"]);
   });
 
   it("never proposes editing a workspace range declared under an alias key", () => {
@@ -435,6 +453,7 @@ describe("identifyLockstepClusterFixes", () => {
           ],
         ],
       ]),
+      { allowMajorUpgrade: true },
     )[0]!;
 
     expect(fix.target).toBe("2.0.0");
@@ -502,6 +521,7 @@ describe("identifyLockstepClusterFixes", () => {
           ],
         ],
       ]),
+      { allowMajorUpgrade: true },
     )[0]!;
 
     expect(fix.target).toBe("2.0.0");
@@ -681,18 +701,31 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix!.reResolutionSet).toEqual([]);
   });
 
-  it("never edits the workspace range of a member the fix does not converge", () => {
-    // 1stG/configs (#182): the workspace asks markuplint, @markuplint/vue-spec
-    // at `^5.0.0`; eslint-plugin-markup's `^4.12.0` keeps markuplint@4, whose
-    // exact pins keep the 4.x internals. Nothing converges on 5.x, so 4.x wins
-    // as the last resort. Spec carries no 4.x and npm publishes no
-    // @markuplint/vue-spec@4.18.3: editing its range fails the install.
-    const fix = identifyLockstepClusterFixes(
+  // 1stG/configs (#182): the workspace asks markuplint, @markuplint/vue-spec at
+  // `^5.0.0`; eslint-plugin-markup's `^4.12.0` keeps markuplint@4, whose exact
+  // pins keep the 4.x internals. Nothing converges on 5.x, so 4.x wins as the
+  // last resort. Spec carries no 4.x and npm publishes no
+  // @markuplint/vue-spec@4.18.3: editing its range fails the install.
+  const markuplintShapeFix = (
+    {
+      low,
+      high,
+      userRange,
+      pluginRange,
+    }: {
+      low: string;
+      high: string;
+      userRange: string;
+      pluginRange: string;
+    },
+    options?: IdentifyLockstepClusterFixesOptions,
+  ) =>
+    identifyLockstepClusterFixes(
       [["family", "family-core", "family-spec"]],
       {
-        family: { npmVersions: ["1.0.0", "2.0.0"], resolutionCount: 2 },
-        "family-core": { npmVersions: ["1.0.0", "2.0.0"], resolutionCount: 2 },
-        "family-spec": { npmVersions: ["2.0.0"], resolutionCount: 1 },
+        family: { npmVersions: [low, high], resolutionCount: 2 },
+        "family-core": { npmVersions: [low, high], resolutionCount: 2 },
+        "family-spec": { npmVersions: [high], resolutionCount: 1 },
       },
       dependents([
         [
@@ -700,15 +733,15 @@ describe("identifyLockstepClusterFixes", () => {
           [
             {
               requester: "package.json",
-              range: "^2.0.0",
-              resolvedVersion: "2.0.0",
+              range: userRange,
+              resolvedVersion: high,
               workspace: { path: "", depType: "devDependencies" },
             },
             {
-              requester: "plugin@1.0.0",
+              requester: `plugin@${low}`,
               requesterName: "plugin",
-              range: "^1.0.0",
-              resolvedVersion: "1.0.0",
+              range: pluginRange,
+              resolvedVersion: low,
             },
           ],
         ],
@@ -716,14 +749,14 @@ describe("identifyLockstepClusterFixes", () => {
           "family-core",
           [
             {
-              requester: "family@1.0.0",
+              requester: `family@${low}`,
               requesterName: "family",
-              range: "1.0.0",
+              range: low,
             },
             {
-              requester: "family@2.0.0",
+              requester: `family@${high}`,
               requesterName: "family",
-              range: "2.0.0",
+              range: high,
             },
           ],
         ],
@@ -732,23 +765,118 @@ describe("identifyLockstepClusterFixes", () => {
           [
             {
               requester: "packages/config",
-              range: "^2.0.0",
-              resolvedVersion: "2.0.0",
+              range: userRange,
+              resolvedVersion: high,
               workspace: { path: "packages/config", depType: "dependencies" },
             },
           ],
         ],
       ]),
+      options,
     )[0]!;
 
-    expect(fix.target).toBe("1.0.0");
+  it("never edits the workspace range of a member the fix does not converge", () => {
+    const fix = markuplintShapeFix({
+      low: "2.0.0",
+      high: "2.1.0",
+      userRange: "^2.1.0",
+      pluginRange: "~2.0.0",
+    });
+
+    expect(fix.target).toBe("2.0.0");
     expect(fix.direction).toBe("down");
     expect(fix.convergentMembers).toEqual(["family", "family-core"]);
     expect(
       fix.workspaceChanges.map(
         (change) => `${change.packageName} ${change.range} -> ${change.to}`,
       ),
-    ).toEqual(["family ^2.0.0 -> 1.0.0"]);
+    ).toEqual(["family ^2.1.0 -> 2.0.0"]);
+    expect(fix.majorChanges).toEqual([]);
+  });
+
+  it("holds back a downgrade of the user's major, reporting it", () => {
+    const fix = markuplintShapeFix({
+      low: "1.0.0",
+      high: "2.0.0",
+      userRange: "^2.0.0",
+      pluginRange: "^1.0.0",
+    });
+
+    expect(fix.applicable).toBe(false);
+    expect(fix.workspaceChanges).toEqual([]);
+    expect(
+      fix.majorChanges.map(
+        (change) =>
+          `${change.packageName} ${change.range} -> ${change.to} ${change.direction}`,
+      ),
+    ).toEqual(["family ^2.0.0 -> 1.0.0 down"]);
+  });
+
+  it("holds back a downgrade even when upgrades are allowed", () => {
+    const fix = markuplintShapeFix(
+      {
+        low: "1.0.0",
+        high: "2.0.0",
+        userRange: "^2.0.0",
+        pluginRange: "^1.0.0",
+      },
+      { allowMajorUpgrade: true },
+    );
+
+    expect(fix.applicable).toBe(false);
+    expect(fix.majorChanges.map((change) => change.direction)).toEqual([
+      "down",
+    ]);
+  });
+
+  it("treats a 0.x minor as a major, as a caret range does", () => {
+    // the metro shape: the workspace pins 0.84.5, a third party pulls 0.87.0
+    const fix = identifyLockstepClusterFixes(
+      [["metro", "metro-config"]],
+      {
+        metro: { npmVersions: ["0.84.5", "0.87.0"], resolutionCount: 2 },
+        "metro-config": {
+          npmVersions: ["0.84.5", "0.87.0"],
+          resolutionCount: 2,
+        },
+      },
+      dependents([
+        [
+          "metro",
+          [
+            {
+              requester: "package.json",
+              range: "0.84.5",
+              resolvedVersion: "0.84.5",
+              workspace: { path: "", depType: "devDependencies" },
+            },
+            { requester: "rn@1", requesterName: "rn", range: "^0.87.0" },
+          ],
+        ],
+        [
+          "metro-config",
+          [
+            {
+              requester: "metro@0.84.5",
+              requesterName: "metro",
+              range: "0.84.5",
+            },
+            {
+              requester: "metro@0.87.0",
+              requesterName: "metro",
+              range: "0.87.0",
+            },
+          ],
+        ],
+      ]),
+    )[0]!;
+
+    expect(fix.applicable).toBe(false);
+    expect(
+      fix.majorChanges.map(
+        (change) => `${change.range} -> ${change.to} ${change.direction}`,
+      ),
+    ).toEqual(["0.84.5 -> 0.87.0 up"]);
   });
 
   it("skips a cluster with no duplicated member", () => {

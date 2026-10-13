@@ -2,7 +2,10 @@ import { deepStrictEqual, ok, strictEqual } from "node:assert/strict";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import type { ClusterFix } from "pm-dedup-core";
+import type {
+  ClusterFix,
+  IdentifyLockstepClusterFixesOptions,
+} from "pm-dedup-core";
 import { buildPnpmPackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { parsePnpmLockPackages } from "./helpers/parsePnpmLockPackages.ts";
 import type { ManifestReader } from "./helpers/readInstalledManifest.ts";
@@ -57,6 +60,7 @@ const readStubbedManifest: ManifestReader = (name, version) => {
 const clusterFixesFor = (
   scenario: string,
   readManifest: ManifestReader = readStubbedManifest,
+  options: IdentifyLockstepClusterFixesOptions = {},
 ): ClusterFix[] => {
   const lock = readPnpmLock(
     fixturesBase(`../test/fixtures/${scenario}/pnpm-lock.yaml`),
@@ -65,6 +69,7 @@ const clusterFixesFor = (
     lock,
     buildPnpmPackagesMap(parsePnpmLockPackages(lock)),
     readManifest,
+    options,
   );
 };
 
@@ -78,10 +83,14 @@ const lockstepFixesFor = (
     (fix) => fix.members.length > 1,
   );
 
-const metroCluster = (): ClusterFix => {
-  const fix = clusterFixesFor("wildcard-not-reused").find((candidate) =>
-    candidate.members.includes("metro"),
-  );
+const metroCluster = (
+  options?: IdentifyLockstepClusterFixesOptions,
+): ClusterFix => {
+  const fix = clusterFixesFor(
+    "wildcard-not-reused",
+    readStubbedManifest,
+    options,
+  ).find((candidate) => candidate.members.includes("metro"));
   ok(fix, "expected a cluster containing metro");
   return fix;
 };
@@ -140,12 +149,16 @@ describe("identifyClusterFixes", () => {
     "../test/fixtures/hoisted-node-linker",
   );
 
-  const hoistedClusterFix = (readManifest: ManifestReader): ClusterFix => {
+  const hoistedClusterFix = (
+    readManifest: ManifestReader,
+    options?: IdentifyLockstepClusterFixesOptions,
+  ): ClusterFix => {
     const lock = readPnpmLock(join(hoistedFixtureDir, "pnpm-lock.yaml"));
     const fixes = identifyClusterFixes(
       lock,
       buildPnpmPackagesMap(parsePnpmLockPackages(lock)),
       readManifest,
+      options,
     );
     strictEqual(fixes.length, 1);
     return fixes[0]!;
@@ -181,7 +194,7 @@ describe("identifyClusterFixes", () => {
     // `mini-plugin`'s `*` reads as an exact `0.87.0`, so keeping the pin
     // collapses nothing and the fix becomes "upgrade the pin" — the opposite of
     // the answer above. Hence the warning when nothing is readable.
-    const fix = hoistedClusterFix(() => undefined);
+    const fix = hoistedClusterFix(() => undefined, { allowMajorUpgrade: true });
 
     strictEqual(fix.target, "0.87.0");
     strictEqual(fix.direction, "up");
@@ -305,7 +318,7 @@ describe("identifyClusterFixes", () => {
   });
 
   it("proposes the metro pin upgrade, since nothing moves react-native", () => {
-    const fix = metroCluster();
+    const fix = metroCluster({ allowMajorUpgrade: true });
 
     // react-native@0.87.0 and @react-native/metro-config@0.87.0 hold the 0.87.0
     // metro subtree. Nothing pins them exactly — they arrive through `*` /
@@ -334,8 +347,21 @@ describe("identifyClusterFixes", () => {
     deepStrictEqual(fix.driverMembers, ["metro"]);
   });
 
-  it("leaves the wildcards alone once the pin they ignored moves to them", () => {
+  it("holds the metro pin upgrade back unless a major upgrade is allowed", () => {
     const fix = metroCluster();
+
+    deepStrictEqual(fix.workspaceChanges, []);
+    deepStrictEqual(
+      fix.majorChanges.map(
+        (change) =>
+          `${change.packageName} ${change.range} -> ${change.to} ${change.direction}`,
+      ),
+      ["metro 0.84.5 -> 0.87.0 up"],
+    );
+  });
+
+  it("leaves the wildcards alone once the pin they ignored moves to them", () => {
+    const fix = metroCluster({ allowMajorUpgrade: true });
 
     // What the fixture is about: `@tamagui/metro-plugin` declares
     // `metro-config: "*"` / `metro-transform-worker: "*"`, and pnpm resolved

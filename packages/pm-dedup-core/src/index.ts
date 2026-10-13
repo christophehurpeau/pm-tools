@@ -20,12 +20,14 @@ export type {
   ClusterExcludedMember,
   ClusterExternalConstraint,
   ClusterFix,
+  ClusterMajorChange,
   ClusterMember,
   ClusterMemberVersions,
   ClusterMembersMap,
   ClusterReuseFix,
   ClusterWorkspaceChange,
   ClusterWorkspaceRef,
+  IdentifyLockstepClusterFixesOptions,
 } from "./identifyLockstepClusterFixes.ts";
 export { identifyResolutionFixes } from "./identifyResolutionFixes.ts";
 export type {
@@ -108,7 +110,7 @@ export { captureFiles, restoreFiles } from "./fileSnapshot.ts";
 export type { FileSnapshot } from "./fileSnapshot.ts";
 export { applyWorkspaceRangeEdit, nextSelector } from "./workspaceManifest.ts";
 export type { WorkspaceRangeEdit } from "./workspaceManifest.ts";
-export { planClusterApply } from "./planClusterApply.ts";
+export { describeMajorChange, planClusterApply } from "./planClusterApply.ts";
 export type {
   ClusterApplyPlan,
   PlannedManifestEdit,

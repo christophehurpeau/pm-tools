@@ -18,6 +18,7 @@ const fix = (overrides: Partial<ClusterFix>): ClusterFix => ({
   anchor: null,
   reuseFixes: [],
   workspaceChanges: [],
+  majorChanges: [],
   reResolutionSet: [],
   externalConstraints: [],
   needsRoundTrip: false,
@@ -368,6 +369,50 @@ describe("applyClusterFixes", () => {
     strictEqual(
       logs.some((line) => line.includes("metro not selected by the filter")),
       true,
+    );
+  });
+
+  it("reports the range edits held back for crossing a major", () => {
+    const dir = makeProject();
+    const logs: string[] = [];
+
+    const outcome = applyClusterFixes({
+      projectDir: dir,
+      color: false,
+      dryRun: true,
+      log: (message = "") => logs.push(message),
+      readFixes: () => [
+        fix({
+          majorChanges: [
+            {
+              requester: "package.json in devDependencies",
+              requesterName: undefined,
+              packageName: "markuplint",
+              range: "^5.0.0",
+              to: "4.18.3",
+              direction: "down",
+              workspace: { path: "", depType: "devDependencies" },
+            },
+          ],
+        }),
+      ],
+      readDuplicates: () => snapshot(),
+      verifyFrozen: () => {
+        throw new Error("a dry run must not verify");
+      },
+      resolve: () => {
+        throw new Error("a dry run must not resolve");
+      },
+    });
+
+    strictEqual(outcome.plannedChangeCount, 0);
+    ok(
+      logs.some((line) =>
+        line.includes(
+          'markuplint in package.json in devDependencies: "^5.0.0" -> "4.18.3" would downgrade a major — left as is',
+        ),
+      ),
+      logs.join("\n"),
     );
   });
 

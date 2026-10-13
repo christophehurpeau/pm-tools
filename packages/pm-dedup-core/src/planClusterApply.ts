@@ -1,4 +1,7 @@
-import type { ClusterFix } from "./identifyLockstepClusterFixes.ts";
+import type {
+  ClusterFix,
+  ClusterMajorChange,
+} from "./identifyLockstepClusterFixes.ts";
 import type { WorkspaceRangeEdit } from "./workspaceManifest.ts";
 
 export interface PlannedManifestEdit extends WorkspaceRangeEdit {
@@ -20,7 +23,13 @@ export interface ClusterApplyPlan {
   conflicts: { packageName: string; kept: string; dropped: string }[];
   // workspace changes carrying no importer reference, which cannot be applied
   unresolvableChanges: string[];
+  majorChanges: ClusterMajorChange[];
 }
+
+export const describeMajorChange = (change: ClusterMajorChange): string =>
+  change.direction === "down"
+    ? `${change.packageName} in ${change.requester}: "${change.range}" -> "${change.to}" would downgrade a major — left as is`
+    : `${change.packageName} in ${change.requester}: "${change.range}" -> "${change.to}" would upgrade a major — pass --allow-major-upgrade to apply it`;
 
 /**
  * Turn the detector's records into the two edits every package manager
@@ -48,6 +57,7 @@ export const planClusterApply = (
   const manifestEdits: PlannedManifestEdit[] = [];
   const unresolvableChanges: string[] = [];
   const conflicts: ClusterApplyPlan["conflicts"] = [];
+  const majorChanges: ClusterMajorChange[] = [];
   const overrides = new Map<string, PlannedOverride>();
 
   const addOverride = (
@@ -76,6 +86,7 @@ export const planClusterApply = (
   }
 
   for (const fix of fixes) {
+    majorChanges.push(...fix.majorChanges);
     if (!fix.applicable || fix.target === null) continue;
 
     for (const change of fix.workspaceChanges) {
@@ -106,5 +117,6 @@ export const planClusterApply = (
     ),
     conflicts,
     unresolvableChanges,
+    majorChanges,
   };
 };

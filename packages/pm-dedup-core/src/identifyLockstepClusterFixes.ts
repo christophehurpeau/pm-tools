@@ -27,6 +27,17 @@ export interface ClusterWorkspaceChange extends ClusterExternalConstraint {
   to: string;
 }
 
+// A workspace edit that would move the user's own range to another major, held
+// back from the fix: a dedupe does not get to undo, or make, a major upgrade.
+export interface ClusterMajorChange extends ClusterWorkspaceChange {
+  direction: "down" | "up";
+}
+
+export interface IdentifyLockstepClusterFixesOptions {
+  // lets an upgrade of the user's major through; a downgrade never is
+  allowMajorUpgrade?: boolean;
+}
+
 // A member kept out of the convergence by one of its own third-party
 // constraints; its duplicate survives the fix.
 export interface ClusterExcludedMember {
@@ -107,6 +118,9 @@ export interface ClusterFix {
   // decision, so it is a last resort (see `betterCandidate`), not immutable. A
   // declaration made through an alias key is the exception — it binds
   workspaceChanges: ClusterWorkspaceChange[];
+  // edits the fix needs and does not get, because they cross the user's major:
+  // reported, never applied
+  majorChanges: ClusterMajorChange[];
   // members that must be re-resolved through an install round-trip because they
   // carry an external dependent and the target version is not installed
   reResolutionSet: string[];
@@ -117,6 +131,12 @@ export interface ClusterFix {
   // a cluster can be unfixable as a whole and still have open ranges to repoint
   applicable: boolean;
 }
+
+// whether a workspace range may not be edited to reach `version`
+type HoldsBack = (
+  constraint: ClusterExternalConstraint,
+  version: string,
+) => boolean;
 
 const accepts = (version: string, range: string): boolean =>
   semver.satisfies(version, range, { includePrerelease: true });
@@ -157,6 +177,15 @@ const betterCandidate = (a: Candidate, b: Candidate): Candidate => {
   return semver.gt(a.version, b.version) ? a : b;
 };
 
+// The versions a caret range keeps together: 0.x versions break on the minor,
+// 0.0.x on the patch, as `^0.84.0` and `^0.0.3` do.
+const caretLine = (version: string): string => {
+  const { major, minor, patch } = semver.parse(version)!;
+  if (major > 0) return `${major}`;
+  if (minor > 0) return `0.${minor}`;
+  return `0.0.${patch}`;
+};
+
 const directionOf = (
   replacedVersions: string[],
   target: string,
@@ -182,7 +211,10 @@ const directionOf = (
  *   cluster (clusters routinely span several publishers, and one unfixable
  *   member should not hide the rest);
  * - a workspace pin belongs to the user, so it is reported as a
- *   `workspaceChanges` edit rather than a blocker.
+ *   `workspaceChanges` edit rather than a blocker — unless reaching the target
+ *   crosses its major (caret semantics, so `0.84` -> `0.87` does too): then it
+ *   blocks like a third-party range and the edit is reported in
+ *   `majorChanges`. `allowMajorUpgrade` lets an upward crossing through.
  *
  * Ranges in `dependents` must be the ranges the requesters declare. A package
  * manager that only stores resolved versions in its lockfile has to recover
@@ -193,6 +225,7 @@ export const identifyLockstepClusterFixes = (
   clusters: string[][],
   members: ClusterMembersMap,
   dependents: ClusterDependentsMap,
+  { allowMajorUpgrade = false }: IdentifyLockstepClusterFixesOptions = {},
 ): ClusterFix[] => {
   const fixes: ClusterFix[] = [];
 
@@ -303,18 +336,55 @@ export const identifyLockstepClusterFixes = (
       ...new Set(clusterMembers.flatMap(npmVersionsOf)),
     ];
 
+    const rangeFloor = (range: string): string | null => {
+      try {
+        return semver.minVersion(range)?.version ?? null;
+      } catch {
+        return null;
+      }
+    };
+
+    // where moving the user's range to `version` lands relative to the major it
+    // resolved in, or null when the move stays within it
+    const majorCrossing = (
+      constraint: ClusterExternalConstraint,
+      version: string,
+    ): ClusterMajorChange["direction"] | null => {
+      if (accepts(version, constraint.range)) return null;
+      const from = constraint.resolvedVersion ?? rangeFloor(constraint.range);
+      if (from === null || semver.valid(from) === null) return null;
+      if (caretLine(from) === caretLine(version)) return null;
+      return semver.gt(version, from) ? "up" : "down";
+    };
+
+    const heldBack: HoldsBack = (constraint, version) => {
+      const direction = majorCrossing(constraint, version);
+      return direction === "down" || (direction === "up" && !allowMajorUpgrade);
+    };
+    const nothingHeldBack: HoldsBack = () => false;
+
     // A binding range decides whether a member is free to move at all — for a
     // non-duplicated member that means being re-resolved along with the family.
+    // A workspace range the policy holds back binds the same way.
     const rejectingConstraints = (
       member: string,
       version: string,
-    ): ClusterExternalConstraint[] =>
-      (bindingByMember.get(member) ?? []).filter(
+      holdsBack: HoldsBack,
+    ): ClusterExternalConstraint[] => [
+      ...(bindingByMember.get(member) ?? []).filter(
         (constraint) => !accepts(version, constraint.range),
-      );
+      ),
+      ...workspaceConstraints.filter(
+        (constraint) =>
+          constraint.packageName === member && holdsBack(constraint, version),
+      ),
+    ];
 
-    const canMove = (member: string, version: string): boolean =>
-      rejectingConstraints(member, version).length === 0;
+    const canMove = (
+      member: string,
+      version: string,
+      holdsBack: HoldsBack,
+    ): boolean => rejectingConstraints(member, version, holdsBack).length === 0;
 
     const isInstalled = (member: string, version: string): boolean =>
       npmVersionsOf(member).some((installed) => semver.eq(installed, version));
@@ -340,14 +410,6 @@ export const identifyLockstepClusterFixes = (
           (constraint) => constraint.packageName === member,
         ),
       ].map((constraint) => constraint.range);
-
-    const rangeFloor = (range: string): string | null => {
-      try {
-        return semver.minVersion(range)?.version ?? null;
-      } catch {
-        return null;
-      }
-    };
 
     // Re-resolving a member *to a named version* absent from the lock only makes
     // sense when a dependent asks for that version line: `^8.59.1` is evidence
@@ -375,11 +437,14 @@ export const identifyLockstepClusterFixes = (
     // A requester its own requesters only ask for through an open range (`*`,
     // `^21.0.2`) is no exception: a resolver keeps a locked version they still
     // accept, so nothing moves it, and its pins block like any other.
-    const convergentSetFor = (version: string): Set<string> => {
+    const convergentSetFor = (
+      version: string,
+      holdsBack: HoldsBack,
+    ): Set<string> => {
       const converging = new Set(
         clusterMembers.filter(
           (member) =>
-            canMove(member, version) &&
+            canMove(member, version, holdsBack) &&
             canReResolve(member, version) &&
             (!duplicatedSet.has(member) || isInstalled(member, version)),
         ),
@@ -404,15 +469,17 @@ export const identifyLockstepClusterFixes = (
       return converging;
     };
 
-    const candidates = candidateVersions.map((version): Candidate => {
-      const converging = convergentSetFor(version);
+    const candidateFor = (version: string, holdsBack: HoldsBack): Candidate => {
+      const converging = convergentSetFor(version, holdsBack);
 
       return {
         version,
         converging,
         // a pin the user would have to edit makes a candidate a last resort
         pinsToEdit: workspaceConstraints.filter(
-          (constraint) => !accepts(version, constraint.range),
+          (constraint) =>
+            !accepts(version, constraint.range) &&
+            !holdsBack(constraint, version),
         ),
         convergentMembers: duplicatedMembers.filter((member) =>
           converging.has(member),
@@ -420,13 +487,56 @@ export const identifyLockstepClusterFixes = (
         excluded: new Map<string, ClusterExternalConstraint[]>(
           duplicatedMembers
             .filter((member) => !converging.has(member))
-            .map((member) => [member, rejectingConstraints(member, version)]),
+            .map((member) => [
+              member,
+              rejectingConstraints(member, version, holdsBack),
+            ]),
         ),
         installedCount: [...converging].filter((member) =>
           isInstalled(member, version),
         ).length,
       };
-    });
+    };
+
+    const bestCandidate = (holdsBack: HoldsBack): Candidate | undefined => {
+      let best: Candidate | undefined;
+      for (const version of candidateVersions) {
+        const candidate = candidateFor(version, holdsBack);
+        best = best ? betterCandidate(best, candidate) : candidate;
+      }
+      return best;
+    };
+
+    // the edits a candidate makes to the user's ranges: only a member that
+    // converges is edited, since a range pointed at a version the member never
+    // reaches names one the registry may not even publish
+    const workspaceChangesOf = (
+      candidate: Candidate,
+      holdsBack: HoldsBack,
+    ): ClusterWorkspaceChange[] =>
+      candidate.pinsToEdit
+        .filter(
+          (constraint) =>
+            candidate.converging.has(constraint.packageName) &&
+            canMove(constraint.packageName, candidate.version, holdsBack),
+        )
+        .map((constraint) => ({ ...constraint, to: candidate.version }));
+
+    // what the fix would have edited had a major been fair game
+    const majorChanges = ((): ClusterMajorChange[] => {
+      const unrestricted = bestCandidate(nothingHeldBack);
+      if (!unrestricted || unrestricted.convergentMembers.length === 0) {
+        return [];
+      }
+      return workspaceChangesOf(unrestricted, nothingHeldBack).flatMap(
+        (change) => {
+          const direction = majorCrossing(change, change.to);
+          return direction !== null && heldBack(change, change.to)
+            ? [{ ...change, direction }]
+            : [];
+        },
+      );
+    })();
 
     // The version an exact workspace pin fixes the family at, used to spot open
     // ranges that ignored it. Ambiguous pins (two members pinned to different
@@ -471,10 +581,7 @@ export const identifyLockstepClusterFixes = (
               : [],
           );
 
-    let best: Candidate | undefined;
-    for (const candidate of candidates) {
-      best = best ? betterCandidate(best, candidate) : candidate;
-    }
+    const best = bestCandidate(heldBack);
 
     if (!best || best.convergentMembers.length === 0) {
       fixes.push({
@@ -489,6 +596,7 @@ export const identifyLockstepClusterFixes = (
         anchor,
         reuseFixes,
         workspaceChanges: [],
+        majorChanges,
         reResolutionSet: [],
         externalConstraints,
         needsRoundTrip: false,
@@ -499,15 +607,7 @@ export const identifyLockstepClusterFixes = (
 
     const target = best.version;
 
-    // only a member that converges is edited: a range pointed at a version the
-    // member never reaches names one the registry may not even publish
-    const workspaceChanges = best.pinsToEdit
-      .filter(
-        (constraint) =>
-          best.converging.has(constraint.packageName) &&
-          canMove(constraint.packageName, target),
-      )
-      .map((constraint) => ({ ...constraint, to: target }));
+    const workspaceChanges = workspaceChangesOf(best, heldBack);
 
     // Editing the pin moves the anchor along with it: a range repointed at the
     // version being left would split the family again.
@@ -525,7 +625,7 @@ export const identifyLockstepClusterFixes = (
         (member) =>
           membersWithExternalDependent.has(member) &&
           (duplicatedSet.has(member) || best.converging.has(member)) &&
-          canMove(member, target) &&
+          canMove(member, target, heldBack) &&
           canReResolve(member, target) &&
           !isInstalled(member, target),
       )
@@ -553,6 +653,7 @@ export const identifyLockstepClusterFixes = (
       anchor,
       reuseFixes: movesAnchor ? [] : reuseFixes,
       workspaceChanges,
+      majorChanges,
       reResolutionSet,
       needsRoundTrip: reResolutionSet.length > 0 || workspaceChanges.length > 0,
       externalConstraints,

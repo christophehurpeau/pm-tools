@@ -7,6 +7,7 @@ import type {
   ClusterDependentsMap,
   ClusterFix,
   ClusterMembersMap,
+  IdentifyLockstepClusterFixesOptions,
 } from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildPackagesMap.ts";
 import { collectDependents } from "./helpers/collectDependents.ts";
@@ -76,6 +77,7 @@ export const identifyClusterFixes = (
   packagesMap: PackagesMap,
   packages: BunLockPackages,
   workspaces: BunLockFile["workspaces"],
+  options: IdentifyLockstepClusterFixesOptions = {},
 ): ClusterFix[] => {
   const clusters = buildLockstepClusters(toLockstepGraph(packagesMap));
   if (clusters.length === 0) return [];
@@ -86,5 +88,6 @@ export const identifyClusterFixes = (
     clusters,
     toClusterMembers(packagesMap, memberNames),
     toClusterDependents(packages, workspaces, memberNames),
+    options,
   );
 };

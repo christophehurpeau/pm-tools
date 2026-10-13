@@ -33,6 +33,7 @@ const clusterFix = (overrides: Partial<ClusterFix> = {}): ClusterFix => ({
   anchor: null,
   reuseFixes: [],
   workspaceChanges: [],
+  majorChanges: [],
   reResolutionSet: ["metro"],
   externalConstraints: [metroPin],
   needsRoundTrip: true,
@@ -451,6 +452,7 @@ describe("renderDuplicatesReport", () => {
           applicable: false,
           convergentMembers: [],
           driverMembers: [],
+          majorChanges: [],
           reResolutionSet: [],
         }),
       ],
@@ -485,6 +487,43 @@ describe("renderDuplicatesReport", () => {
     ok(
       output.includes(
         '    - metro-config: react-native-web requires "^0.74.1"',
+      ),
+    );
+  });
+
+  it("renders the range edits held back for crossing a major", () => {
+    const output = render({
+      clusterFixes: [
+        clusterFix({
+          applicable: false,
+          target: null,
+          majorChanges: [
+            {
+              ...metroPin,
+              to: "0.87.0",
+              direction: "up",
+            },
+            {
+              requester: "package.json in devDependencies",
+              requesterName: undefined,
+              packageName: "markuplint",
+              range: "^5.0.0",
+              to: "4.18.3",
+              direction: "down",
+            },
+          ],
+        }),
+      ],
+    });
+    ok(output.includes("  Held back, crosses a major:"));
+    ok(
+      output.includes(
+        '    - package.json in devDependencies requires metro "0.84.5" -> would upgrade to 0.87.0 (--allow-major-upgrade applies it)',
+      ),
+    );
+    ok(
+      output.includes(
+        '    - package.json in devDependencies requires markuplint "^5.0.0" -> would downgrade to 4.18.3\n',
       ),
     );
   });

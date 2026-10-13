@@ -6,6 +6,7 @@ import type {
   ClusterDependentsMap,
   ClusterFix,
   ClusterMembersMap,
+  IdentifyLockstepClusterFixesOptions,
 } from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildYarnPackagesMap.ts";
 import type { Workspace } from "./helpers/collectWorkspaces.ts";
@@ -81,6 +82,7 @@ export const identifyClusterFixes = (
   packagesMap: PackagesMap,
   packages: YarnLockPackages,
   workspaces: Workspace[],
+  options: IdentifyLockstepClusterFixesOptions = {},
 ): ClusterFix[] => {
   const clusters = buildLockstepClusters(toLockstepGraph(packagesMap));
   if (clusters.length === 0) return [];
@@ -91,5 +93,6 @@ export const identifyClusterFixes = (
     clusters,
     toClusterMembers(packagesMap, memberNames),
     toClusterDependents(packages, workspaces, memberNames),
+    options,
   );
 };

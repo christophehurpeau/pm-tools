@@ -25,6 +25,7 @@ export interface DedupeOptions {
   // restricts which packages may be touched, for deduplicating a large lockfile
   // a family at a time
   filter?: PackageFilterOptions;
+  allowMajorUpgrade?: boolean;
 }
 
 const residualsMessage = "`pnpm dedupe` would also change the lockfile.";
@@ -61,6 +62,7 @@ export function dedupe({
   mode = "apply",
   convergenceOverrides = true,
   filter,
+  allowMajorUpgrade = false,
 }: DedupeOptions = {}): void {
   const dryRun = mode !== "apply";
   const projectDir = resolvePnpmProjectDir();
@@ -105,6 +107,7 @@ export function dedupe({
     dryRun,
     convergenceOverrides,
     filter,
+    allowMajorUpgrade,
     packageManagerResiduals: residuals,
   });
 

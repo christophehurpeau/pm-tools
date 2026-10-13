@@ -4,6 +4,7 @@ import {
   applyWorkspaceRangeEdit,
   captureFiles,
   createPackageFilter,
+  describeMajorChange,
   describeSkippedClusterFix,
   diffDuplicates,
   outstandingOverrides,
@@ -20,6 +21,7 @@ import type {
   ClusterFix,
   DuplicateSnapshot,
   FileSnapshot,
+  IdentifyLockstepClusterFixesOptions,
   OverrideTargetState,
   PackageFilterOptions,
   PlannedManifestEdit,
@@ -72,6 +74,8 @@ export interface ApplyClusterFixesOptions {
   // restricts which packages may be touched, for deduplicating a large lockfile
   // a family at a time
   filter?: PackageFilterOptions;
+  // lets a cluster fix upgrade a range the user declares to another major
+  allowMajorUpgrade?: boolean;
   // what `yarn install` itself would still change, for the dry-run report. Only
   // the caller runs that probe, so only it can say.
   packageManagerResiduals?: string;
@@ -80,13 +84,17 @@ export interface ApplyClusterFixesOptions {
   color?: boolean;
 }
 
-const defaultReadFixes = (projectDir: string): ClusterFix[] => {
+const defaultReadFixes = (
+  projectDir: string,
+  options: IdentifyLockstepClusterFixesOptions,
+): ClusterFix[] => {
   const entries = readAndParseYarnLock(lockPathOf(projectDir));
   const packages = parseYarnLockPackages(entries);
   return identifyClusterFixes(
     buildYarnPackagesMap(packages),
     packages,
     collectWorkspaces(packages, createManifestReader(projectDir)),
+    options,
   );
 };
 
@@ -132,7 +140,8 @@ export const applyClusterFixes = ({
   // the result has to be what CI would install from the manifests alone
   verifyFrozen = () =>
     runYarn(["install", "--immutable"], { cwd: projectDir }).status,
-  readFixes = defaultReadFixes,
+  allowMajorUpgrade = false,
+  readFixes = (dir: string) => defaultReadFixes(dir, { allowMajorUpgrade }),
   readDuplicates = readDuplicateSnapshot,
   readVersions = readVersionsSnapshot,
   filter,
@@ -171,6 +180,7 @@ export const applyClusterFixes = ({
 
   const skipped = [
     ...filteredOut.map(describeSkippedClusterFix),
+    ...plan.majorChanges.map(describeMajorChange),
     ...plan.unresolvableChanges.map(
       (unresolvable) => `${unresolvable}: no workspace file recorded for it`,
     ),

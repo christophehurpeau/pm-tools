@@ -13,6 +13,7 @@ const usage = `Usage: yarn-berry-deduplicate [options]
 
   --check                      print the plan, change nothing, exit 1 if anything would change
   -n, --dry-run                print the plan, change nothing
+  --allow-major-upgrade        let a cluster fix move a range you declare up a major
   --no-clusters                skip the cluster pass, rewrite the lockfile only
 
 ${packageFilterUsage}`;
@@ -22,6 +23,7 @@ const parsed = parseBinArgs(usage, {
   options: {
     check: { type: "boolean" },
     "dry-run": { type: "boolean", short: "n" },
+    "allow-major-upgrade": { type: "boolean" },
     "no-clusters": { type: "boolean" },
     ...packageFilterParseArgsOptions,
   },
@@ -42,5 +44,6 @@ if (parsed !== null) {
     mode,
     clusters: !values["no-clusters"],
     filter: toPackageFilterOptions(values),
+    allowMajorUpgrade: values["allow-major-upgrade"],
   });
 }

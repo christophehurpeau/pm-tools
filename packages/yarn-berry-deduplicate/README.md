@@ -89,6 +89,8 @@ reaching versions the lockfile does not carry; the pure-lock pass then collapses
 the leaves yarn did not merge on its own, by merging descriptors onto one entry.
 `--no-clusters` runs only the second.
 
+The cluster pass never moves a range you declare to another major — a `0.x` minor counts as one, as in a caret range. A downgrade is never applied; an upgrade only with `--allow-major-upgrade`. Either is listed in the plan instead.
+
 The cluster pass writes `resolutions` in the workspace root `package.json` as
 scaffolding only: it re-resolves without them, and a fix that yarn resolves back
 away from once the resolution is gone is reverted rather than applied. A dedupe

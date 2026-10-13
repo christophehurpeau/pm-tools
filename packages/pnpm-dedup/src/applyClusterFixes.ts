@@ -4,6 +4,7 @@ import {
   applyWorkspaceRangeEdit,
   captureFiles,
   createPackageFilter,
+  describeMajorChange,
   describeSkippedClusterFix,
   diffDuplicates,
   heldOverrides,
@@ -21,6 +22,7 @@ import type {
   ClusterFix,
   DuplicateSnapshot,
   FileSnapshot,
+  IdentifyLockstepClusterFixesOptions,
   OverrideTargetState,
   PackageFilterOptions,
   PlannedManifestEdit,
@@ -86,6 +88,8 @@ export interface ApplyClusterFixesOptions {
   // restricts which packages may be touched, for deduplicating a large lockfile
   // a family at a time
   filter?: PackageFilterOptions;
+  // lets a cluster fix upgrade a range the user declares to another major
+  allowMajorUpgrade?: boolean;
   // what `pnpm dedupe` itself would still change, for the dry-run report. Only
   // the caller runs that probe, so only it can say.
   packageManagerResiduals?: string;
@@ -94,12 +98,16 @@ export interface ApplyClusterFixesOptions {
   color?: boolean;
 }
 
-const defaultReadFixes = (projectDir: string): ClusterFix[] => {
+const defaultReadFixes = (
+  projectDir: string,
+  options: IdentifyLockstepClusterFixesOptions,
+): ClusterFix[] => {
   const lock = readPnpmLock(lockPathOf(projectDir));
   return identifyClusterFixes(
     lock,
     buildPnpmPackagesMap(parsePnpmLockPackages(lock)),
     createManifestReader(projectDir),
+    options,
   );
 };
 
@@ -145,7 +153,8 @@ export const applyClusterFixes = ({
   // re-resolves, and is also what runs right after this, so it is the only
   // honest thing to verify against.
   resolve = () => runPnpm(["dedupe"], { cwd: projectDir }).status,
-  readFixes = defaultReadFixes,
+  allowMajorUpgrade = false,
+  readFixes = (dir: string) => defaultReadFixes(dir, { allowMajorUpgrade }),
   readDuplicates = readDuplicateSnapshot,
   readVersions = readVersionsSnapshot,
   readDependentRanges = defaultReadDependentRanges,
@@ -182,6 +191,7 @@ export const applyClusterFixes = ({
 
   const skipped = [
     ...filteredOut.map(describeSkippedClusterFix),
+    ...plan.majorChanges.map(describeMajorChange),
     ...plan.unresolvableChanges.map(
       (unresolvable) => `${unresolvable}: no workspace file recorded for it`,
     ),

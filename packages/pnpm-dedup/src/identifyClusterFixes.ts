@@ -6,6 +6,7 @@ import type {
   ClusterDependentsMap,
   ClusterFix,
   ClusterMembersMap,
+  IdentifyLockstepClusterFixesOptions,
 } from "pm-dedup-core";
 import type { PackagesMap } from "./helpers/buildPnpmPackagesMap.ts";
 import { collectDependentRanges } from "./helpers/collectDependentRanges.ts";
@@ -88,6 +89,7 @@ export const identifyClusterFixes = (
   lock: PnpmLockFile,
   packagesMap: PackagesMap,
   readManifest: ManifestReader,
+  options: IdentifyLockstepClusterFixesOptions = {},
 ): ClusterFix[] => {
   const lockstepClusters = buildLockstepClusters(
     toLockstepGraph(lock, packagesMap),
@@ -104,6 +106,7 @@ export const identifyClusterFixes = (
     clusters,
     toClusterMembers(packagesMap, memberNames),
     toClusterDependents(lock, memberNames, readManifest),
+    options,
     // A lone duplicate that only converges by editing a range the workspace
     // declares is an upgrade of a direct dependency, not a dedupe: that pin is
     // the whole decision here, where in a family it is one constraint among

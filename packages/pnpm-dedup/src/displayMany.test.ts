@@ -87,6 +87,7 @@ const clusterFix = (overrides: Partial<ClusterFix> = {}): ClusterFix => ({
   anchor: null,
   reuseFixes: [],
   workspaceChanges: [],
+  majorChanges: [],
   reResolutionSet: ["metro"],
   externalConstraints: [],
   needsRoundTrip: true,
