@@ -499,8 +499,14 @@ export const identifyLockstepClusterFixes = (
 
     const target = best.version;
 
+    // only a member that converges is edited: a range pointed at a version the
+    // member never reaches names one the registry may not even publish
     const workspaceChanges = best.pinsToEdit
-      .filter((constraint) => canMove(constraint.packageName, target))
+      .filter(
+        (constraint) =>
+          best.converging.has(constraint.packageName) &&
+          canMove(constraint.packageName, target),
+      )
       .map((constraint) => ({ ...constraint, to: target }));
 
     // Editing the pin moves the anchor along with it: a range repointed at the

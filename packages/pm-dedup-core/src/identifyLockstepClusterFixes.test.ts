@@ -681,13 +681,12 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix!.reResolutionSet).toEqual([]);
   });
 
-  it("edits the workspace range of a member the fix does not converge", () => {
+  it("never edits the workspace range of a member the fix does not converge", () => {
     // 1stG/configs (#182): the workspace asks markuplint, @markuplint/vue-spec
     // at `^5.0.0`; eslint-plugin-markup's `^4.12.0` keeps markuplint@4, whose
     // exact pins keep the 4.x internals. Nothing converges on 5.x, so 4.x wins
-    // as the last resort — and every `^5.0.0` is edited to it, spec included,
-    // although spec carries no 4.x and npm publishes no
-    // @markuplint/vue-spec@4.18.3: the install fails and the fix reverts.
+    // as the last resort. Spec carries no 4.x and npm publishes no
+    // @markuplint/vue-spec@4.18.3: editing its range fails the install.
     const fix = identifyLockstepClusterFixes(
       [["family", "family-core", "family-spec"]],
       {
@@ -745,13 +744,11 @@ describe("identifyLockstepClusterFixes", () => {
     expect(fix.target).toBe("1.0.0");
     expect(fix.direction).toBe("down");
     expect(fix.convergentMembers).toEqual(["family", "family-core"]);
-    // what the detector says today: family-spec is edited to a version it does
-    // not carry, without being part of the convergence
     expect(
       fix.workspaceChanges.map(
         (change) => `${change.packageName} ${change.range} -> ${change.to}`,
       ),
-    ).toEqual(["family ^2.0.0 -> 1.0.0", "family-spec ^2.0.0 -> 1.0.0"]);
+    ).toEqual(["family ^2.0.0 -> 1.0.0"]);
   });
 
   it("skips a cluster with no duplicated member", () => {
