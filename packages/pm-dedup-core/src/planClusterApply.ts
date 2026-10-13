@@ -26,10 +26,17 @@ export interface ClusterApplyPlan {
   majorChanges: ClusterMajorChange[];
 }
 
-export const describeMajorChange = (change: ClusterMajorChange): string =>
-  change.direction === "down"
-    ? `${change.packageName} in ${change.requester}: "${change.range}" -> "${change.to}" would downgrade a major — left as is`
-    : `${change.packageName} in ${change.requester}: "${change.range}" -> "${change.to}" would upgrade a major — pass --allow-major-upgrade to apply it`;
+export const majorChangeWording = (
+  direction: ClusterMajorChange["direction"],
+): { verb: string; outcome: string } =>
+  direction === "down"
+    ? { verb: "downgrade", outcome: "left as is" }
+    : { verb: "upgrade", outcome: "pass --allow-major-upgrade to apply it" };
+
+export const describeMajorChange = (change: ClusterMajorChange): string => {
+  const { verb, outcome } = majorChangeWording(change.direction);
+  return `${change.packageName} in ${change.requester}: "${change.range}" -> "${change.to}" would ${verb} a major — ${outcome}`;
+};
 
 /**
  * Turn the detector's records into the two edits every package manager

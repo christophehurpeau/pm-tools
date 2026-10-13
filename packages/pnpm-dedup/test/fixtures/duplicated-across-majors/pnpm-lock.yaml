@@ -1,0 +1,61 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      betterdisplaycli:
+        specifier: 0.2.4
+        version: 0.2.4
+      printable-shell-command:
+        specifier: ^4.0.4
+        version: 4.0.4
+
+packages:
+
+  '@types/node@26.6.5':
+    resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
+
+  betterdisplaycli@0.2.4:
+    resolution: {integrity: sha512-2cvmrFpj2UyrDAvHgePvWqJQxcPRhasDdz5uA+SUk3bDeLi2Vg83voDKpHGWyljhfokpHm/1YuBKnn3kEK2gLA==}
+
+  path-class@0.17.2:
+    resolution: {integrity: sha512-4it41RYI+4qp+JIcvenGrfqr9I1x06PZfcOEpTtNvhnCiDtGW0IjLfLAev4eCgcpIAA5NdlwPH8gfskG/t4Wzw==}
+
+  printable-shell-command@4.0.4:
+    resolution: {integrity: sha512-0wUqzs668cD5Y6/SzwDyuWToh4cFe2zIN3ijCFLvecLONiP7OQMX1Vzb0Sbsczwiz/ZdDFTze+kFxsgWSL3I+Q==}
+
+  printable-shell-command@5.3.2:
+    resolution: {integrity: sha512-gtIdKXTpCCq6B642I5ILcXBuUwRnEcQIniO5EzLZP/XVb9OkE3MajVuD5em1Y8QmW7enZzo3mD386MKEfZSJWg==}
+
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
+
+snapshots:
+
+  '@types/node@26.6.5':
+    dependencies:
+      undici-types: 8.9.0
+
+  betterdisplaycli@0.2.4:
+    dependencies:
+      printable-shell-command: 5.3.2
+
+  path-class@0.17.2:
+    dependencies:
+      '@types/node': 26.6.5
+
+  printable-shell-command@4.0.4:
+    dependencies:
+      '@types/node': 26.6.5
+      path-class: 0.17.2
+
+  printable-shell-command@5.3.2:
+    dependencies:
+      path-class: 0.17.2
+
+  undici-types@8.9.0: {}

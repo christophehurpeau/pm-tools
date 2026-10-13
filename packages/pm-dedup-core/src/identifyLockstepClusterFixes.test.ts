@@ -293,6 +293,52 @@ describe("identifyLockstepClusterFixes", () => {
     ).toEqual(["~1.0.0 -> 2.0.0 up"]);
   });
 
+  // `b` converges on 0.9.0 untouched. With no policy, 1.1.0 would win (`a`'s
+  // pin needs an edit either way, and it is the higher), but `a`'s pin is held
+  // back from 0.9.0 as a downgrade, which `--allow-major-upgrade` does not lift:
+  // the flag keeps 0.9.0, so no upgrade is offered.
+  it("reports only the upgrades the flag would apply", () => {
+    const fixFor = (options?: IdentifyLockstepClusterFixesOptions) =>
+      identifyLockstepClusterFixes(
+        [["a", "b"]],
+        {
+          a: { npmVersions: ["2.1.0"], resolutionCount: 1 },
+          b: { npmVersions: ["0.9.0", "1.1.0"], resolutionCount: 2 },
+        },
+        dependents([
+          [
+            "a",
+            [
+              {
+                requester: "package.json",
+                range: "2.1.0",
+                resolvedVersion: "2.1.0",
+                workspace: { path: "", depType: "dependencies" },
+              },
+            ],
+          ],
+          [
+            "b",
+            [
+              {
+                requester: "package.json",
+                range: "^0.9.0",
+                resolvedVersion: "0.9.0",
+                workspace: { path: "", depType: "dependencies" },
+              },
+            ],
+          ],
+        ]),
+        options,
+      )[0]!;
+
+    for (const fix of [fixFor(), fixFor({ allowMajorUpgrade: true })]) {
+      expect(fix.target).toBe("0.9.0");
+      expect(fix.workspaceChanges).toEqual([]);
+      expect(fix.majorChanges).toEqual([]);
+    }
+  });
+
   it("never proposes editing a workspace range declared under an alias key", () => {
     // Same shape as above, with the workspace declaring leaf through a key of
     // its own (`"leaf-1": "npm:leaf@~1.0.0"`). Moving that range to 2.0.0 would

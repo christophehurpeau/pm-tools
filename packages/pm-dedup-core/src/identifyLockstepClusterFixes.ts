@@ -357,11 +357,14 @@ export const identifyLockstepClusterFixes = (
       return semver.gt(version, from) ? "up" : "down";
     };
 
-    const heldBack: HoldsBack = (constraint, version) => {
-      const direction = majorCrossing(constraint, version);
-      return direction === "down" || (direction === "up" && !allowMajorUpgrade);
-    };
+    const holdsBackDowngrade: HoldsBack = (constraint, version) =>
+      majorCrossing(constraint, version) === "down";
+    const holdsBackAnyCrossing: HoldsBack = (constraint, version) =>
+      majorCrossing(constraint, version) !== null;
     const nothingHeldBack: HoldsBack = () => false;
+    const heldBack = allowMajorUpgrade
+      ? holdsBackDowngrade
+      : holdsBackAnyCrossing;
 
     // A binding range decides whether a member is free to move at all — for a
     // non-duplicated member that means being re-resolved along with the family.
@@ -522,21 +525,33 @@ export const identifyLockstepClusterFixes = (
         )
         .map((constraint) => ({ ...constraint, to: candidate.version }));
 
-    // what the fix would have edited had a major been fair game
-    const majorChanges = ((): ClusterMajorChange[] => {
-      const unrestricted = bestCandidate(nothingHeldBack);
-      if (!unrestricted || unrestricted.convergentMembers.length === 0) {
-        return [];
-      }
-      return workspaceChangesOf(unrestricted, nothingHeldBack).flatMap(
-        (change) => {
-          const direction = majorCrossing(change, change.to);
-          return direction !== null && heldBack(change, change.to)
-            ? [{ ...change, direction }]
-            : [];
-        },
+    // the `direction` crossings the fix would make once `holdsBack` is the
+    // policy
+    const crossingsUnder = (
+      holdsBack: HoldsBack,
+      direction: ClusterMajorChange["direction"],
+    ): ClusterMajorChange[] => {
+      const candidate = bestCandidate(holdsBack);
+      if (!candidate || candidate.convergentMembers.length === 0) return [];
+      return workspaceChangesOf(candidate, holdsBack).flatMap((change) =>
+        majorCrossing(change, change.to) === direction
+          ? [{ ...change, direction }]
+          : [],
       );
-    })();
+    };
+
+    // An upgrade is reported from the run `allowMajorUpgrade` would make, so
+    // the flag applies exactly what is listed; a downgrade, which nothing
+    // applies, from the run with no policy at all.
+    const majorChanges: ClusterMajorChange[] =
+      workspaceConstraints.length === 0
+        ? []
+        : [
+            ...crossingsUnder(nothingHeldBack, "down"),
+            ...(allowMajorUpgrade
+              ? []
+              : crossingsUnder(holdsBackDowngrade, "up")),
+          ];
 
     // The version an exact workspace pin fixes the family at, used to spot open
     // ranges that ignored it. Ambiguous pins (two members pinned to different

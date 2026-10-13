@@ -271,6 +271,26 @@ describe("identifyClusterFixes", () => {
     deepStrictEqual(clusterFixesFor("duplicated-printable-shell-command"), []);
   });
 
+  it("leaves a lone duplicate alone when its workspace pin is a major behind", () => {
+    // the workspace asks `^4.0.4`, `betterdisplaycli` `^5.0.8`: held back by
+    // default, edited with the flag, dropped either way
+    const readManifest: ManifestReader = (name, version) =>
+      name === "betterdisplaycli" && version === "0.2.4"
+        ? { dependencies: { "printable-shell-command": "^5.0.8" } }
+        : undefined;
+
+    deepStrictEqual(
+      clusterFixesFor("duplicated-across-majors", readManifest),
+      [],
+    );
+    deepStrictEqual(
+      clusterFixesFor("duplicated-across-majors", readManifest, {
+        allowMajorUpgrade: true,
+      }),
+      [],
+    );
+  });
+
   it("skips clusters whose members are all single-version", () => {
     for (const fix of lockstepFixesFor("wildcard-not-reused")) {
       ok(fix.duplicatedMembers.length > 0);

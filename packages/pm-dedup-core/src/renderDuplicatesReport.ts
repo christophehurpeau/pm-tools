@@ -5,6 +5,7 @@ import type {
   ClusterFix,
 } from "./identifyLockstepClusterFixes.ts";
 import { stylePackageName, stylePackageReference } from "./packageStyles.ts";
+import { majorChangeWording } from "./planClusterApply.ts";
 import { createColorize, shouldColorize } from "./reportColors.ts";
 import type { Colorize } from "./reportColors.ts";
 import { columnWidth, listText, padTo, plural } from "./reportText.ts";
@@ -513,12 +514,9 @@ const renderCluster = (
   if (fix.majorChanges.length > 0) {
     log(`  ${color("dim", "Held back, crosses a major:")}`);
     for (const change of fix.majorChanges) {
-      const hint =
-        change.direction === "up"
-          ? color("dim", " (--allow-major-upgrade applies it)")
-          : "";
+      const { verb, outcome } = majorChangeWording(change.direction);
       log(
-        `    - ${color("dim", change.requester)} requires ${stylePackageName(color, change.packageName)} ${color("yellow", `"${change.range}"`)} -> would ${change.direction === "down" ? "downgrade" : "upgrade"} to ${color("red", change.to)}${hint}`,
+        `    - ${color("dim", change.requester)} requires ${stylePackageName(color, change.packageName)} ${color("yellow", `"${change.range}"`)} -> would ${verb} to ${color("red", change.to)} ${color("dim", `(${outcome})`)}`,
       );
     }
   }

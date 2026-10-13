@@ -518,12 +518,12 @@ describe("renderDuplicatesReport", () => {
     ok(output.includes("  Held back, crosses a major:"));
     ok(
       output.includes(
-        '    - package.json in devDependencies requires metro "0.84.5" -> would upgrade to 0.87.0 (--allow-major-upgrade applies it)',
+        '    - package.json in devDependencies requires metro "0.84.5" -> would upgrade to 0.87.0 (pass --allow-major-upgrade to apply it)',
       ),
     );
     ok(
       output.includes(
-        '    - package.json in devDependencies requires markuplint "^5.0.0" -> would downgrade to 4.18.3\n',
+        '    - package.json in devDependencies requires markuplint "^5.0.0" -> would downgrade to 4.18.3 (left as is)\n',
       ),
     );
   });

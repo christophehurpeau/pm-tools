@@ -110,8 +110,11 @@ export const identifyClusterFixes = (
     // A lone duplicate that only converges by editing a range the workspace
     // declares is an upgrade of a direct dependency, not a dedupe: that pin is
     // the whole decision here, where in a family it is one constraint among
-    // many. Left to the user.
+    // many. Left to the user — held back across a major or not, or
+    // `--allow-major-upgrade` would be offered for an edit this drops.
   ).filter(
-    (fix) => fix.members.length > 1 || fix.workspaceChanges.length === 0,
+    (fix) =>
+      fix.members.length > 1 ||
+      (fix.workspaceChanges.length === 0 && fix.majorChanges.length === 0),
   );
 };
