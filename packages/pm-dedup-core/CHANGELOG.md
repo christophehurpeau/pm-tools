@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.3.0](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core%402.2.2...pm-dedup-core%402.3.0) (2026-10-13)
+
+### Features
+
+* hold back cluster fixes that move a declared range across a major, references [#182](https://github.com/christophehurpeau/pm-tools/issues/182)
+
+### Bug Fixes
+
+* never edit the workspace range of a member the fix does not converge, closes [#182](https://github.com/christophehurpeau/pm-tools/issues/182)
+* report only the major crossings a run would act on, references [#182](https://github.com/christophehurpeau/pm-tools/issues/182)
+
 ## [2.2.2](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core@2.2.1...pm-dedup-core@2.2.2) (2026-10-10)
 
 ### Bug Fixes
