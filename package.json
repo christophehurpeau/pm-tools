@@ -30,7 +30,7 @@
     "tsc": "tsc -b"
   },
   "devDependencies": {
-    "@pob/eslint-config": "67.13.0",
+    "@pob/eslint-config": "67.14.0",
     "@pob/root": "27.16.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "eslint": "10.12.0",
