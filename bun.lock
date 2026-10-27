@@ -5,7 +5,7 @@
     "": {
       "name": "pm-tools-monorepo",
       "devDependencies": {
-        "@pob/eslint-config": "67.13.0",
+        "@pob/eslint-config": "67.14.0",
         "@pob/root": "27.16.0",
         "@typescript/native": "npm:typescript@7.0.2",
         "eslint": "10.12.0",
@@ -260,9 +260,9 @@
 
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.85.0", "", { "os": "win32", "cpu": "x64" }, "sha512-pBebIPUpKKhWrhSMWhy8TdAZBewiXnfxmaAGxhzxM1068GagqFaTwgKlU6e+UyJ2sPR+VoHouhXuGJkQjsrDvA=="],
 
-    "@pob/eslint-config": ["@pob/eslint-config@67.13.0", "", { "dependencies": { "@eslint/js": "^10.0.1", "@eslint/json": "^2.0.0", "@pob/eslint-plugin": "66.6.0", "@typescript-eslint/eslint-plugin": "8.63.0", "@typescript-eslint/parser": "8.63.0", "check-package-dependencies": "^13.2.0", "confusing-browser-globals": "^1.0.11", "eslint-plugin-import-x": "^4.17.1", "eslint-plugin-n": "^17.24.0", "eslint-plugin-regexp": "^3.1.0", "eslint-plugin-unicorn": "^64.0.0", "typescript-eslint": "^8.63.0" }, "peerDependencies": { "eslint": "^10.8.0", "typescript": ">=5.0.0 <8.0.0" }, "optionalPeers": ["typescript"] }, "sha512-9D8vfZTOjZdqeJSrv4w4JH1Or8PO6FciluWgyiX1lnRmp0F7CI76EGhzr+aiK2lcezCmokHzCQnLRxLDmEKMzw=="],
+    "@pob/eslint-config": ["@pob/eslint-config@67.14.0", "", { "dependencies": { "@eslint/js": "^10.0.1", "@eslint/json": "^2.0.0", "@pob/eslint-plugin": "66.7.0", "@typescript-eslint/eslint-plugin": "8.63.0", "@typescript-eslint/parser": "8.63.0", "check-package-dependencies": "^13.2.0", "confusing-browser-globals": "^1.0.11", "eslint-plugin-import-x": "^4.17.1", "eslint-plugin-n": "^17.24.0", "eslint-plugin-regexp": "^3.1.0", "eslint-plugin-unicorn": "^64.0.0", "typescript-eslint": "^8.63.0" }, "peerDependencies": { "eslint": "^10.8.0", "typescript": ">=5.0.0 <8.0.0" }, "optionalPeers": ["typescript"] }, "sha512-Ge9f1K3pclwqk4cdP7/YKSFgd7r35uw5CGVs3o+s12YdMRQqp0EKHruCoHMBLAK2L34+ixO+aNxmFXC8d4qzww=="],
 
-    "@pob/eslint-plugin": ["@pob/eslint-plugin@66.6.0", "", { "dependencies": { "@typescript-eslint/utils": "8.63.0", "eslint-plugin-react": "^7.37.5" }, "peerDependencies": { "eslint": "^10.0.2", "typescript": ">=5.0.0 <8.0.0" }, "optionalPeers": ["typescript"] }, "sha512-GCB/BhnQeD8iUQqyUNvIR9aGoO1d7ygB8x2pgfQb8NFkhYv5M7VftBB2yKi4kxtofMYVTTkQBFQynuU0R+uHLw=="],
+    "@pob/eslint-plugin": ["@pob/eslint-plugin@66.7.0", "", { "dependencies": { "@typescript-eslint/utils": "8.63.0", "eslint-plugin-react": "^7.37.5" }, "peerDependencies": { "eslint": "^10.0.2", "typescript": ">=5.0.0 <8.0.0" }, "optionalPeers": ["typescript"] }, "sha512-6pt5cfW3dvsUfFsNaMQ/yuag5ZdxMDVHvIH04kQxkSg898pgsDbPrRm+qz0dnZdzmmTKnDw1nu9LJS10rhD0WA=="],
 
     "@pob/root": ["@pob/root@27.16.0", "", { "dependencies": { "@commitlint/format": "21.2.3", "@commitlint/lint": "21.2.3", "@commitlint/types": "21.2.3", "@pob/version": "7.0.0", "conventional-changelog-conventionalcommits": "^10.0.0", "conventional-changelog-writer": "^9.0.0", "conventional-commits-parser": "^7.0.0", "json5": "^2.2.3", "lint-staged": "17.6.0", "oxfmt": "0.72.0", "oxlint": "1.85.0", "oxlint-tsgolint": "7.0.2003", "picomatch": "^4.0.7", "pob-dependencies": "27.13.0", "semver": "^7.7.3" }, "bin": { "oxfmt": "./bin/oxfmt.cjs", "oxlint": "./bin/oxlint.js", "pob-version": "./bin/pob-version.js", "yarn-version": "./bin/pob-version.js", "pob-check-commit-msg": "./bin/pob-check-commit-msg.js", "pob-root-lint-staged": "./bin/pob-root-lint-staged.js", "pob-root-postinstall": "./bin/pob-root-postinstall.js", "repository-check-dirty": "./bin/repository-check-dirty.js", "pob-claude-run-lint-staged": "./bin/pob-claude-run-lint-staged.js" } }, "sha512-cBAVXb9tY7tj3vJJFhQx4P4Fj/T0zL5jfJLy/MqLtzADJNVK0QnwcfoZfDnWhMhE7JRgMlS96dHu+MU6c8PcvQ=="],
 
