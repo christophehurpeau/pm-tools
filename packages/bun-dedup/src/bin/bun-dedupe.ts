@@ -16,6 +16,8 @@ const usage = `Usage: bun-dedupe [options]
   --dedupe-by-direct-major-bump
                                let a cluster fix bump a direct dependency to its next major
   --no-clusters                skip the cluster pass, rewrite the lockfile only
+  --immutable-dry-run          where bun installs use a frozen lockfile (bunfig.toml),
+                               run as --dry-run instead of --check
 
 ${packageFilterUsage}`;
 
@@ -26,6 +28,7 @@ const parsed = parseBinArgs(usage, {
     "dry-run": { type: "boolean", short: "n" },
     "dedupe-by-direct-major-bump": { type: "boolean" },
     "no-clusters": { type: "boolean" },
+    "immutable-dry-run": { type: "boolean" },
     ...packageFilterParseArgsOptions,
   },
 });
@@ -46,5 +49,6 @@ if (parsed !== null) {
     clusters: !values["no-clusters"],
     filter: toPackageFilterOptions(values),
     dedupeByDirectMajorBump: values["dedupe-by-direct-major-bump"],
+    immutableDryRun: values["immutable-dry-run"],
   });
 }

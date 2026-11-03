@@ -5,11 +5,16 @@ import {
   diffVersionsSnapshots,
   renderApplyPlan,
   renderDedupeSummary,
+  resolveImmutableMode,
   selectExplainedPackages,
   selectPackages,
   skipNestedRun,
 } from "pm-dedup-core";
-import type { PackageFilterOptions, VersionsSnapshot } from "pm-dedup-core";
+import type {
+  DedupeMode,
+  PackageFilterOptions,
+  VersionsSnapshot,
+} from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { displayMany } from "./displayMany.ts";
 import { applyIdentifiedFixesToBunLock } from "./helpers/applyIdentifiedFixesToBunLock.ts";
@@ -18,6 +23,7 @@ import {
   filterDuplicatesPackagesMap,
 } from "./helpers/buildPackagesMap.ts";
 import { collectDependents } from "./helpers/collectDependents.ts";
+import { bunLockfileIsFrozen } from "./helpers/frozenLockfile.ts";
 import { parseBunLockPackages } from "./helpers/parseBunLockPackages.ts";
 import { lockPathOf, resolveBunProjectDir } from "./helpers/projectDir.ts";
 import {
@@ -156,9 +162,7 @@ export function listDuplicates({
   });
 }
 
-// `--dry-run` and `--check` print the same plan and write nothing; only the exit
-// code differs, so `--check` can gate CI while `--dry-run` stays informational.
-export type DedupeMode = "apply" | "check" | "dry-run";
+export type { DedupeMode } from "pm-dedup-core";
 
 export interface FixDuplicatesOptions {
   mode?: DedupeMode;
@@ -169,6 +173,9 @@ export interface FixDuplicatesOptions {
   // a family at a time
   filter?: PackageFilterOptions;
   dedupeByDirectMajorBump?: boolean;
+  // where bun installs use a frozen lockfile, an apply runs as `--check` unless
+  // this turns it into a `--dry-run`
+  immutableDryRun?: boolean;
 }
 
 interface PlannedLockRewrite {
@@ -222,14 +229,22 @@ const planLockRewrite = (
 // lockfile does not carry, and the pure-lock pass then collapses the leaves bun
 // did not merge on its own.
 export function fixDuplicates({
-  mode = "apply",
+  mode: requestedMode = "apply",
   clusters = true,
   filter,
   dedupeByDirectMajorBump = false,
+  immutableDryRun = false,
 }: FixDuplicatesOptions = {}): void {
   if (skipNestedRun("bun-dedupe")) return;
   const projectDir = resolveBunProjectDir();
   if (projectDir === null) return;
+  const mode = resolveImmutableMode({
+    requested: requestedMode,
+    isImmutable: () => bunLockfileIsFrozen(projectDir),
+    reason:
+      "bun installs use a frozen lockfile here (install.frozenLockfile in bunfig.toml)",
+    immutableDryRun,
+  });
   const dryRun = mode !== "apply";
 
   // Read before the cluster pass touches anything: `bun install` rewrites the

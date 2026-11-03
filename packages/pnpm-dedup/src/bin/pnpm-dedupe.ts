@@ -16,6 +16,8 @@ const usage = `Usage: pnpm-dedupe [options]
   --dedupe-by-direct-major-bump
                                let a cluster fix bump a direct dependency to its next major
   --no-convergence-overrides   write plain overrides instead of convergence ones
+  --immutable-dry-run          where pnpm installs use a frozen lockfile (CI by default),
+                               run as --dry-run instead of --check
 
 ${packageFilterUsage}`;
 
@@ -26,6 +28,7 @@ const parsed = parseBinArgs(usage, {
     "dry-run": { type: "boolean", short: "n" },
     "dedupe-by-direct-major-bump": { type: "boolean" },
     "no-convergence-overrides": { type: "boolean" },
+    "immutable-dry-run": { type: "boolean" },
     ...packageFilterParseArgsOptions,
   },
 });
@@ -44,5 +47,6 @@ if (parsed !== null) {
     convergenceOverrides: !values["no-convergence-overrides"],
     filter: toPackageFilterOptions(values),
     dedupeByDirectMajorBump: values["dedupe-by-direct-major-bump"],
+    immutableDryRun: values["immutable-dry-run"],
   });
 }
