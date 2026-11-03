@@ -28,3 +28,7 @@ minimumReleaseAgeExcludes = [
   "nightingale-levels",
   "nightingale-types",
 ]
+
+[test]
+# dist is build output: its compiled *.test.js copies would otherwise run too.
+pathIgnorePatterns = ["**/dist/**"]
