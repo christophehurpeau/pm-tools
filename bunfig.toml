@@ -3,15 +3,24 @@
 # Only install package versions published at least 2.5 days ago
 minimumReleaseAge = 216000 # seconds
 minimumReleaseAgeExcludes = [
-  "@pob/root",
+  "@pob/codemods",
+  "@pob/commitlint-config",
   "@pob/esbuild",
+  "@pob/eslint-config",
+  "@pob/eslint-config-typescript",
+  "@pob/eslint-config-typescript-react",
+  "@pob/eslint-plugin",
+  "@pob/pretty-pkg",
   "@pob/rollup",
   "@pob/rollup-esbuild",
   "@pob/rollup-typescript",
+  "@pob/root",
   "@pob/sort-object",
   "@pob/sort-pkg",
   "@pob/version",
+  "pob",
   "pob-dependencies",
+  "check-package-dependencies",
   "alouette",
   "alouette-icons",
   "nightingale",
@@ -21,7 +30,5 @@ minimumReleaseAgeExcludes = [
 ]
 
 [test]
-# Every test lives in packages/*/src; dist is gitignored build output that a
-# local `bun run build` leaves in place, and its *.test.js copies would
-# otherwise run as duplicates.
+# dist is build output: its compiled *.test.js copies would otherwise run too.
 pathIgnorePatterns = ["**/dist/**"]

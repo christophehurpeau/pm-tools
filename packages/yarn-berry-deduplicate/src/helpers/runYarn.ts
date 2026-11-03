@@ -17,7 +17,10 @@ export type YarnRunner = (
   options?: RunYarnOptions,
 ) => YarnRunResult;
 
-export const runYarn: YarnRunner = (args, { cwd, stdio = "inherit" } = {}) => {
+export const runYarn: YarnRunner = (
+  args,
+  { cwd, stdio = "inherit" }: RunYarnOptions = {},
+) => {
   const result = spawnSync("yarn", args, {
     cwd,
     stdio,

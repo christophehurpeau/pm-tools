@@ -17,7 +17,10 @@ export type PnpmRunner = (
   options?: RunPnpmOptions,
 ) => PnpmRunResult;
 
-export const runPnpm: PnpmRunner = (args, { cwd, stdio = "inherit" } = {}) => {
+export const runPnpm: PnpmRunner = (
+  args,
+  { cwd, stdio = "inherit" }: RunPnpmOptions = {},
+) => {
   const result = spawnSync("pnpm", args, {
     cwd,
     stdio,

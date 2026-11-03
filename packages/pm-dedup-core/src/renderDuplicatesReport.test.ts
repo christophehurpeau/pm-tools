@@ -8,7 +8,7 @@ import type {
 } from "./renderDuplicatesReport.ts";
 
 const escapeStart = "\u001B[";
-// eslint-disable-next-line no-control-regex
+// oxlint-disable-next-line no-control-regex
 const escapePattern = /\u001B\[[\d;]+m/gu;
 
 const metroPin = {
