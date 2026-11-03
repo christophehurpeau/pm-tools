@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.0.0](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core%402.3.1...pm-dedup-core%403.0.0) (2026-11-03)
+
+### ⚠ BREAKING CHANGES
+
+* run as --check where pnpm or bun installs use a frozen lockfile
+
+### Features
+
+* run as --check where pnpm or bun installs use a frozen lockfile
+
+### Bug Fixes
+
+* skip nested dedupe runs, check only where yarn installs are immutable, closes [#186](https://github.com/christophehurpeau/pm-tools/issues/186)
+
 ## [2.3.1](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core%402.3.0...pm-dedup-core%402.3.1) (2026-11-03)
 
 ### Bug Fixes
