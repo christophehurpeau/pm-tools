@@ -15,7 +15,7 @@
   "type": "module",
   "scripts": {
     "build": "bun run build:definitions",
-    "build:definitions": "tsc -b",
+    "build:definitions": "tsrs -b",
     "clean": "rm -rf packages/*/dist packages/*/node_modules/.cache/tsc",
     "format": "oxfmt",
     "format:check": "oxfmt --check .",
@@ -27,13 +27,15 @@
     "test:coverage": "TZ=UTC bun test --coverage ",
     "test:coverage:generate": "TZ=UTC bun test --coverage --coverage-report=json",
     "test:watch": "TZ=UTC bun test --watch",
-    "tsc": "tsc -b"
+    "tsc": "tsrs -b",
+    "tsc:go": "tsc -b"
   },
   "devDependencies": {
-    "@pob/eslint-config": "67.13.0",
+    "@pob/eslint-config": "68.3.0",
     "@pob/root": "28.6.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "eslint": "10.14.0",
+    "tsrs": "0.18.0-ts7.1.0-dev.20260929",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "commitlint": {
@@ -42,6 +44,6 @@
     ]
   },
   "engines": {
-    "node": ">=22.18.0"
+    "node": "^22.18.0 || >=24.14.1"
   }
 }
