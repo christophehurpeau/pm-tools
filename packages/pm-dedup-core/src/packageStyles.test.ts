@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 const colorize = createColorize(true);
-// eslint-disable-next-line no-control-regex
+// oxlint-disable-next-line no-control-regex
 const escapePattern = /\u001B\[[\d;]+m/gu;
 const plainText = (text: string): string => text.replaceAll(escapePattern, "");
 

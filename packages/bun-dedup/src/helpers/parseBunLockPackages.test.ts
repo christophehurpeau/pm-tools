@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/no-array-sort */
+/* oxlint-disable unicorn/no-array-sort */
 import { describe, it } from "bun:test";
 import { deepStrictEqual, strictEqual } from "node:assert/strict";
 import { fileURLToPath } from "node:url";

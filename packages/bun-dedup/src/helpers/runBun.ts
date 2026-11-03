@@ -16,7 +16,10 @@ export type BunRunner = (
   options?: RunBunOptions,
 ) => BunRunResult;
 
-export const runBun: BunRunner = (args, { cwd, stdio = "inherit" } = {}) => {
+export const runBun: BunRunner = (
+  args,
+  { cwd, stdio = "inherit" }: RunBunOptions = {},
+) => {
   const result = spawnSync("bun", args, {
     cwd,
     stdio,
