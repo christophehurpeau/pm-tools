@@ -67,6 +67,7 @@ export type {
 } from "./packageFilterArgs.ts";
 export { parseBinArgs } from "./parseBinArgs.ts";
 export { findProjectRoot, resolveProjectDir } from "./findProjectRoot.ts";
+export { nestedRunEnv, skipNestedRun } from "./nestedRun.ts";
 export type { ProjectRootOptions } from "./findProjectRoot.ts";
 export { createCandidateVersionComparator } from "./compareCandidateVersions.ts";
 export type { CandidateVersionComparatorOptions } from "./compareCandidateVersions.ts";

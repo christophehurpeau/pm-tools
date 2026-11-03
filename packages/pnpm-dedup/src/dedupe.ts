@@ -5,6 +5,7 @@ import {
   createPackageFilter,
   diffVersionsSnapshots,
   renderDedupeSummary,
+  skipNestedRun,
 } from "pm-dedup-core";
 import type { PackageFilterOptions } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
@@ -64,6 +65,7 @@ export function dedupe({
   filter,
   dedupeByDirectMajorBump = false,
 }: DedupeOptions = {}): void {
+  if (skipNestedRun("pnpm-dedupe")) return;
   const dryRun = mode !== "apply";
   const projectDir = resolvePnpmProjectDir();
   if (projectDir === null) return;

@@ -7,6 +7,7 @@ import {
   renderDedupeSummary,
   selectExplainedPackages,
   selectPackages,
+  skipNestedRun,
 } from "pm-dedup-core";
 import type { PackageFilterOptions, VersionsSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
@@ -226,6 +227,7 @@ export function fixDuplicates({
   filter,
   dedupeByDirectMajorBump = false,
 }: FixDuplicatesOptions = {}): void {
+  if (skipNestedRun("bun-dedupe")) return;
   const projectDir = resolveBunProjectDir();
   if (projectDir === null) return;
   const dryRun = mode !== "apply";

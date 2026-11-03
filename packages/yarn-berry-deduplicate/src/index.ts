@@ -1,12 +1,15 @@
 import {
   buildIdentifiedFixesMap,
   countDuplicatedPackages,
+  createColorize,
   createPackageFilter,
   diffVersionsSnapshots,
   renderApplyPlan,
   renderDedupeSummary,
   selectExplainedPackages,
   selectPackages,
+  shouldColorize,
+  skipNestedRun,
 } from "pm-dedup-core";
 import type { PackageFilterOptions, VersionsSnapshot } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
@@ -21,6 +24,7 @@ import {
   createManifestReader,
 } from "./helpers/collectWorkspaces.ts";
 import { collectYarnDependents } from "./helpers/collectYarnDependents.ts";
+import { yarnInstallsAreImmutable } from "./helpers/immutableInstalls.ts";
 import { parseYarnLockPackages } from "./helpers/parseYarnLockPackages.ts";
 import { lockPathOf, resolveYarnProjectDir } from "./helpers/projectDir.ts";
 import {
@@ -200,6 +204,9 @@ export interface FixDuplicatesOptions {
   // a family at a time
   filter?: PackageFilterOptions;
   dedupeByDirectMajorBump?: boolean;
+  // where yarn installs are immutable, an apply runs as `--check` unless this
+  // turns it into a `--dry-run`
+  immutableDryRun?: boolean;
 }
 
 interface PlannedLockRewrite {
@@ -252,17 +259,61 @@ const planLockRewrite = (
   };
 };
 
+interface ResolveModeOptions {
+  requested: DedupeMode;
+  projectDir: string;
+  immutableDryRun: boolean;
+}
+
+/**
+ * Where yarn would not write the lockfile — CI by default — neither does this
+ * run: the outer install already settled the lockfile, nobody commits what a CI
+ * checkout is left with, and the cluster pass could not run its own installs.
+ */
+const resolveMode = ({
+  requested,
+  projectDir,
+  immutableDryRun,
+}: ResolveModeOptions): DedupeMode => {
+  if (requested !== "apply" || !yarnInstallsAreImmutable(projectDir)) {
+    return requested;
+  }
+
+  const colorize = createColorize(shouldColorize());
+  const mode = immutableDryRun ? "dry-run" : "check";
+  console.log(
+    colorize(
+      ["bold", "yellow"],
+      `yarn installs are immutable here (enableImmutableInstalls, on by default on CI): running as --${mode}, nothing is written.`,
+    ),
+  );
+  if (!immutableDryRun) {
+    console.log(
+      "Pass --immutable-dry-run to report the plan without failing; run it where installs are writable to apply it.",
+    );
+  }
+  console.log();
+  return mode;
+};
+
 // Cluster fixes go first: they are the only pass that can reach a version the
 // lockfile does not carry, and the pure-lock pass then collapses the leaves
 // yarn did not merge on its own.
 export function fixDuplicates({
-  mode = "apply",
+  mode: requestedMode = "apply",
   clusters = true,
   filter,
   dedupeByDirectMajorBump = false,
+  immutableDryRun = false,
 }: FixDuplicatesOptions = {}): void {
+  if (skipNestedRun("yarn-berry-deduplicate")) return;
   const projectDir = resolveYarnProjectDir();
   if (projectDir === null) return;
+  const mode = resolveMode({
+    requested: requestedMode,
+    projectDir,
+    immutableDryRun,
+  });
   const dryRun = mode !== "apply";
 
   // Read before the cluster pass touches anything: `yarn install` rewrites the

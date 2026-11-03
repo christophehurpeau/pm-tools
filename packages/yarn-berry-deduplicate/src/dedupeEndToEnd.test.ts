@@ -67,11 +67,17 @@ const projects = createTempProjects("yarn-berry-deduplicate-e2e-");
 
 afterEach(projects.cleanup);
 
-const run = (cwd: string, command: string, args: string[]): Run => {
+const run = (
+  cwd: string,
+  command: string,
+  args: string[],
+  env: Record<string, string> = {},
+): Run => {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
     timeout: 300_000,
+    env: { ...process.env, ...env },
   });
   if (result.error) throw result.error;
   return {
@@ -80,11 +86,22 @@ const run = (cwd: string, command: string, args: string[]): Run => {
   };
 };
 
+// yarn makes installs immutable on CI, so each run says which side it stands on
+// rather than inheriting the runner's; an `--immutable` argument still wins
 const install = (cwd: string, ...args: string[]): Run =>
-  run(cwd, "yarn", ["install", ...args]);
+  run(cwd, "yarn", ["install", ...args], {
+    YARN_ENABLE_IMMUTABLE_INSTALLS: "false",
+  });
 
-const dedupe = (cwd: string, ...args: string[]): Run =>
-  run(cwd, process.execPath, [dedupeBin, ...args]);
+// the bin refuses to apply where installs are immutable
+const dedupe = (
+  cwd: string,
+  args: string[],
+  { immutable = false }: { immutable?: boolean } = {},
+): Run =>
+  run(cwd, process.execPath, [dedupeBin, ...args], {
+    YARN_ENABLE_IMMUTABLE_INSTALLS: String(immutable),
+  });
 
 const resolutionsOf = (dir: string, packageName: string): string[] => {
   const packagesMap = buildYarnPackagesMap(
@@ -168,10 +185,17 @@ suite("yarn-berry-deduplicate end to end", () => {
           "printable-shell-command@npm:5.0.7",
         ]);
 
-        const check = dedupe(dir, "--check");
+        const check = dedupe(dir, ["--check"]);
         strictEqual(check.status, 1);
 
-        const applied = dedupe(dir);
+        // where yarn would not write the lockfile, an apply is a check
+        const lockBefore = readFileSync(join(dir, "yarn.lock"), "utf8");
+        const gated = dedupe(dir, [], { immutable: true });
+        strictEqual(gated.status, 1);
+        ok(gated.output.includes("running as --check, nothing is written"));
+        strictEqual(readFileSync(join(dir, "yarn.lock"), "utf8"), lockBefore);
+
+        const applied = dedupe(dir, []);
         strictEqual(applied.status, 0);
         ok(applied.output.includes("yarn.lock updated"));
 
@@ -199,7 +223,7 @@ suite("yarn-berry-deduplicate end to end", () => {
         // and yarn agrees the lockfile is one CI could install from as it stands
         strictEqual(install(dir, "--immutable").status, 0);
 
-        strictEqual(dedupe(dir, "--check").status, 0);
+        strictEqual(dedupe(dir, ["--check"]).status, 0);
       },
     );
   }
