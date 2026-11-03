@@ -7,11 +7,11 @@ if [ "$1" = "0000000000000000000000000000000000000000" ]; then
   if [ -x scripts/setup-worktree.sh ]; then
     ./scripts/setup-worktree.sh || true
   else
-    bun i --frozen-lockfile || true
+    npm i || true
   fi
   exit 0
 fi
 
-if [ -n "$(git diff HEAD@{1}..HEAD@{0} -- bun.lock)" ]; then
-  bun i --frozen-lockfile || true
+if [ -n "$(git diff HEAD@{1}..HEAD@{0} -- package-lock.json)" ]; then
+  npm i || true
 fi

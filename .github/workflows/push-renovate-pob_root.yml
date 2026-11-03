@@ -18,8 +18,7 @@ jobs:
         with:
           ssh-key: ${{ secrets.PUSH_DEPLOY_KEY }}
 
-      - name: Install bun
-        uses: oven-sh/setup-bun@v2
+      -
 
       - uses: actions/setup-node@v7
         with:
@@ -27,12 +26,12 @@ jobs:
 
       - name: Install Dependencies
         # no immutable here
-        run: bun i
+        run: npm i
         env:
           YARN_ENABLE_IMMUTABLE_INSTALLS: false
 
       - name: Run pob-root-postinstall
-        run: bun run pob-root-postinstall
+        run: npx --no-install pob-root-postinstall
 
       - name: Run pob update
         run: npx pob update --force
@@ -45,7 +44,7 @@ jobs:
 
       - name: Build
         if: steps.git-check-modified.outputs.modified == 'true'
-        run: bun run build
+        run: npm run build
 
       - name: Commit report
         if: steps.git-check-modified.outputs.modified == 'true'
