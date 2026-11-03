@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { nestedRunEnv } from "pm-dedup-core";
 
 export interface YarnRunResult {
   status: number | null;
@@ -20,7 +21,12 @@ export const runYarn: YarnRunner = (
   args,
   { cwd, stdio = "inherit" }: RunYarnOptions = {},
 ) => {
-  const result = spawnSync("yarn", args, { cwd, stdio, encoding: "utf8" });
+  const result = spawnSync("yarn", args, {
+    cwd,
+    stdio,
+    encoding: "utf8",
+    env: nestedRunEnv(),
+  });
 
   if (result.error) {
     throw result.error;

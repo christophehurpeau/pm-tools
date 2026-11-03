@@ -1,8 +1,18 @@
 import { ok, strictEqual } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
-import { join } from "node:path";
-import { afterEach, describe, it } from "node:test";
+import {
+  chmodSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, join } from "node:path";
+import { after, afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { fixtureDir } from "../helpers/fixtures.ts";
 import { createTempProjects } from "../helpers/tempProjects.ts";
@@ -16,6 +26,28 @@ const projects = createTempProjects("yarn-berry-deduplicate-bin-");
 
 afterEach(projects.cleanup);
 
+// These runs never install, but the bin asks yarn whether installs are
+// immutable, and the real answer follows `CI`. The stand-in answers from
+// `YARN_ENABLE_IMMUTABLE_INSTALLS` alone, as yarn does when it is set, and
+// fails anything else so an unexpected install cannot pass unnoticed.
+const fakeYarnDir = mkdtempSync(join(tmpdir(), "yarn-berry-deduplicate-yarn-"));
+writeFileSync(
+  join(fakeYarnDir, "yarn"),
+  `#!/bin/sh
+if [ "$*" = "config get enableImmutableInstalls --json" ]; then
+  echo "\${YARN_ENABLE_IMMUTABLE_INSTALLS:-false}"
+  exit 0
+fi
+echo "fake yarn: unexpected yarn $*" >&2
+exit 1
+`,
+);
+chmodSync(join(fakeYarnDir, "yarn"), 0o755);
+
+after(() => {
+  rmSync(fakeYarnDir, { recursive: true, force: true });
+});
+
 interface Run {
   status: number | null;
   output: string;
@@ -23,11 +55,21 @@ interface Run {
   stderr: string;
 }
 
-const runBin = (name: string, cwd: string, args: string[]): Run => {
+const runBin = (
+  name: string,
+  cwd: string,
+  args: string[],
+  env: Record<string, string> = {},
+): Run => {
   const result = spawnSync(process.execPath, [binPath(name), ...args], {
     cwd,
     encoding: "utf8",
     timeout: 60_000,
+    env: {
+      ...process.env,
+      PATH: `${fakeYarnDir}${delimiter}${process.env.PATH ?? ""}`,
+      ...env,
+    },
   });
   if (result.error) throw result.error;
   return {
@@ -121,6 +163,91 @@ describe("yarn-berry-deduplicate", () => {
         0,
       );
     });
+  });
+
+  describe("where yarn installs are immutable", () => {
+    const immutable = { YARN_ENABLE_IMMUTABLE_INSTALLS: "true" };
+    const notice =
+      "yarn installs are immutable here (enableImmutableInstalls, on by default on CI)";
+
+    it("runs as --check: says so, writes nothing, exits 1 when something would change", () => {
+      const dir = project("duplicated-printable-shell-command");
+      const before = lockOf(dir);
+
+      const result = runBin(
+        "yarn-berry-deduplicate",
+        dir,
+        ["--no-clusters"],
+        immutable,
+      );
+
+      strictEqual(result.status, 1);
+      ok(result.stdout.includes(`${notice}: running as --check`));
+      ok(result.stdout.includes("--immutable-dry-run"));
+      ok(result.stdout.includes("yarn.lock would be rewritten"));
+      strictEqual(lockOf(dir), before);
+    });
+
+    it("exits 0 when nothing would change", () => {
+      const dir = project("simple");
+
+      const result = runBin(
+        "yarn-berry-deduplicate",
+        dir,
+        ["--no-clusters"],
+        immutable,
+      );
+
+      strictEqual(result.status, 0);
+      ok(result.stdout.includes(`${notice}: running as --check`));
+    });
+
+    it("runs as --dry-run with --immutable-dry-run, still saying so", () => {
+      const dir = project("duplicated-printable-shell-command");
+      const before = lockOf(dir);
+
+      const result = runBin(
+        "yarn-berry-deduplicate",
+        dir,
+        ["--no-clusters", "--immutable-dry-run"],
+        immutable,
+      );
+
+      strictEqual(result.status, 0);
+      ok(result.stdout.includes(`${notice}: running as --dry-run`));
+      ok(result.stdout.includes("yarn.lock would be rewritten"));
+      strictEqual(lockOf(dir), before);
+    });
+
+    it("leaves an explicit --dry-run as it is", () => {
+      const dir = project("duplicated-printable-shell-command");
+
+      const result = runBin(
+        "yarn-berry-deduplicate",
+        dir,
+        ["--no-clusters", "--dry-run"],
+        immutable,
+      );
+
+      strictEqual(result.status, 0);
+      ok(!result.stdout.includes(notice));
+    });
+  });
+
+  it("skips a run started by an install another dedupe run is driving", () => {
+    const dir = project("duplicated-printable-shell-command");
+    const before = lockOf(dir);
+
+    const result = runBin("yarn-berry-deduplicate", dir, ["--no-clusters"], {
+      PM_DEDUP_NESTED_RUN: "1",
+    });
+
+    strictEqual(result.status, 0);
+    strictEqual(
+      result.stderr.trim(),
+      "yarn-berry-deduplicate: skipped, started by an install another dedupe run is driving",
+    );
+    strictEqual(lockOf(dir), before);
   });
 
   describe("package filters", () => {

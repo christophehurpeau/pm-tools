@@ -15,7 +15,7 @@
     },
     "packages/bun-dedup": {
       "name": "bun-dedup",
-      "version": "2.3.0",
+      "version": "3.0.0",
       "bin": {
         "bun-dedup": "./dist/bin/bun-dedupe.js",
         "bun-dedupe": "./dist/bin/bun-dedupe.js",
@@ -36,7 +36,7 @@
     },
     "packages/pm-dedup-core": {
       "name": "pm-dedup-core",
-      "version": "2.3.0",
+      "version": "3.0.0",
       "dependencies": {
         "picomatch": "4.0.7",
         "semver": "7.8.5",
@@ -52,13 +52,14 @@
     },
     "packages/pnpm-dedup": {
       "name": "pnpm-dedup",
-      "version": "2.3.0",
+      "version": "3.0.0",
       "bin": {
         "pnpm-dedup": "./dist/bin/pnpm-dedupe.js",
         "pnpm-dedupe": "./dist/bin/pnpm-dedupe.js",
         "pnpm-why-duplicate": "./dist/bin/pnpm-why-duplicate.js",
       },
       "dependencies": {
+        "ci-info": "4.4.0",
         "pm-dedup-core": "workspace:*",
         "semver": "7.8.5",
         "tslib": "^2.9.1",
@@ -73,7 +74,7 @@
     },
     "packages/yarn-berry-deduplicate": {
       "name": "yarn-berry-deduplicate",
-      "version": "7.1.0",
+      "version": "8.0.0",
       "bin": {
         "yarn-berry-deduplicate": "./dist/bin/yarn-berry-deduplicate.js",
         "yarn-berry-why-duplicate": "./dist/bin/yarn-berry-why-duplicate.js",

@@ -5,16 +5,17 @@ import {
   createPackageFilter,
   diffVersionsSnapshots,
   renderDedupeSummary,
+  resolveImmutableMode,
+  skipNestedRun,
 } from "pm-dedup-core";
-import type { PackageFilterOptions } from "pm-dedup-core";
+import type { DedupeMode, PackageFilterOptions } from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
+import { pnpmLockfileIsFrozen } from "./helpers/frozenLockfile.ts";
 import { lockPathOf, resolvePnpmProjectDir } from "./helpers/projectDir.ts";
 import { runPnpm } from "./helpers/runPnpm.ts";
 import { readVersionsSnapshot } from "./helpers/versionsSnapshot.ts";
 
-// `--dry-run` and `--check` print the same plan and write nothing; only the exit
-// code differs, so `--check` can gate CI while `--dry-run` stays informational.
-export type DedupeMode = "apply" | "check" | "dry-run";
+export type { DedupeMode } from "pm-dedup-core";
 
 export interface DedupeOptions {
   mode?: DedupeMode;
@@ -26,6 +27,9 @@ export interface DedupeOptions {
   // a family at a time
   filter?: PackageFilterOptions;
   dedupeByDirectMajorBump?: boolean;
+  // where pnpm installs use a frozen lockfile, an apply runs as `--check`
+  // unless this turns it into a `--dry-run`
+  immutableDryRun?: boolean;
 }
 
 const residualsMessage = "`pnpm dedupe` would also change the lockfile.";
@@ -59,14 +63,23 @@ const warnOnLeftoverOverrides = (projectDir: string): void => {
  * gap, so they run first and `pnpm dedupe` finishes the residuals.
  */
 export function dedupe({
-  mode = "apply",
+  mode: requestedMode = "apply",
   convergenceOverrides = true,
   filter,
   dedupeByDirectMajorBump = false,
+  immutableDryRun = false,
 }: DedupeOptions = {}): void {
-  const dryRun = mode !== "apply";
+  if (skipNestedRun("pnpm-dedupe")) return;
   const projectDir = resolvePnpmProjectDir();
   if (projectDir === null) return;
+  const mode = resolveImmutableMode({
+    requested: requestedMode,
+    isImmutable: () => pnpmLockfileIsFrozen({ projectDir }),
+    reason:
+      "pnpm installs use a frozen lockfile here (frozen-lockfile, on by default on CI)",
+    immutableDryRun,
+  });
+  const dryRun = mode !== "apply";
   const lockPath = lockPathOf(projectDir);
   const filtered = !createPackageFilter(filter).selectsEverything;
 

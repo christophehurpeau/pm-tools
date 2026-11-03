@@ -84,6 +84,17 @@ yarn dlx yarn-berry-deduplicate --check      # print the plan, change nothing, e
 `--check` is the CI gate; `--dry-run` (`-n`) is the same output without the
 failing exit code.
 
+Where yarn installs are immutable — `enableImmutableInstalls`, which yarn turns
+on by default on CI — an apply runs as `--check` and says so first: the
+lockfile is already settled by the install, and nothing a CI checkout is left
+with gets committed. `--immutable-dry-run` makes it a `--dry-run` instead, for a
+`prepare` script that should report on CI without failing the install. An
+explicit `--check` or `--dry-run` is left as it is.
+
+A run started by an install another dedupe run is driving — a `prepare` script
+under `plugin-prepare-lifecycle`, re-run by each `yarn install` the cluster pass
+makes — is skipped rather than re-entered.
+
 Two passes run: the cluster pass edits `package.json` and runs `yarn install`,
 reaching versions the lockfile does not carry; the pure-lock pass then collapses
 the leaves yarn did not merge on its own, by merging descriptors onto one entry.

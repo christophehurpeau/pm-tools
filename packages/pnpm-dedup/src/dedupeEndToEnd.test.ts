@@ -57,11 +57,19 @@ const projects = createTempProjects("pnpm-dedup-e2e-");
 
 afterEach(projects.cleanup);
 
+// pnpm freezes the lockfile on CI, and the bin then refuses to apply: every run
+// here writes, whatever the runner says
+const writableEnv = {
+  ...process.env,
+  ...Object.fromEntries([["pnpm_config_frozen_lockfile", "false"]]),
+};
+
 const run = (cwd: string, command: string, args: string[]): Run => {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
     timeout: 120_000,
+    env: writableEnv,
   });
   if (result.error) {
     throw result.error;

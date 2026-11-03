@@ -5,10 +5,16 @@ import {
   diffVersionsSnapshots,
   renderApplyPlan,
   renderDedupeSummary,
+  resolveImmutableMode,
   selectExplainedPackages,
   selectPackages,
+  skipNestedRun,
 } from "pm-dedup-core";
-import type { PackageFilterOptions, VersionsSnapshot } from "pm-dedup-core";
+import type {
+  DedupeMode,
+  PackageFilterOptions,
+  VersionsSnapshot,
+} from "pm-dedup-core";
 import { applyClusterFixes } from "./applyClusterFixes.ts";
 import { displayMany } from "./displayMany.ts";
 import { applyIdentifiedFixesToYarnLock } from "./helpers/applyIdentifiedFixesToYarnLock.ts";
@@ -21,6 +27,7 @@ import {
   createManifestReader,
 } from "./helpers/collectWorkspaces.ts";
 import { collectYarnDependents } from "./helpers/collectYarnDependents.ts";
+import { yarnInstallsAreImmutable } from "./helpers/immutableInstalls.ts";
 import { parseYarnLockPackages } from "./helpers/parseYarnLockPackages.ts";
 import { lockPathOf, resolveYarnProjectDir } from "./helpers/projectDir.ts";
 import {
@@ -187,9 +194,7 @@ export function listDuplicates({
   });
 }
 
-// `--dry-run` and `--check` print the same plan and write nothing; only the exit
-// code differs, so `--check` can gate CI while `--dry-run` stays informational.
-export type DedupeMode = "apply" | "check" | "dry-run";
+export type { DedupeMode } from "pm-dedup-core";
 
 export interface FixDuplicatesOptions {
   mode?: DedupeMode;
@@ -200,6 +205,9 @@ export interface FixDuplicatesOptions {
   // a family at a time
   filter?: PackageFilterOptions;
   dedupeByDirectMajorBump?: boolean;
+  // where yarn installs are immutable, an apply runs as `--check` unless this
+  // turns it into a `--dry-run`
+  immutableDryRun?: boolean;
 }
 
 interface PlannedLockRewrite {
@@ -256,13 +264,22 @@ const planLockRewrite = (
 // lockfile does not carry, and the pure-lock pass then collapses the leaves
 // yarn did not merge on its own.
 export function fixDuplicates({
-  mode = "apply",
+  mode: requestedMode = "apply",
   clusters = true,
   filter,
   dedupeByDirectMajorBump = false,
+  immutableDryRun = false,
 }: FixDuplicatesOptions = {}): void {
+  if (skipNestedRun("yarn-berry-deduplicate")) return;
   const projectDir = resolveYarnProjectDir();
   if (projectDir === null) return;
+  const mode = resolveImmutableMode({
+    requested: requestedMode,
+    isImmutable: () => yarnInstallsAreImmutable(projectDir),
+    reason:
+      "yarn installs are immutable here (enableImmutableInstalls, on by default on CI)",
+    immutableDryRun,
+  });
   const dryRun = mode !== "apply";
 
   // Read before the cluster pass touches anything: `yarn install` rewrites the

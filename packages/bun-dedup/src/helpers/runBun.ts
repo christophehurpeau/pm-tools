@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { nestedRunEnv } from "pm-dedup-core";
 
 export interface BunRunResult {
   status: number | null;
@@ -24,6 +25,7 @@ export const runBun: BunRunner = (
     cwd,
     stdio,
     encoding: "utf8",
+    env: nestedRunEnv(),
   });
 
   if (result.error) {

@@ -86,6 +86,15 @@ bunx -p bun-dedup bun-dedupe --check      # print the plan, change nothing, exit
 `--check` is the CI gate; `--dry-run` (`-n`) is the same output without the
 failing exit code.
 
+Where `bun install` would use a frozen lockfile — `install.frozenLockfile` in
+the project's `bunfig.toml` or the global one; bun has no CI default — an apply
+runs as `--check` and says so first. `--immutable-dry-run` makes it a
+`--dry-run` instead, for a `prepare` script that should report without failing
+the install. An explicit `--check` or `--dry-run` is left as it is.
+
+bun runs the root `prepare` and `postinstall` on every install, so a run started
+by an install another dedupe run is driving is skipped rather than re-entered.
+
 Two passes run: the cluster pass edits `package.json` and runs `bun install`,
 reaching versions the lockfile does not carry; the pure-lock pass then collapses
 the leaves bun did not merge on its own. `--no-clusters` runs only the second.

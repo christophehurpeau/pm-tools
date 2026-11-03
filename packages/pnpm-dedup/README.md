@@ -88,6 +88,18 @@ failing exit code. `--check` also exits 1 when `pnpm dedupe --check` itself
 cannot confirm the lockfile is settled, so a probe that fails for environmental
 reasons fails the gate rather than passing silently.
 
+Where `pnpm install` would use a frozen lockfile — an explicit `frozen-lockfile`,
+or CI unless `prefer-frozen-lockfile` is false — an apply runs as `--check` and
+says so first: the lockfile is already settled by the install, and nothing a CI
+checkout is left with gets committed. `pnpm dedupe` would write regardless, which
+is why the run asks. `--immutable-dry-run` makes it a `--dry-run` instead, for a
+`prepare` script that should report on CI without failing the install. An
+explicit `--check` or `--dry-run` is left as it is.
+
+pnpm runs the root `prepare` and `postinstall` on install and on `pnpm dedupe`,
+so a run started by an install another dedupe run is driving is skipped rather
+than re-entered.
+
 `--no-convergence-overrides` writes plain overrides instead of convergence ones,
 which pnpm applies to every requester whatever range it declares. Convergence
 overrides need pnpm >= 11.13.0; without them the cluster pass is skipped.

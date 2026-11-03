@@ -1,6 +1,6 @@
 {
   "name": "pnpm-dedup",
-  "version": "2.3.0",
+  "version": "3.0.0",
   "description": "List duplicates and dedupe pnpm lock file",
   "keywords": [
     "dedupe",
@@ -51,6 +51,7 @@
     "tsc:go": "tsc"
   },
   "dependencies": {
+    "ci-info": "4.4.0",
     "pm-dedup-core": "workspace:*",
     "semver": "7.8.5",
     "tslib": "^2.9.1",

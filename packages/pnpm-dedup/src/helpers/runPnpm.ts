@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { nestedRunEnv } from "pm-dedup-core";
 
 export interface PnpmRunResult {
   status: number | null;
@@ -24,6 +25,7 @@ export const runPnpm: PnpmRunner = (
     cwd,
     stdio,
     encoding: "utf8",
+    env: nestedRunEnv(),
   });
 
   if (result.error) {
