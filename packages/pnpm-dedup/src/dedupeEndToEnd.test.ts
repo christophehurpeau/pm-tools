@@ -11,20 +11,26 @@ import { createTempProjects } from "./helpers/tempProjects.ts";
 import { readPnpmLock } from "./readPnpmLock.ts";
 
 // The shipped tool against a real pnpm: a copy of the
-// `exact-pin-forces-downgrade` fixture, a real `pnpm install`, then the built
-// `pnpm-dedupe` bin as a user would run it. Every other test stubs the
+// `exact-pin-forces-downgrade-e2e` fixture, a real `pnpm install`, then the
+// built `pnpm-dedupe` bin as a user would run it. Every other test stubs the
 // resolution step, so this is the only one that can tell whether pnpm holds the
 // deduplicated result on its own once the transient override is removed again —
 // the step the tool takes before reporting "applied" — and pnpm is asked for its
 // own account of the tree at the end rather than only our reading of it.
 //
-// Requires network access or a warm pnpm store; skipped when pnpm is not on PATH.
+// The fixture's lockfile is the one pnpm 12 wrote for its manifest, untrimmed,
+// unlike the unit-test `exact-pin-forces-downgrade`. It pins the starting tree:
+// left to the registry, `^3.0.0` follows every new barcode-detector release, and
+// the versions asserted below with it.
+//
+// Requires network access or a warm pnpm store; skipped when pnpm is not on PATH,
+// as on CI, which installs only bun.
 
 const pnpmAvailable =
   spawnSync("pnpm", ["--version"], { encoding: "utf8" }).status === 0;
 
 const fixtureDir = fileURLToPath(
-  new URL("../test/fixtures/exact-pin-forces-downgrade", import.meta.url),
+  new URL("../test/fixtures/exact-pin-forces-downgrade-e2e", import.meta.url),
 );
 // the built bin, the one the `bin` field points at: from `src` it is one level
 // up, and the compiled copy of this file sits beside it
@@ -94,12 +100,11 @@ suite("pnpm-dedupe end to end", () => {
     { timeout: 180_000 },
     () => {
       const dir = projects.create();
-      // only the manifest: the lockfile has to be the real resolution pnpm writes
-      // here, not the trimmed one the unit-test fixture commits
-      cpSync(join(fixtureDir, "package.json"), join(dir, "package.json"));
+      cpSync(fixtureDir, dir, { recursive: true });
       writeFileSync(join(dir, "pnpm-workspace.yaml"), workspaceYamlContent);
 
-      const installed = install(dir);
+      // frozen: pnpm installs the committed resolution or fails, never a newer one
+      const installed = install(dir, "--frozen-lockfile");
       strictEqual(installed.status, 0, installed.output);
 
       // `@yudiel/react-qr-scanner` pins barcode-detector at exactly 3.0.3 while
