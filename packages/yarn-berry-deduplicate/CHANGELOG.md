@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.1.1](https://github.com/christophehurpeau/pm-tools/compare/yarn-berry-deduplicate%407.1.0...yarn-berry-deduplicate%407.1.1) (2026-11-03)
+
+### Bug Fixes
+
+* **deps:** update dependency @types/bun to v1.4.3 ([#183](https://github.com/christophehurpeau/pm-tools/issues/183))
+* **deps:** update dependency @types/bun to v1.4.4 ([#187](https://github.com/christophehurpeau/pm-tools/issues/187))
+
+Version bump for dependency: pm-dedup-core
+
+
 ## [7.1.0](https://github.com/christophehurpeau/pm-tools/compare/yarn-berry-deduplicate%407.0.2...yarn-berry-deduplicate%407.1.0) (2026-10-13)
 
 ### Features

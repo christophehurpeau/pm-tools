@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.3.1](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core%402.3.0...pm-dedup-core%402.3.1) (2026-11-03)
+
+### Bug Fixes
+
+* **deps:** update dependency @types/bun to v1.4.3 ([#183](https://github.com/christophehurpeau/pm-tools/issues/183))
+* **deps:** update dependency @types/bun to v1.4.4 ([#187](https://github.com/christophehurpeau/pm-tools/issues/187))
+
 ## [2.3.0](https://github.com/christophehurpeau/pm-tools/compare/pm-dedup-core%402.2.2...pm-dedup-core%402.3.0) (2026-10-13)
 
 ### Features
