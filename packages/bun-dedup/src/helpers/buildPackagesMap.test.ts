@@ -16,7 +16,6 @@ const loadResolutionsFixture = (fileName: string): PackageResolution[] => {
       fileURLToPath(
         new URL(`../../test/fixtures/resolutions/${fileName}`, import.meta.url),
       ),
-      // oxlint-disable-next-line unicorn-js/prefer-json-parse-buffer
       "utf8",
     ),
   );
