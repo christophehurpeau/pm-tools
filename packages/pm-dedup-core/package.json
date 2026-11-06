@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "picomatch": "4.0.7",
-    "semver": "7.8.5",
+    "semver": "7.8.6",
     "tslib": "^2.9.1"
   },
   "devDependencies": {
