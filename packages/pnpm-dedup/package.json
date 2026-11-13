@@ -51,7 +51,7 @@
     "tsc:go": "tsc"
   },
   "dependencies": {
-    "ci-info": "4.4.0",
+    "ci-info": "4.5.0",
     "pm-dedup-core": "workspace:*",
     "semver": "7.8.5",
     "tslib": "^2.9.1",
