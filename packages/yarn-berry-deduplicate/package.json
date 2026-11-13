@@ -63,7 +63,7 @@
     "@types/bun": "1.4.4",
     "@types/semver": "7.8.0",
     "@typescript/native": "npm:typescript@7.0.2",
-    "tsrs": "0.20.1-ts7.1.0-beta",
+    "tsrs": "0.24.0-ts7.1.0-beta",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "engines": {
