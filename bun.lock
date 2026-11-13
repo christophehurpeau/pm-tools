@@ -25,7 +25,7 @@
         "@types/bun": "1.4.4",
         "json5": "2.2.3",
         "pm-dedup-core": "workspace:*",
-        "semver": "7.8.5",
+        "semver": "7.8.6",
         "tslib": "^2.9.1",
       },
       "devDependencies": {
@@ -39,7 +39,7 @@
       "version": "3.0.0",
       "dependencies": {
         "picomatch": "4.0.7",
-        "semver": "7.8.5",
+        "semver": "7.8.6",
         "tslib": "^2.9.1",
       },
       "devDependencies": {
@@ -61,7 +61,7 @@
       "dependencies": {
         "ci-info": "4.4.0",
         "pm-dedup-core": "workspace:*",
-        "semver": "7.8.5",
+        "semver": "7.8.6",
         "tslib": "^2.9.1",
         "yaml": "2.9.1",
       },
@@ -82,7 +82,7 @@
       "dependencies": {
         "@yarnpkg/parsers": "3.1.0",
         "pm-dedup-core": "workspace:*",
-        "semver": "7.8.5",
+        "semver": "7.8.6",
         "tslib": "^2.9.1",
       },
       "devDependencies": {
@@ -99,7 +99,7 @@
       "bin": "./bin/yarn-why-duplicate.mjs",
       "dependencies": {
         "@yarnpkg/core": "4.9.2",
-        "semver": "7.8.5",
+        "semver": "7.8.6",
       },
     },
   },
@@ -818,7 +818,7 @@
 
     "scslre": ["scslre@0.3.0", "", { "dependencies": { "@eslint-community/regexpp": "^4.8.0", "refa": "^0.12.0", "regexp-ast-analysis": "^0.7.0" } }, "sha512-3A6sD0WYP7+QrjbfNA2FN3FsOaGGFoekCVgTyypy53gPxhbkCIjtO6YWgdrfM+n/8sI8JeXZOIxsHjMTNxQ4nQ=="],
 
-    "semver": ["semver@7.8.5", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA=="],
+    "semver": ["semver@7.8.6", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw=="],
 
     "semver-utils": ["semver-utils@1.1.4", "", {}, "sha512-EjnoLE5OGmDAVV/8YDoN5KiajNadjzIp9BAHOhYeQHt7j0UWxjmgsx4YD48wp4Ue1Qogq38F1GNUJNqF1kKKxA=="],
 
@@ -901,6 +901,8 @@
     "@cacheable/utils/keyv": ["keyv@5.6.0", "", { "dependencies": { "@keyv/serialize": "^1.1.1" } }, "sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw=="],
 
     "@eslint-community/eslint-utils/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
+
+    "@pob/version/semver": ["semver@7.8.5", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA=="],
 
     "cacheable/keyv": ["keyv@5.6.0", "", { "dependencies": { "@keyv/serialize": "^1.1.1" } }, "sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw=="],
 
