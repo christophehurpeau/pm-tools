@@ -58,7 +58,7 @@
     "yaml": "2.9.1"
   },
   "devDependencies": {
-    "@types/bun": "1.4.4",
+    "@types/bun": "1.4.5",
     "@typescript/native": "npm:typescript@7.0.2",
     "tsrs": "0.25.0-ts7.1.0-beta",
     "typescript": "npm:@typescript/typescript6@6.0.2"
